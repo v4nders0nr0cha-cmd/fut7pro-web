@@ -32,7 +32,7 @@ export default function ListaAtletasPage() {
         <title>Perfis dos Atletas | Estatísticas e Conquistas | Fut7Pro</title>
         <meta
           name="description"
-          content="Conheça o perfil completo de todos os atletas do seu racha: estatísticas, conquistas, posição em campo e evolução ao longo das temporadas. Compare jogadores, busque destaques e acompanhe o futebol 7 entre amigos com o sistema Fut7Pro."
+          content="Conheça os atletas do grupo: perfis, estatísticas, conquistas, posição em campo e evolução ao longo das temporadas. Acompanhe o futebol entre amigos no Fut7Pro."
         />
         <meta
           name="keywords"
@@ -44,7 +44,7 @@ export default function ListaAtletasPage() {
         Perfis dos Atletas
       </h1>
       <p className="mb-7 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
-        Descubra tudo sobre os <strong>atletas do seu racha</strong>! Acesse o{" "}
+        Conheça os <strong>atletas do grupo</strong>! Acesse o{" "}
         <strong>perfil completo de cada jogador</strong> com estatísticas, conquistas, posição em
         campo, histórico de partidas e evolução por temporada.
       </p>

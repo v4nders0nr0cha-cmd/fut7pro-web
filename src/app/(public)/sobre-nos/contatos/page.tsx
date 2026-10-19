@@ -167,8 +167,8 @@ export default function ContatosPage() {
             Fale Conosco
           </h1>
           <p className="text-center text-zinc-300 mb-6">
-            Quer ser parceiro, anunciar sua marca ou tirar dúvidas sobre o Racha Fut7Pro? Fale
-            direto com a equipe responsável pela administração através das opções abaixo!
+            Quer ser parceiro, anunciar sua marca ou tirar dúvidas sobre o grupo? Fale direto com a
+            equipe responsável pela administração através das opções abaixo!
           </p>
 
           {/* Formulário */}

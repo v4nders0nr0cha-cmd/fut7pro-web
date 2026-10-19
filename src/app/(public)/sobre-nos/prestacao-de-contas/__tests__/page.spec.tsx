@@ -53,9 +53,7 @@ describe("PrestacaoDeContasPage", () => {
       screen.getByRole("heading", { name: "Prestação de contas indisponível" })
     ).toBeInTheDocument();
     expect(screen.getByText(/ainda não publicou lançamentos financeiros/i)).toBeInTheDocument();
-    expect(
-      screen.queryByText(/Este racha não existe ou não está disponível/i)
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Grupo não encontrado" })).not.toBeInTheDocument();
     expect(mockedUseFinanceiroPublic).toHaveBeenCalledWith("vitrine", { enabled: true });
   });
 
@@ -96,6 +94,6 @@ describe("PrestacaoDeContasPage", () => {
     });
 
     render(<PrestacaoDeContasPage />);
-    expect(screen.getByRole("heading", { name: "Racha não encontrado" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Grupo não encontrado" })).toBeInTheDocument();
   });
 });

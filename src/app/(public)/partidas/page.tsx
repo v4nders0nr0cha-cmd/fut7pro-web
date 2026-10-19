@@ -43,7 +43,7 @@ export default function PartidasPage() {
             </p>
             <p>
               Administradores também podem acessar o sorteio inteligente para gerar times
-              equilibrados usando os dados do racha.
+              equilibrados usando os dados do grupo.
             </p>
           </>
         }

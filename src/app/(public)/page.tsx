@@ -603,7 +603,7 @@ export default function Home({
       <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10 flex flex-col lg:flex-row gap-8">
         {/* CONTEUDO PRINCIPAL */}
         <div className="flex-1">
-          <h1 className="sr-only">Fut7Pro: Sistema para Racha, Fut7 e Futebol Amador</h1>
+          <h1 className="sr-only">Fut7Pro: peladas, rachas e futebol entre amigos</h1>
 
           <ChampionBanner
             image={championBanner.image}
@@ -666,7 +666,7 @@ export default function Home({
               <Card title="Ranking" description="Compare seu desempenho com os melhores." />
             </Link>
             <Link href={publicHref("/os-campeoes")}>
-              <Card title="Campeões" description="Veja quem se destacou nos rachas." />
+              <Card title="Campeões" description="Veja os destaques do grupo." />
             </Link>
             <Link href={publicHref("/estatisticas/tira-teima")}>
               <Card

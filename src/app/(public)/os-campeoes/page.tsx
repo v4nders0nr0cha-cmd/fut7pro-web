@@ -26,7 +26,7 @@ type TenantInfo = {
 const tenantFetcher = async (url: string): Promise<TenantInfo> => {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
-    throw new Error("Erro ao carregar dados do racha");
+    throw new Error("Erro ao carregar dados do grupo");
   }
   return res.json();
 };
@@ -269,18 +269,18 @@ export default function CampeoesPage() {
 
       <main className="w-full max-w-[1440px] mx-auto px-4 pt-[40px] pb-12">
         <h1 className="sr-only">
-          Os Campeões do Racha - Melhores do Ano, Rankings e Campeões por Quadrimestre
+          Os Campeões do grupo - Melhores do Ano, Rankings e Campeões por Quadrimestre
         </h1>
 
         <PageHelp
           title="Os Campeões"
-          summary="Hall da Fama oficial com títulos anuais e quadrimestrais do racha."
+          summary="Hall da Fama com títulos anuais e quadrimestrais do grupo."
           className="mb-8"
           detailsTitle="Como funciona a página Os Campeões"
           details={
             <>
               <p>
-                A página Os Campeões consolida os títulos oficiais do racha por ano e por
+                A página Os Campeões consolida os títulos oficiais do grupo por ano e por
                 quadrimestre, com vencedores calculados a partir das partidas publicadas.
               </p>
 
