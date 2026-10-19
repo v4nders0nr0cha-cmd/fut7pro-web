@@ -102,7 +102,7 @@ export default function CardCicloPlano({
 
   const mensagem = useMemo(() => {
     if (isCompensated) {
-      return "Seu racha recebeu uma compensação de acesso temporária. Aproveite esse período extra para continuar usando o painel normalmente.";
+      return "Seu grupo recebeu uma compensação de acesso temporária. Aproveite esse período extra para continuar usando o painel normalmente.";
     }
     if (isTrial) {
       const planContext = planLabel ? ` do ${planLabel}` : "";

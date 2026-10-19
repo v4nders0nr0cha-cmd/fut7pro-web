@@ -100,7 +100,7 @@ export default function AdminGuideClient() {
           <div>
             <h1 className="text-2xl font-bold sm:text-3xl">Guia Fut7Pro</h1>
             <p className="mt-2 text-sm text-zinc-300 sm:text-base">
-              Acompanhe a preparação da pelada e encontre o próximo passo para sua função.
+              Acompanhe a preparação do grupo e encontre o próximo passo para sua função.
             </p>
           </div>
         </header>
@@ -113,7 +113,7 @@ export default function AdminGuideClient() {
           <section className="rounded-xl border border-white/10 bg-[#23272F] p-5">
             <p>
               {error?.status === 403
-                ? "O Guia está disponível somente para administradores aprovados desta pelada."
+                ? "O Guia está disponível somente para administradores aprovados deste grupo."
                 : error?.status === 401
                   ? "Sua sessão expirou. Entre novamente para acessar o Guia."
                   : "Não foi possível carregar o Guia Fut7Pro agora."}
@@ -157,7 +157,7 @@ export default function AdminGuideClient() {
                 <h2 className="text-lg font-bold text-yellow-200">Bem-vindo ao Guia Fut7Pro!</h2>
                 <p className="mt-2 text-sm text-zinc-200">
                   {guide.activationProgress.complete
-                    ? "Sua pelada já concluiu a jornada inicial. Consulte as etapas e conheça os recursos da sua função."
+                    ? "Seu grupo já concluiu a jornada inicial. Consulte as etapas e conheça os recursos da sua função."
                     : "Vamos acompanhar os primeiros jogos e mostrar os recursos úteis para sua função."}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -220,10 +220,10 @@ export default function AdminGuideClient() {
               </div>
               {guide.activationProgress.complete && (
                 <div className="mt-3 text-sm text-yellow-200">
-                  <p className="font-semibold">Sua pelada concluiu a jornada inicial!</p>
+                  <p className="font-semibold">Seu grupo concluiu a jornada inicial!</p>
                   <p className="mt-1 text-zinc-200">
                     Os primeiros passos estão completos. Continue utilizando o Fut7Pro para
-                    organizar os jogos e acompanhar a evolução da sua pelada.
+                    organizar os jogos e acompanhar a evolução do seu grupo.
                   </p>
                 </div>
               )}

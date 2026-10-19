@@ -139,10 +139,10 @@ export default function AdminDashboard() {
   return (
     <>
       <Head>
-        <title>Dashboard do Racha | Painel Admin - Fut7Pro</title>
+        <title>Dashboard do grupo | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Gerencie seu racha, jogadores, partidas, rankings e financas com dados reais do painel Fut7Pro."
+          content="Gerencie seu grupo, jogadores, partidas, rankings e finanças com dados reais do painel Fut7Pro."
         />
         <meta
           name="keywords"

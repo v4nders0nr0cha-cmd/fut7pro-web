@@ -135,7 +135,7 @@ export default function AdminGuidePostMatchSection({ guide }: { guide: AdminGuid
         {step({
           title: "Registre os resultados",
           description:
-            "Depois dos jogos, registre os placares para manter os resultados, as estatísticas e o histórico da pelada atualizados.",
+            "Depois dos jogos, registre os placares para manter os resultados, as estatísticas e o histórico do grupo atualizados.",
           status: hasResults
             ? "Você já registrou todos os placares de pelo menos uma data de jogos."
             : !hasMatches
@@ -148,7 +148,7 @@ export default function AdminGuidePostMatchSection({ guide }: { guide: AdminGuid
             "Um placar de 0 × 0 também é um resultado registrado. Registrar o placar não finaliza oficialmente a partida.",
         })}
         {step({
-          title: "Acompanhe o histórico da pelada",
+          title: "Acompanhe o histórico do grupo",
           description:
             "Consulte as partidas registradas e acompanhe os resultados e as informações disponíveis de cada jogo.",
           status: hasMatches
@@ -178,9 +178,9 @@ export default function AdminGuidePostMatchSection({ guide }: { guide: AdminGuid
         {step({
           title: "Publique o Time Campeão do Dia",
           description:
-            "Depois de registrar os resultados, utilize o recurso Time Campeão do Dia para destacar a equipe campeã da pelada.",
+            "Depois de registrar os resultados, utilize o recurso Time Campeão do Dia para destacar a equipe campeã do grupo.",
           status: hasChampion
-            ? "Sua pelada já possui um Time Campeão do Dia publicado com resultados completos."
+            ? "Seu grupo já possui um Time Campeão do Dia publicado com resultados completos."
             : !hasResults
               ? "Registre todos os placares de uma data de jogos antes de concluir a publicação do campeão."
               : "Os resultados já foram registrados. Agora você pode acessar o Time Campeão do Dia.",

@@ -198,7 +198,7 @@ it("reconhece partidas persistidas somente pelo estado retornado pelo backend", 
       update={update}
     />
   );
-  expect(screen.getByText(/Sua pelada já possui partidas registradas/)).toBeInTheDocument();
+  expect(screen.getByText(/Seu grupo já possui partidas registradas/)).toBeInTheDocument();
   expect(screen.getByText(/12 jogadores ativos/)).toBeInTheDocument();
   expect(screen.getByText(/2 times oficiais ativos/)).toBeInTheDocument();
 });

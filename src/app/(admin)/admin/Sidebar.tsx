@@ -181,7 +181,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
         <div className="flex items-center gap-3">
           <Image
             src={logo}
-            alt={`Logo do ${nome} - Sistema de rachas e futebol`}
+            alt={`Logo de ${nome}`}
             width={42}
             height={42}
             className="rounded"
@@ -269,7 +269,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 font-bold text-brand-soft"
-                title="Abrir site público do seu racha"
+                title="Abrir site público do grupo"
                 data-testid="admin-sidebar-view-site"
               >
                 Ver o Site
@@ -280,7 +280,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                 className="font-bold text-zinc-500"
                 data-testid="admin-sidebar-view-site-disabled"
               >
-                Selecione um racha no Hub
+                Selecione um grupo no Hub
               </span>
             )}
           </div>

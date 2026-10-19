@@ -84,20 +84,20 @@ export default function AdminGuideResourcesSection({
         </h2>
         <p className="mt-2 text-sm text-zinc-300">
           Além de organizar os jogos, você pode valorizar os atletas, divulgar parceiros e manter
-          sua pelada conectada. Estes recursos são opcionais e não alteram o progresso da jornada
+          seu grupo conectado. Estes recursos são opcionais e não alteram o progresso da jornada
           inicial.
         </p>
         {guide.activationProgress.complete && (
           <p className="mt-2 text-sm font-semibold text-yellow-200">
-            Sua pelada já concluiu os primeiros passos. Continue aproveitando o Fut7Pro!
+            Seu grupo já concluiu os primeiros passos. Continue aproveitando o Fut7Pro!
           </p>
         )}
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <ResourceCard
-          title="Dê visibilidade aos patrocinadores da sua pelada"
-          description="Divulgue as empresas que apoiam sua pelada e valorize essas parcerias."
-          details="Um espaço organizado para apresentar patrocinadores pode ajudar sua pelada a buscar novas oportunidades de apoio, sem garantia de retorno financeiro."
+          title="Dê visibilidade aos patrocinadores do grupo"
+          description="Divulgue as empresas que apoiam o grupo e valorize essas parcerias."
+          details="Um espaço organizado para apresentar patrocinadores pode ajudar o grupo a buscar novas oportunidades de apoio, sem garantia de retorno financeiro."
           icon={Handshake}
           links={
             destinations.sponsors
@@ -106,9 +106,9 @@ export default function AdminGuideResourcesSection({
           }
         />
         <ResourceCard
-          title="Acompanhe os rankings da pelada"
+          title="Acompanhe os rankings do grupo"
           description="Confira a participação nos jogos e os atletas que estiveram em equipes campeãs."
-          details="Os rankings dependem dos registros esportivos oficiais. Em uma pelada nova, eles podem ainda não apresentar resultados."
+          details="Os rankings dependem dos registros esportivos oficiais. Em um grupo novo, eles podem ainda não apresentar resultados."
           icon={Trophy}
           links={[
             ...(destinations.attendanceRanking
@@ -120,14 +120,14 @@ export default function AdminGuideResourcesSection({
           ]}
         />
         <ResourceCard
-          title="Explore as estatísticas da sua pelada"
+          title="Explore as estatísticas do seu grupo"
           description="Conheça artilheiros, assistências, classificação e outros dados alimentados pelos jogos registrados."
           icon={ChartNoAxesCombined}
           links={
             destinations.statistics
               ? [
                   {
-                    label: "Ver estatísticas da pelada (nova aba)",
+                    label: "Ver estatísticas do grupo (nova aba)",
                     href: destinations.statistics,
                     external: true,
                   },
@@ -137,7 +137,7 @@ export default function AdminGuideResourcesSection({
         />
         <ResourceCard
           title="Valorize as conquistas dos jogadores"
-          description="Conheça os títulos e as premiações que preservam a história da sua pelada."
+          description="Conheça os títulos e as premiações que preservam a história do seu grupo."
           details="O acesso à página de Conquistas não concede permissão para criar ou editar títulos."
           icon={BookOpen}
           links={
@@ -147,7 +147,7 @@ export default function AdminGuideResourcesSection({
           }
         />
         <ResourceCard
-          title="Mantenha sua pelada conectada"
+          title="Mantenha seu grupo conectado"
           description="Compartilhe avisos com comunicados e conheça as enquetes para ouvir os participantes."
           icon={Megaphone}
           links={[

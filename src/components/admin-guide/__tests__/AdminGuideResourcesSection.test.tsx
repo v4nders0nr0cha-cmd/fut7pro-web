@@ -108,7 +108,7 @@ it("isola estatísticas públicas na pelada ativa e omite o link quando o slug �
   const view = render(
     <AdminGuideResourcesSection guide={makeGuide()} updating={false} update={update} />
   );
-  expect(screen.getByRole("link", { name: /Ver estatísticas da pelada/ })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: /Ver estatísticas do grupo/ })).toHaveAttribute(
     "href",
     "/seu-racha/estatisticas"
   );
@@ -119,7 +119,7 @@ it("isola estatísticas públicas na pelada ativa e omite o link quando o slug �
       update={update}
     />
   );
-  expect(screen.getByRole("link", { name: /Ver estatísticas da pelada/ })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: /Ver estatísticas do grupo/ })).toHaveAttribute(
     "href",
     "/outra-pelada/estatisticas"
   );
@@ -130,9 +130,7 @@ it("isola estatísticas públicas na pelada ativa e omite o link quando o slug �
       update={update}
     />
   );
-  expect(
-    screen.queryByRole("link", { name: /Ver estatísticas da pelada/ })
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Ver estatísticas do grupo/ })).not.toBeInTheDocument();
 });
 
 it("mantém a explicação sem ações proibidas para Diretor Financeiro", () => {
@@ -144,7 +142,7 @@ it("mantém a explicação sem ações proibidas para Diretor Financeiro", () =>
     />
   );
   expect(screen.getByRole("link", { name: "Gerenciar patrocinadores" })).toBeInTheDocument();
-  expect(screen.getByText("Acompanhe os rankings da pelada")).toBeInTheDocument();
+  expect(screen.getByText("Acompanhe os rankings do grupo")).toBeInTheDocument();
   expect(
     screen.queryByRole("link", { name: "Ver Ranking de Assiduidade" })
   ).not.toBeInTheDocument();
@@ -175,7 +173,7 @@ it("não navega por rotas genéricas, externas ou recomendações não aplicáve
     screen.queryByRole("link", { name: "Ver Ranking de Assiduidade" })
   ).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Gerenciar comunicados" })).not.toBeInTheDocument();
-  expect(screen.getByText("Acompanhe os rankings da pelada")).toBeInTheDocument();
+  expect(screen.getByText("Acompanhe os rankings do grupo")).toBeInTheDocument();
 });
 
 it("registra vídeos somente após clique, sem impedir a abertura por falha no PATCH", () => {
