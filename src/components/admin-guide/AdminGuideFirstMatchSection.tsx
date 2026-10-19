@@ -123,10 +123,10 @@ export default function AdminGuideFirstMatchSection({
         <p className="mt-2 text-sm text-zinc-300">
           {players === null
             ? "Consulte a lista de jogadores para conferir quem pode participar."
-            : `${players} ${players === 1 ? "jogador ativo" : "jogadores ativos"} neste grupo.`}{" "}
+            : `${players} ${players === 1 ? "jogador ativo" : "jogadores ativos"} no grupo.`}{" "}
           {teams === null
             ? "Consulte os times oficiais cadastrados."
-            : `${teams} ${teams === 1 ? "time oficial ativo" : "times oficiais ativos"} neste grupo.`}
+            : `${teams} ${teams === 1 ? "time oficial ativo" : "times oficiais ativos"} no grupo.`}
         </p>
         <p className="mt-2 text-sm text-zinc-400">
           Esses números representam o cadastro do grupo, não a presença confirmada no dia do jogo.

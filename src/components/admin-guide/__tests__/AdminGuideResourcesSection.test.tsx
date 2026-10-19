@@ -130,9 +130,7 @@ it("isola estatísticas públicas na pelada ativa e omite o link quando o slug �
       update={update}
     />
   );
-  expect(
-    screen.queryByRole("link", { name: /Ver estatísticas do grupo/ })
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Ver estatísticas do grupo/ })).not.toBeInTheDocument();
 });
 
 it("mantém a explicação sem ações proibidas para Diretor Financeiro", () => {
