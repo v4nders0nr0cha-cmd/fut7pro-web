@@ -36,7 +36,7 @@ const socialFields: SocialField[] = [
     icon: <FaWhatsapp size={26} className="text-green-400" />,
     placeholder: "Link do grupo do WhatsApp (convite)",
     helper:
-      'Aqui é o link do GRUPO do WhatsApp do racha (convite). Para WhatsApp comercial/contato direto, use a página Contatos em /admin/personalizacao/editar-paginas/contatos (campo "WhatsApp Comercial (link completo)").',
+      'Aqui é o link do grupo de WhatsApp da sua comunidade (convite). Para WhatsApp comercial/contato direto, use a página Contatos em /admin/personalizacao/editar-paginas/contatos (campo "WhatsApp Comercial (link completo)").',
   },
   {
     key: "instagramUrl",
@@ -54,7 +54,7 @@ const socialFields: SocialField[] = [
     key: "websiteUrl",
     label: "Site",
     icon: <FaGlobe size={26} className="text-yellow-300" />,
-    placeholder: "Link do site do racha",
+    placeholder: "Link do site do grupo",
   },
 ];
 
@@ -108,7 +108,7 @@ export default function RedesSociaisPage() {
         <title>Redes Sociais | Admin Fut7Pro</title>
         <meta
           name="description"
-          content="Adicione e personalize as redes sociais do seu racha para aparecerem no site Fut7Pro."
+          content="Adicione e personalize as redes sociais do seu grupo para aparecerem no site Fut7Pro."
         />
         <meta
           name="keywords"
@@ -117,10 +117,10 @@ export default function RedesSociaisPage() {
       </Head>
       <div className="w-full max-w-2xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-6">
-          🌐 Redes Sociais do Seu Racha
+          🌐 Redes sociais do seu grupo
         </h1>
         <p className="text-gray-300 mb-8">
-          Preencha os campos abaixo para exibir os ícones das redes sociais do seu racha no site.
+          Preencha os campos abaixo para exibir os ícones das redes sociais do seu grupo no site.
           Deixe em branco para ocultar uma rede específica.
         </p>
         <form className="space-y-7" onSubmit={handleSalvar}>

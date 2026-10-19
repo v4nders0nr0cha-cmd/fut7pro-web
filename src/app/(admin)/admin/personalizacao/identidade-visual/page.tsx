@@ -40,7 +40,7 @@ export default function LogoDoRachaPage() {
   const tenantSlug = contextTenantSlug || me?.tenant?.tenantSlug || "";
   const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
   const aboutErrorMessage =
-    aboutLoadError instanceof Error ? aboutLoadError.message : "Falha ao carregar dados do racha.";
+    aboutLoadError instanceof Error ? aboutLoadError.message : "Falha ao carregar dados do grupo.";
   const hasLoadError = Boolean(aboutLoadError) || isMeError || loadingTimeoutReached;
   const loadErrorMessage = loadingTimeoutReached
     ? "Carregamento acima do esperado. Tente novamente."
@@ -67,7 +67,7 @@ export default function LogoDoRachaPage() {
       const shouldPrefill = nomeAtual && nomeAtual.toLowerCase() !== "fut7pro";
       setLogo({
         url: about.logoUrl || LOGO_PADRAO,
-        nome: about.nome || "Logo do racha",
+        nome: about.nome || "Logo do grupo",
       });
       setNomeRacha(shouldPrefill ? nomeAtual : "");
     }
@@ -147,7 +147,7 @@ export default function LogoDoRachaPage() {
 
   async function handleSalvarIdentidade(slugChangeConfirmed = false) {
     if (!tenantSlug) {
-      toast.error("Selecione um racha ativo no Hub antes de salvar.");
+      toast.error("Selecione um grupo ativo no Hub antes de salvar.");
       return;
     }
 
@@ -187,7 +187,7 @@ export default function LogoDoRachaPage() {
           });
           if (!res.ok) {
             const body = await res.text();
-            throw new Error(body || "Erro ao atualizar link do racha.");
+            throw new Error(body || "Erro ao atualizar link do grupo.");
           }
         }
       }
@@ -248,7 +248,7 @@ export default function LogoDoRachaPage() {
     return (
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4 text-center">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">
-          Identidade Visual do Racha
+          Identidade visual do grupo
         </h1>
         <div className="text-gray-300">Carregando perfil...</div>
       </div>
@@ -266,10 +266,10 @@ export default function LogoDoRachaPage() {
   return (
     <>
       <Head>
-        <title>Personalizar Logo e Nome do Racha | Fut7Pro Painel Admin</title>
+        <title>Personalizar logo e nome do grupo | Fut7Pro Painel Admin</title>
         <meta
           name="description"
-          content="Personalize a logo e o nome do seu racha de futebol no painel admin Fut7Pro. SaaS de rachas, multi-tenant, customizacao visual total."
+          content="Personalize a logo e o nome do seu grupo de futebol no painel admin Fut7Pro."
         />
         <meta
           name="keywords"
@@ -278,18 +278,18 @@ export default function LogoDoRachaPage() {
       </Head>
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
-          Identidade Visual do Racha
+          Identidade visual do grupo
         </h1>
         <div className="bg-[#191c22] rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center gap-4">
           {/* Nome do racha */}
           <div className="w-full max-w-xs mb-3">
             <label className="block text-yellow-300 font-semibold mb-2">
-              Nome do Racha <span className="text-xs text-gray-400">(até 18 caracteres)</span>
+              Nome do grupo <span className="text-xs text-gray-400">(até 18 caracteres)</span>
             </label>
             <input
               type="text"
               className="w-full rounded px-4 py-2 bg-[#181a1e] border border-yellow-800 text-white focus:outline-none text-lg"
-              placeholder="Digite o nome do seu racha"
+              placeholder="Digite o nome do seu grupo"
               value={nomeRacha}
               onChange={handleNomeChange}
               maxLength={18}
@@ -299,7 +299,7 @@ export default function LogoDoRachaPage() {
               Esse nome será exibido no cabeçalho e outras áreas do site.
             </div>
             <div className="text-xs text-gray-400 mt-1">
-              Se não quiser alterar o nome do racha, deixe o campo em branco e troque apenas a logo.
+              Se não quiser alterar o nome do grupo, deixe o campo em branco e troque apenas a logo.
             </div>
             {currentLink && (
               <div className="text-xs text-gray-400 mt-2">
@@ -308,13 +308,13 @@ export default function LogoDoRachaPage() {
             )}
             {missingTenantScope && (
               <div className="mt-2 text-xs text-red-300">
-                Racha ativo não identificado. Volte ao Hub para selecionar um racha.
+                Grupo ativo não identificado. Volte ao Hub para selecionar um grupo.
               </div>
             )}
             {slugChanged && (
               <div className="mt-2 rounded-md border border-yellow-700/60 bg-[#121212] px-3 py-2">
                 <div className="text-xs text-yellow-200">
-                  Aviso: ao alterar o nome, o link público do racha também muda.
+                  Aviso: ao alterar o nome, o link público do grupo também muda.
                 </div>
                 {nextLink && (
                   <div className="text-xs text-gray-300 mt-1">
@@ -342,7 +342,11 @@ export default function LogoDoRachaPage() {
           <div className="w-40 h-40 rounded-full overflow-hidden bg-black flex items-center justify-center shadow-md border-2 border-[#FFD600]">
             <Image
               src={logo.url || LOGO_PADRAO}
-              alt={`Logo do racha ${nomeRacha.trim() || about?.nome || "Racha"}`}
+              alt={
+                nomeRacha.trim() || about?.nome
+                  ? `Logo do grupo ${nomeRacha.trim() || about?.nome}`
+                  : "Logo do grupo"
+              }
               width={160}
               height={160}
               className="object-contain"
@@ -364,7 +368,7 @@ export default function LogoDoRachaPage() {
             accept="image/png, image/jpeg"
             className="hidden"
             onChange={handleLogoUpload}
-            aria-label="Upload logo do racha"
+            aria-label="Upload logo do grupo"
           />
           <div className="text-gray-400 text-xs mt-1 text-center">
             Imagem recomendada: PNG transparente, 400x400px.
@@ -406,7 +410,7 @@ export default function LogoDoRachaPage() {
         />
         <Fut7ConfirmDialog
           open={slugConfirmOpen}
-          title="Alterar link público do racha?"
+          title="Alterar link público do grupo?"
           eyebrow="Identidade pública"
           description={
             <>

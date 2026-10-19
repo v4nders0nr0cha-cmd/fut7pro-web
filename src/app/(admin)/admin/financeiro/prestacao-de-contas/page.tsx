@@ -56,7 +56,7 @@ const tenantFetcher = async (url: string): Promise<TenantPayload> => {
   const res = await fetch(url);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || "Erro ao carregar dados do racha");
+    throw new Error(text || "Erro ao carregar dados do grupo");
   }
   return res.json();
 };
@@ -415,7 +415,7 @@ export default function PrestacaoDeContasAdmin() {
         <title>Prestação de Contas | Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Gerencie todas as receitas e despesas do racha, cadastre novos lançamentos e exporte relatórios financeiros."
+          content="Gerencie as receitas e despesas do grupo, cadastre novos lançamentos e exporte relatórios financeiros."
         />
         <meta
           name="keywords"
@@ -434,7 +434,7 @@ export default function PrestacaoDeContasAdmin() {
             Esta página está <b>oculta no site público</b>.<br />
             Ative a transparência financeira para liberar o acesso aos atletas e visitantes.
             <br />
-            Quando ativado, qualquer pessoa poderá visualizar a prestação de contas deste racha.
+            Quando ativado, qualquer pessoa poderá visualizar a prestação de contas deste grupo.
           </div>
         )}
 
@@ -442,7 +442,7 @@ export default function PrestacaoDeContasAdmin() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">Prestação de Contas</h1>
             <p className="text-xs sm:text-sm text-gray-400">
-              Gestão total das receitas e despesas do racha.
+              Gestão das receitas e despesas do grupo.
               <br />
               Cadastre, filtre, exporte e mantenha o controle financeiro 100% transparente.
             </p>

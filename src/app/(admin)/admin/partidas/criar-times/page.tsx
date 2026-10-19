@@ -93,7 +93,7 @@ function EmptyState({ tab, onCreate }: { tab: TabKey; onCreate: () => void }) {
       <ImagePlus className="mx-auto h-10 w-10 text-yellow-300" aria-hidden="true" />
       <h2 className="mt-4 text-xl font-bold text-white">Nenhum time ativo</h2>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
-        Cadastre o primeiro time para utilizá-lo nos sorteios e partidas do racha.
+        Cadastre o primeiro time para utilizá-lo nos sorteios e partidas do grupo.
       </p>
       <button
         type="button"
@@ -340,7 +340,7 @@ function TeamFormModal({
     }
 
     if (!currentSlug) {
-      setUploadError("Selecione um racha no Hub para enviar logos.");
+      setUploadError("Selecione um grupo no Hub para enviar logos.");
       return;
     }
 
@@ -602,7 +602,7 @@ export default function CriarTimesPage() {
 
   const handleSaveTeam = async (payload: { nome: string; cor: string; logoUrl: string }) => {
     if (!currentSlug) {
-      throw new Error("Selecione um racha no Hub para criar ou editar times.");
+      throw new Error("Selecione um grupo no Hub para criar ou editar times.");
     }
 
     setPendingAction("save");
@@ -694,13 +694,13 @@ export default function CriarTimesPage() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-300/80">
-                  Times oficiais do racha
+                  Times oficiais do grupo
                 </p>
                 <h1 className="mt-2 text-3xl font-black tracking-tight text-yellow-300 sm:text-4xl">
                   Gerenciar Times
                 </h1>
                 <p className="mt-3 text-sm leading-6 text-zinc-300 sm:text-base">
-                  Cadastre e organize os times do seu racha. Defina nome, cor e identidade visual,
+                  Cadastre e organize os times do seu grupo. Defina nome, cor e identidade visual,
                   arquive times que não são mais utilizados e preserve todo o histórico das
                   partidas.
                 </p>
@@ -729,13 +729,13 @@ export default function CriarTimesPage() {
 
           <div className="mt-5 space-y-4">
             {!currentSlug && (
-              <Fut7InlineFeedback tone="warning" title="Racha não selecionado">
-                Selecione um racha no Hub para cadastrar, editar, arquivar ou reativar times.
+              <Fut7InlineFeedback tone="warning" title="Grupo não selecionado">
+                Selecione um grupo no Hub para cadastrar, editar, arquivar ou reativar times.
               </Fut7InlineFeedback>
             )}
             {isError && (
               <Fut7InlineFeedback tone="error" title="Erro ao carregar times">
-                Não foi possível carregar os times do racha. Tente novamente em instantes.
+                Não foi possível carregar os times do grupo. Tente novamente em instantes.
               </Fut7InlineFeedback>
             )}
             {pageError && (

@@ -57,10 +57,10 @@ export default function GerenciarRachasPage() {
   return (
     <>
       <Head>
-        <title>Gerenciar Dias & Horarios do Racha | Painel Admin - Fut7Pro</title>
+        <title>Gerenciar dias e horários do grupo | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Cadastre, edite e remova os dias e horarios do seu racha. Receba alertas de feriado automaticamente. Gestao profissional no Fut7Pro."
+          content="Cadastre, edite e remova os dias e horários do grupo. Receba alertas de feriado automaticamente. Gestão profissional no Fut7Pro."
         />
         <meta
           name="keywords"
@@ -73,13 +73,13 @@ export default function GerenciarRachasPage() {
           <div className="flex items-center gap-3 mb-6">
             <FaCalendarPlus className="text-cyan-400 text-3xl" />
             <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
-              Gerenciar Dias & Horarios do Racha
+              Gerenciar dias e horários do grupo
             </h1>
           </div>
 
           <p className="text-gray-300 mb-6">
-            Cadastre todos os dias e horarios em que seu racha acontece na semana. O sistema avisa
-            caso algum caia em feriado.
+            Cadastre todos os dias e horários em que seu grupo joga na semana. O sistema avisa caso
+            algum caia em feriado.
           </p>
 
           {isError && error && (

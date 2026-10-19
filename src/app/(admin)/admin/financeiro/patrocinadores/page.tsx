@@ -173,7 +173,7 @@ function PaginaPatrocinadoresClient() {
         <title>Patrocinadores | Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Gerencie patrocinadores do racha, metas financeiras, visibilidade pública e relatórios."
+          content="Gerencie patrocinadores do grupo, metas financeiras, visibilidade pública e relatórios."
         />
       </Head>
 
@@ -182,7 +182,7 @@ function PaginaPatrocinadoresClient() {
           <div>
             <h1 className="text-3xl font-bold text-yellow-500">Patrocinadores</h1>
             <p className="text-sm text-gray-300">
-              Cadastre, edite e controle a visibilidade dos patrocinadores do seu racha.
+              Cadastre, edite e controle a visibilidade dos patrocinadores do seu grupo.
             </p>
           </div>
         </div>

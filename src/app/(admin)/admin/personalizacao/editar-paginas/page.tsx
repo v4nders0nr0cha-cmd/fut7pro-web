@@ -9,21 +9,21 @@ const paginas = [
     slug: "nossa-historia",
     titulo: "Nossa História",
     descricao:
-      "Edite o conteúdo institucional sobre a origem, missão e valores do seu racha. Ideal para contar a trajetória do grupo.",
+      "Edite o conteúdo institucional sobre a origem, missão e valores do seu grupo. Ideal para contar sua trajetória.",
     rota: "/admin/personalizacao/editar-paginas/nossa-historia",
   },
   {
     slug: "estatuto",
     titulo: "Estatuto",
     descricao:
-      "Gerencie as regras oficiais, critérios, direitos e deveres do seu racha de forma simples e segura.",
+      "Gerencie as regras oficiais, critérios, direitos e deveres do seu grupo de forma simples e segura.",
     rota: "/admin/personalizacao/editar-paginas/estatuto",
   },
   {
     slug: "contatos",
     titulo: "Contatos",
     descricao:
-      "Atualize e personalize os canais de contato, WhatsApp, redes sociais e informações públicas do seu racha.",
+      "Atualize e personalize os canais de contato, WhatsApp, redes sociais e informações públicas do seu grupo.",
     rota: "/admin/personalizacao/editar-paginas/contatos",
   },
 ];
@@ -35,7 +35,7 @@ export default function EditarPaginas() {
         <title>Páginas do Sobre Nós | Personalização | Painel Admin | Fut7Pro</title>
         <meta
           name="description"
-          content="Atualize os textos que aparecem na página Sobre Nós do seu racha (Nossa História, Estatuto e Contatos) no Fut7Pro."
+          content="Atualize os textos que aparecem na página Sobre Nós do seu grupo (Nossa História, Estatuto e Contatos) no Fut7Pro."
         />
         <meta
           name="keywords"
@@ -46,7 +46,7 @@ export default function EditarPaginas() {
         <div className="max-w-5xl mx-auto">
           <h1 className="text-3xl font-bold text-white mb-2">Páginas do Sobre Nós</h1>
           <p className="text-gray-300 mb-8 text-base max-w-2xl text-balance">
-            Atualize os textos que aparecem na página Sobre Nós do seu racha (Nossa História,
+            Atualize os textos que aparecem na página Sobre Nós do seu grupo (Nossa História,
             Estatuto e Contatos). As mudanças são exibidas no site público em /[slug]/sobre-nos.
           </p>
 

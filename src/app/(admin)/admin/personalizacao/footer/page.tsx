@@ -145,7 +145,7 @@ export default function FooterPersonalizacaoPage() {
         <title>Personalizar Rodapé | Admin Fut7Pro</title>
         <meta
           name="description"
-          content="Personalize os tópicos do rodapé, legenda institucional e localização do campo oficial do seu racha no Fut7Pro."
+          content="Personalize os tópicos do rodapé, legenda institucional e localização do campo oficial do seu grupo no Fut7Pro."
         />
         <meta
           name="keywords"
@@ -334,7 +334,7 @@ export default function FooterPersonalizacaoPage() {
             )}
           </div>
           <span className="text-xs text-gray-400 block mt-1">
-            Os links são carregados da página de redes sociais do seu racha.
+            Os links são carregados da página de redes sociais do seu grupo.
           </span>
         </section>
 
