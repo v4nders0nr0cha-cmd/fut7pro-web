@@ -13,7 +13,7 @@ export default function CriarPartidasPage() {
         <title>Criar Partidas | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Escolha o modo de cadastro das partidas do seu racha: Sorteio Inteligente ou Partida Classica. Sessao ao vivo com rodadas dinamicas e resultados em tempo real."
+          content="Escolha o modo de cadastro das partidas do grupo: Sorteio Inteligente ou Partida Classica. Sessao ao vivo com rodadas dinamicas e resultados em tempo real."
         />
         <meta
           name="keywords"

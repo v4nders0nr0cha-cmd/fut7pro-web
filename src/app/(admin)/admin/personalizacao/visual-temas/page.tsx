@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import VisualTemasClient from "./VisualTemasClient";
 
 export const metadata: Metadata = {
-  title: "Visual & Temas do Racha | Fut7Pro Painel Admin",
+  title: "Visual e temas do grupo | Fut7Pro Painel Admin",
   description:
-    "Escolha e personalize o tema visual do seu racha no Fut7Pro. Paletas de cores sofisticadas, esportivas e exclusivas.",
+    "Escolha e personalize o tema visual do seu grupo no Fut7Pro. Paletas de cores sofisticadas, esportivas e exclusivas.",
   keywords: [
     "Fut7Pro",
     "temas",

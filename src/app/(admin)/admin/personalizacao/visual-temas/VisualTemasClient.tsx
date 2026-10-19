@@ -107,7 +107,7 @@ export default function VisualTemasClient() {
 
   const handleSalvar = async () => {
     if (!tenantSlug) {
-      toast.error("Não foi possível identificar o racha. Refaça o login.");
+      toast.error("Não foi possível identificar o grupo. Refaça o login.");
       return;
     }
     if (!hasChanges) {
@@ -176,11 +176,11 @@ export default function VisualTemasClient() {
         publicUrl={tenantSlug ? publicHref("/") : undefined}
       />
       <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
-        Visual & Temas do Racha
+        Visual e temas do grupo
       </h1>
       <div className="bg-[#191c22] rounded-2xl shadow-lg p-6 flex flex-col gap-6 items-center">
         <p className="text-gray-200 text-base text-center mb-2">
-          Escolha uma paleta de cores para personalizar o visual do seu racha.
+          Escolha uma paleta de cores para personalizar o visual do seu grupo.
           <br />
           Todas as telas do painel e do site público refletirão a identidade escolhida.
         </p>

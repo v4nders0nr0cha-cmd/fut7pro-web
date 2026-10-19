@@ -65,7 +65,7 @@ export default function PartidasPage() {
         <title>Partidas e Resultados | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Centralize o seu racha em um só lugar: registre resultados do Sorteio Inteligente e consulte o histórico completo de partidas."
+          content="Centralize as partidas do grupo em um só lugar: registre resultados do Sorteio Inteligente e consulte o histórico completo."
         />
         <meta
           name="keywords"
@@ -79,9 +79,9 @@ export default function PartidasPage() {
             Partidas e Resultados
           </h1>
           <p className="text-center text-gray-300 mb-2 max-w-2xl mx-auto">
-            Centralize o seu racha em um só lugar: registre os resultados dos confrontos gerados no
-            Sorteio Inteligente e consulte o histórico completo de partidas, com filtros por período
-            e busca rápida.
+            Centralize as partidas do grupo em um só lugar: registre os resultados dos confrontos
+            gerados no Sorteio Inteligente e consulte o histórico completo de partidas, com filtros
+            por período e busca rápida.
           </p>
           <p className="text-center text-xs text-gray-400 mb-10 max-w-2xl mx-auto">
             As partidas do Sorteio Inteligente já ficam disponíveis no site público, aqui você
@@ -89,7 +89,7 @@ export default function PartidasPage() {
           </p>
           {missingTenantScope && (
             <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-              Não foi possível identificar o racha ativo. Acesse o Hub e selecione um racha para
+              Não foi possível identificar o grupo ativo. Acesse o Hub e selecione um grupo para
               continuar.
             </div>
           )}
@@ -146,7 +146,7 @@ export default function PartidasPage() {
                   </a>
                 ) : (
                   <span className="inline-flex items-center justify-center gap-2 text-sm text-gray-500">
-                    Selecione um racha no Hub para abrir o site público.
+                    Selecione um grupo no Hub para abrir o site público.
                   </span>
                 )}
               </div>
@@ -168,7 +168,7 @@ export default function PartidasPage() {
                   <h2 className="text-lg font-semibold text-yellow-300">Histórico de Partidas</h2>
                   <p className="text-sm text-gray-300 mt-2">
                     Pesquise partidas anteriores, revise resultados, filtre por ano e acompanhe a
-                    evolução do racha ao longo do tempo.
+                    evolução do grupo ao longo do tempo.
                   </p>
                 </div>
               </div>

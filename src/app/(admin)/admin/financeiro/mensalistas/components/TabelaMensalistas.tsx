@@ -166,7 +166,7 @@ export default function TabelaMensalistas({
                   disabled={agendaOrdenada.length === 0 || Boolean(processandoAthleteId)}
                   title={
                     agendaOrdenada.length === 0
-                      ? "Cadastre dias e horários do racha para habilitar."
+                      ? "Cadastre dias e horários do grupo para habilitar."
                       : "Definir dias vinculados."
                   }
                 >

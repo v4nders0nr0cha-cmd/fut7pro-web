@@ -547,7 +547,7 @@ export default function PlanosLimitesPage() {
 
   const handleApplyCoupon = async () => {
     if (!subscription?.id) {
-      setActionError("Assinatura não encontrada para este racha.");
+      setActionError("Assinatura não encontrada para este grupo.");
       return;
     }
 
@@ -601,7 +601,7 @@ export default function PlanosLimitesPage() {
 
   const openPaymentModal = () => {
     if (!subscription?.id) {
-      setActionError("Assinatura não encontrada para este racha.");
+      setActionError("Assinatura não encontrada para este grupo.");
       return;
     }
 
@@ -616,7 +616,7 @@ export default function PlanosLimitesPage() {
 
   const handleRecurringPayment = async () => {
     if (!subscription?.id) {
-      setActionError("Assinatura não encontrada para este racha.");
+      setActionError("Assinatura não encontrada para este grupo.");
       return;
     }
 
@@ -644,7 +644,7 @@ export default function PlanosLimitesPage() {
 
   const handleCreatePixCharge = async () => {
     if (!subscription?.id) {
-      setActionError("Assinatura não encontrada para este racha.");
+      setActionError("Assinatura não encontrada para este grupo.");
       return;
     }
 
@@ -745,13 +745,13 @@ export default function PlanosLimitesPage() {
       <main className="max-w-7xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3">Planos & Limites</h1>
         <p className="text-base text-neutral-300 mb-6 max-w-2xl">
-          Central de assinatura do seu racha. Confira o plano atual, ciclo, pagamentos e troque
+          Central de assinatura do seu grupo. Confira o plano atual, ciclo, pagamentos e troque
           quando quiser.
         </p>
 
         {!hasActiveTenant && (
           <div className="mb-6 rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-red-100">
-            Não foi possível identificar o racha ativo. Volte para a seleção de racha e tente
+            Não foi possível identificar o grupo ativo. Volte para a seleção de grupo e tente
             novamente.
           </div>
         )}
@@ -772,7 +772,7 @@ export default function PlanosLimitesPage() {
           <div className="mb-6 rounded-2xl border border-green-500/40 bg-green-500/10 px-4 py-4 text-green-50">
             <p className="text-base font-semibold">Acesso liberado por compensação</p>
             <p className="mt-1 text-sm text-green-50/90">
-              Seu racha recebeu uma compensação de acesso de{" "}
+              Seu grupo recebeu uma compensação de acesso de{" "}
               {formatDaysLabel(effectiveAccess?.activeCompensation?.daysGranted)}. O painel
               permanece liberado até {formatDate(effectiveAccess?.effectiveAccessUntil)}.
             </p>
@@ -976,7 +976,7 @@ export default function PlanosLimitesPage() {
             <p className="mt-1 text-sm text-red-50">{error}</p>
             {errorStatus === 403 && (
               <p className="mt-2 text-xs text-red-100/80">
-                Verifique se o racha selecionado no painel corresponde ao racha que você deseja
+                Verifique se o grupo selecionado no painel corresponde ao grupo que você deseja
                 administrar.
               </p>
             )}
@@ -1000,7 +1000,7 @@ export default function PlanosLimitesPage() {
           >
             <p className="text-base font-semibold">Assinatura em sincronização</p>
             <p className="mt-1 text-sm text-blue-100/90">
-              Recebemos o plano do seu racha e estamos finalizando a sincronização dos dados de
+              Recebemos o plano do seu grupo e estamos finalizando a sincronização dos dados de
               cobrança.
             </p>
           </div>
@@ -1207,7 +1207,7 @@ export default function PlanosLimitesPage() {
           <div className="w-full max-w-2xl bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <h3 className="text-xl font-bold text-white mb-2">Como deseja pagar?</h3>
             <p className="text-sm text-gray-300 mb-5">
-              Escolha a forma de pagamento para liberar o painel do seu racha.
+              Escolha a forma de pagamento para liberar o painel do seu grupo.
             </p>
             {actionError && (
               <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-100">
@@ -1217,7 +1217,7 @@ export default function PlanosLimitesPage() {
             {hasCouponBenefits && paymentPricing && (
               <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-100">
                 <p className="font-semibold text-emerald-200">
-                  Cupom Creator aplicado no seu racha.
+                  Cupom Creator aplicado no seu grupo.
                 </p>
                 {hasRecurringCoupon ? (
                   <p className="mt-1">
@@ -1493,7 +1493,7 @@ export default function PlanosLimitesPage() {
                 <h3 className="text-2xl font-black text-white md:text-3xl">Benefício liberado</h3>
                 <p className="mt-2 text-sm leading-relaxed text-zinc-300">
                   O cupom <b className="text-yellow-300">{couponBenefitModal.couponCode}</b> foi
-                  aplicado ao seu racha. Seu teste e os próximos pagamentos já foram atualizados.
+                  aplicado ao seu grupo. Seu teste e os próximos pagamentos já foram atualizados.
                 </p>
               </div>
 
@@ -1660,7 +1660,7 @@ export default function PlanosLimitesPage() {
       {showInvoicesModal && (
         <Modal onClose={() => setShowInvoicesModal(false)}>
           <div className="w-full max-w-2xl bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-2">Faturas do racha</h3>
+            <h3 className="text-xl font-bold text-white mb-2">Faturas do grupo</h3>
             <p className="text-sm text-gray-300 mb-4">
               Histórico recente das suas cobranças e pagamentos.
             </p>

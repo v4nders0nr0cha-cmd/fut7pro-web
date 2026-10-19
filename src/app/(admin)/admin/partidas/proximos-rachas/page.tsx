@@ -56,7 +56,7 @@ export default function ProximosRachasPage() {
         <title>Dias e Horários | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Confira os dias e horários recorrentes do seu racha Fut7Pro. Agenda dinâmica, aviso de feriados e gestão completa da agenda do time."
+          content="Confira os dias e horários recorrentes do seu grupo no Fut7Pro. Agenda dinâmica e avisos de feriados."
         />
         <meta
           name="keywords"
@@ -83,8 +83,8 @@ export default function ProximosRachasPage() {
             ) : ocorrencias.length === 0 ? (
               <div className="text-sm text-gray-400">
                 {items.length === 0
-                  ? "Nenhuma agenda encontrada. Cadastre dias e horarios para liberar a agenda."
-                  : "Nenhum jogo futuro neste mes."}
+                  ? "Nenhuma agenda encontrada. Cadastre dias e horários para liberar a agenda."
+                  : "Nenhum jogo futuro neste mês."}
               </div>
             ) : (
               ocorrencias.map((racha) => (

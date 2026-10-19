@@ -655,7 +655,7 @@ function PartidaClassicaClient() {
     if (selectedTeams.length > liveTeamCount) {
       return `Limite atual: ${liveTeamCount} times ativos. Ajuste a selecao ou aumente o limite.`;
     }
-    if (!tenantId) return "Nao foi possivel identificar o racha logado.";
+    if (!tenantId) return "Não foi possível identificar o grupo ativo.";
     for (const teamId of selectedTeams) {
       const roster = teamRosters[teamId] || [];
       if (!roster.length) {
