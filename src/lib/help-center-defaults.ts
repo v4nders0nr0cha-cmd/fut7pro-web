@@ -121,18 +121,18 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 40,
     conteudo:
-      "1. Vá em Financeiro > Prestação de Contas.\n2. No novo lançamento, escolha tipo (entrada/saída), categoria, valor e data.\n3. Sempre escreva descrição clara (ex.: mensalidade fevereiro, aluguel campo, arbitragem).\n4. Ao corrigir um lançamento, preserve histórico com justificativa para auditoria interna.\n5. Gere exportações PDF/CSV para transparência com os atletas.",
+      "1. Vá em Financeiro > Prestação de Contas.\n2. No novo lançamento, escolha tipo (receita/despesa), categoria, valor e data.\n3. Escreva uma descrição clara (ex.: mensalidade de fevereiro, aluguel do campo, arbitragem).\n4. Use os filtros para conferir receitas e despesas do período.\n5. Revise os lançamentos regularmente para manter as informações financeiras do grupo atualizadas.",
     tags: ["financeiro", "entradas", "saídas", "prestação de contas"],
   },
   {
     id: "financeiro-patrocinadores",
     categoria: "Financeiro",
-    titulo: "Cadastrar patrocinadores e acompanhar retorno",
+    titulo: "Cadastrar e acompanhar patrocinadores",
     destaque: true,
     ordem: 41,
     conteudo:
-      "No módulo Financeiro > Patrocinadores:\n- Cadastre marca, plano, vigência e mídia vinculada.\n- Atualize logo e links com UTM quando necessário.\n- Acompanhe entregas e status para evitar patrocinador expirado sem ação.\n- Confirme visibilidade no site público do racha após salvar.",
-    tags: ["patrocinadores", "receita", "mídia"],
+      "Em Financeiro > Patrocinadores:\n- Cadastre o nome e o ramo do patrocinador, escolha o plano e informe o valor.\n- Adicione a logo obrigatória e, se desejar, um link para o patrocinador.\n- Confira a situação e as informações de pagamento no cadastro.\n- Após salvar, verifique a visibilidade do patrocinador no site público do grupo.",
+    tags: ["patrocinadores", "receita", "plano"],
   },
   {
     id: "personalizacao-identidade",
@@ -277,11 +277,11 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
   {
     id: "boas-praticas-operacao-diaria",
     categoria: "Boas práticas",
-    titulo: "Checklist diário de operação do racha",
+    titulo: "Checklist para organizar a rotina do grupo",
     destaque: true,
     ordem: 90,
     conteudo:
-      "Antes da rodada: confirmar agenda, participantes e pendências.\nApós a rodada: lançar resultado, validar estatísticas e publicar destaques.\nSemanalmente: revisar financeiro, patrocinadores, solicitações pendentes e comunicados.\nMensalmente: exportar prestação de contas e revisar qualidade dos dados.",
+      "Antes da rodada: confirmar agenda, participantes e pendências.\nApós a rodada: lançar resultado, validar estatísticas e publicar destaques.\nSemanalmente: revisar financeiro, patrocinadores, solicitações pendentes e comunicados.\nMensalmente: conferir receitas, despesas e qualidade dos dados.",
     tags: ["checklist", "rotina", "governança"],
   },
   {
@@ -297,11 +297,11 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
   {
     id: "boas-praticas-suporte-eficiente",
     categoria: "Boas práticas",
-    titulo: "Como reduzir chamados de suporte no seu racha",
+    titulo: "Como evitar problemas comuns e agilizar o suporte",
     destaque: false,
     ordem: 92,
     conteudo:
-      "- Padronize o processo da equipe admin com um responsável por módulo.\n- Atualize a Central de Ajuda interna com dúvidas recorrentes da diretoria.\n- Use comunicados claros para reduzir dúvidas dos atletas.\n- Revise configurações do painel após mudanças de gestão.\n- Escalone para suporte apenas quando houver bloqueio real ou bug.",
+      "- Combine as responsabilidades da equipe administrativa.\n- Reúna dúvidas recorrentes da equipe e encaminhe sugestões de melhoria ao suporte do Fut7Pro.\n- Use comunicados claros para reduzir dúvidas dos atletas.\n- Revise configurações do painel após mudanças de gestão.\n- Abra um chamado de suporte quando precisar de ajuda com o funcionamento da plataforma.",
     tags: ["suporte", "eficiência", "processo"],
   },
   {

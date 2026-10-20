@@ -63,7 +63,52 @@ describe("Central de Ajuda administrativa", () => {
     ]);
     expect(
       DEFAULT_HELP_CENTER_TOPICS.filter((topic) => topic.destaque).map((topic) => topic.id)
-    ).toContain("partidas-dias-horarios");
+    ).toEqual([
+      "primeiros-passos-acesso",
+      "dashboard-visao-geral",
+      "partidas-dias-horarios",
+      "partidas-criar-resultado",
+      "partidas-sorteio-inteligente",
+      "partidas-times-do-dia",
+      "jogadores-cadastro",
+      "jogadores-solicitacoes",
+      "jogadores-mensalistas",
+      "conquistas-os-campeoes",
+      "financeiro-prestacao-de-contas",
+      "financeiro-patrocinadores",
+      "personalizacao-identidade",
+      "administracao-administradores",
+      "administracao-logs",
+      "comunicacao-comunicados",
+      "comunicacao-enquetes",
+      "comunicacao-sugestoes",
+      "comunicacao-notificacoes",
+      "comunicacao-suporte",
+      "configuracoes-assinatura",
+      "boas-praticas-operacao-diaria",
+      "faq-recuperacao-acesso",
+      "faq-dados-nao-atualizam",
+    ]);
+  });
+
+  it("documenta somente ações financeiras e de suporte disponíveis aos administradores", () => {
+    const getTopic = (id: string) => DEFAULT_HELP_CENTER_TOPICS.find((topic) => topic.id === id);
+    const accounts = getTopic("financeiro-prestacao-de-contas");
+    const sponsors = getTopic("financeiro-patrocinadores");
+    const routine = getTopic("boas-praticas-operacao-diaria");
+    const support = getTopic("boas-praticas-suporte-eficiente");
+
+    expect(accounts?.conteudo).toContain("Use os filtros para conferir receitas e despesas");
+    expect(accounts?.conteudo).not.toMatch(/exporta|PDF|CSV/i);
+    expect(routine?.conteudo).toContain("conferir receitas, despesas");
+    expect(routine?.conteudo).not.toMatch(/exporta|PDF|CSV/i);
+    expect(sponsors?.conteudo).toContain("link para o patrocinador");
+    expect(sponsors?.conteudo).toContain("situação e as informações de pagamento");
+    expect(sponsors?.conteudo).not.toMatch(/UTM|mídia vinculada|entregas|rastreamento/i);
+    expect(support?.conteudo).toContain("encaminhe sugestões de melhoria ao suporte");
+    expect(support?.conteudo).not.toMatch(/atualize a Central de Ajuda|edite a Central de Ajuda/i);
+    expect(support?.titulo).toBe("Como evitar problemas comuns e agilizar o suporte");
+    expect(routine?.titulo).toBe("Checklist para organizar a rotina do grupo");
   });
 
   it("mantém orientações de navegação alinhadas ao menu e à tela de agenda", () => {
