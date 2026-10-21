@@ -7,7 +7,7 @@ jest.mock("react", () => {
 });
 
 import { isPrestacaoDeContasPathForSlug } from "../layout-path-utils";
-import { resolvePublicPageSeo } from "../layout";
+import { resolvePublicPageSeo } from "@/lib/seo/public-page-seo";
 
 describe("PublicSlugLayout helpers", () => {
   it("identifica rota de prestacao de contas para o slug informado", () => {
