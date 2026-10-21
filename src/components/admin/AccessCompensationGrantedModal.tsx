@@ -131,7 +131,7 @@ export default function AccessCompensationGrantedModal({
           transition={{ duration: reduceMotion ? 0.1 : 0.2 }}
           role="dialog"
           aria-modal="true"
-          aria-label="Compensação concedida ao seu racha"
+          aria-label="Compensação concedida ao seu grupo"
         >
           <motion.div
             className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-amber-400/45 bg-[#121212] p-6 text-white shadow-[0_36px_110px_-35px_rgba(251,191,36,0.52)]"
@@ -187,7 +187,7 @@ export default function AccessCompensationGrantedModal({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.16, duration: 0.26 }}
               >
-                Seu racha recebeu dias extras de acesso
+                Seu grupo recebeu dias extras de acesso
               </motion.h2>
 
               <motion.p
@@ -196,7 +196,7 @@ export default function AccessCompensationGrantedModal({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.25 }}
               >
-                O Fut7Pro liberou um período extra de acesso para o seu racha.
+                O Fut7Pro liberou um período extra de acesso para o seu grupo.
               </motion.p>
 
               <motion.div
