@@ -172,7 +172,7 @@ export default function NotificacoesClient() {
         <p className="font-semibold text-yellow-300">Central de notificações do seu grupo.</p>
         <p className="mt-1">
           Aqui você acompanha novas sugestões, atualizações da equipe Fut7Pro e alertas importantes
-          do painel. Cada ação fica salva e sincronizada para todos os admins do seu grupo.
+          do painel. As notificações ficam salvas, e o status de leitura acompanha a sua conta.
         </p>
       </div>
 
