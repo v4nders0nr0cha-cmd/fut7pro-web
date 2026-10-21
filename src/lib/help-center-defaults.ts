@@ -11,8 +11,8 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 1,
     conteudo:
-      "1. Faça login com o e-mail aprovado como administrador.\n2. Se você administra mais de um racha, selecione o racha ativo no Hub (/admin/selecionar-racha).\n3. Confirme no topo do painel se o nome e o escudo do racha estão corretos.\n4. Antes de operar, valide em Administração > Administradores se os cargos estão corretos (Presidente, Vice, Diretor de Futebol e Diretor Financeiro).\n5. Configure os dados básicos em Personalização > Identidade Visual para alinhar marca, nome e logo do racha.",
-    tags: ["login", "hub", "racha ativo", "primeiro acesso"],
+      "1. Entre com a conta que tem acesso administrativo ao grupo.\n2. Se você administra mais de um grupo, escolha no Hub aquele que deseja gerenciar.\n3. Confira o nome e a logo do grupo no topo do painel.\n4. Em Administração > Administradores, confira os cargos e convites da equipe.\n5. Em Personalização > Identidade Visual, ajuste o nome e a logo do grupo, se necessário.",
+    tags: ["login", "hub", "grupo ativo", "primeiro acesso"],
   },
   {
     id: "dashboard-visao-geral",
@@ -27,21 +27,21 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
   {
     id: "partidas-dias-horarios",
     categoria: "Partidas",
-    titulo: "Configurar dias e horários do racha",
+    titulo: "Configurar dias e horários do grupo",
     destaque: true,
     ordem: 10,
     conteudo:
-      "1. Acesse Partidas > Próximos Rachas ou a área de agenda do racha.\n2. Defina dia da semana, horário e local padrão.\n3. Salve e revise a agenda para confirmar recorrência.\n4. Quando houver feriado ou alteração pontual, ajuste apenas a ocorrência necessária para não quebrar o calendário mensal.",
+      "1. Acesse Partidas > Dias e Horários para consultar os próximos encontros.\n2. Se precisar cadastrar ou remover um horário recorrente, use a opção de gerenciamento nessa página.\n3. Na tela de gerenciamento, escolha o dia da semana e o horário, depois selecione Adicionar.\n4. Confira a agenda atualizada. O sistema sinaliza quando a próxima data coincide com um feriado.",
     tags: ["agenda", "dias", "horários"],
   },
   {
     id: "partidas-criar-resultado",
     categoria: "Partidas",
-    titulo: "Criar partida e registrar resultado completo",
+    titulo: "Preparar partidas e registrar resultados",
     destaque: true,
     ordem: 11,
     conteudo:
-      "1. Crie a partida na data correta.\n2. Defina participantes e confirme presença (titular, substituto ou ausente).\n3. Após o jogo, abra o histórico e lance placar, gols, assistências, cartões e destaques.\n4. Valide os nomes antes de salvar, porque esses dados impactam rankings, conquistas e perfis dos atletas.\n5. Se precisar corrigir, edite a partida no histórico e confirme novamente os totais.",
+      "1. Em Partidas > Gerenciar Times, cadastre pelo menos dois times oficiais ativos. Esse cadastro é obrigatório.\n2. Em Partidas > Criar Partidas, escolha Sorteio Inteligente ou Partida Clássica para organizar o jogo.\n3. Em Partidas > Partidas e Resultados, acompanhe a rodada e registre os resultados dos confrontos.\n4. Confira os times, atletas e placares antes de concluir. Os resultados alimentam o histórico e os rankings.\n5. Se precisar corrigir um resultado, use a opção de edição no histórico.",
     tags: ["histórico", "resultado", "gols", "assistências"],
   },
   {
@@ -51,7 +51,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 12,
     conteudo:
-      "1. Em Partidas > Sorteio Inteligente, selecione apenas atletas aptos para jogar.\n2. Confira se as posições estão preenchidas (goleiro, zagueiro, meia, atacante).\n3. Gere os times e revise o balanceamento por ranking, estrelas e assiduidade.\n4. Ajuste manualmente apenas quando houver necessidade específica (lesão, chegada atrasada, limitação física).\n5. Salve o sorteio final para manter rastreabilidade do dia.",
+      "1. Cadastre os times oficiais em Partidas > Gerenciar Times antes de criar a rodada.\n2. Em Partidas > Criar Partidas, escolha Sorteio Inteligente.\n3. Selecione os times e atletas disponíveis e confira as posições cadastradas.\n4. Gere o sorteio e revise a composição dos Times do Dia antes de continuar.\n5. Acompanhe os confrontos e resultados em Partidas > Partidas e Resultados.",
     tags: ["sorteio", "balanceamento", "times"],
   },
   {
@@ -61,7 +61,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 13,
     conteudo:
-      "Times do Dia: mostra escalações e organização da rodada.\nTime Campeão do Dia: registra o destaque final com foto e atletas campeões.\nBoas práticas:\n- Publique somente após conferir placar e elenco final.\n- Evite duplicar publicação no mesmo dia.\n- Se houver erro na foto ou atletas, edite imediatamente para não afetar perfis e mural público.",
+      "Os times oficiais são cadastrados em Partidas > Gerenciar Times. Os Times do Dia mostram as escalações organizadas para cada rodada ou sorteio.\nDepois de concluir os resultados da rodada, acesse Partidas > Time Campeão do Dia para registrar o time vencedor e os destaques.\nAntes de publicar, confira o placar e o elenco. Se houver erro, use as opções de correção disponíveis na página.",
     tags: ["times do dia", "campeão", "publicação"],
   },
   {
@@ -81,7 +81,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 21,
     conteudo:
-      "1. Abra Comunicação > Solicitações ou o atalho no topo do painel.\n2. Revise nome, posição e contexto do pedido.\n3. Aprovando: o atleta passa a acessar o ambiente do racha.\n4. Rejeitando: informe motivo claro para evitar novo pedido sem correção.\n5. Mantenha o fluxo diário para não acumular pendências no onboarding de atletas.",
+      "1. Acesse Jogadores > Listar/Cadastrar e localize Solicitações pendentes.\n2. Confira os dados do pedido antes de aprovar ou rejeitar.\n3. Ao aprovar, o atleta passa a integrar o grupo.\n4. Ao rejeitar, informe um motivo claro.\n5. Revise as solicitações pendentes regularmente.",
     tags: ["solicitações", "aprovação", "entrada"],
   },
   {
@@ -91,7 +91,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 22,
     conteudo:
-      "Use Jogadores > Mensalistas (e Financeiro > Mensalistas) para controlar competências pagas e pendentes.\n- Marque pagamento por mês/competência.\n- Evite lançar pagamento em atleta errado: confirme nome e período.\n- Utilize os filtros por situação para cobrança ativa.\n- Com dados em dia, os relatórios financeiros ficam confiáveis para prestação de contas.",
+      "Use Jogadores > Gestão de Mensalistas para configurar os atletas mensalistas e Financeiro > Cobrança de Mensalistas para acompanhar os pagamentos.\n- Confira o atleta e a competência antes de registrar um pagamento.\n- Use os filtros de pagamentos confirmados e pendentes para acompanhar a cobrança.\n- Os pagamentos registrados também aparecem na Prestação de Contas.",
     tags: ["mensalistas", "adimplência", "competência"],
   },
   {
@@ -121,37 +121,37 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 40,
     conteudo:
-      "1. Vá em Financeiro > Prestação de Contas.\n2. No novo lançamento, escolha tipo (entrada/saída), categoria, valor e data.\n3. Sempre escreva descrição clara (ex.: mensalidade fevereiro, aluguel campo, arbitragem).\n4. Ao corrigir um lançamento, preserve histórico com justificativa para auditoria interna.\n5. Gere exportações PDF/CSV para transparência com os atletas.",
+      "1. Vá em Financeiro > Prestação de Contas.\n2. No novo lançamento, escolha tipo (receita/despesa), categoria, valor e data.\n3. Escreva uma descrição clara (ex.: mensalidade de fevereiro, aluguel do campo, arbitragem).\n4. Use os filtros para conferir receitas e despesas do período.\n5. Revise os lançamentos regularmente para manter as informações financeiras do grupo atualizadas.",
     tags: ["financeiro", "entradas", "saídas", "prestação de contas"],
   },
   {
     id: "financeiro-patrocinadores",
     categoria: "Financeiro",
-    titulo: "Cadastrar patrocinadores e acompanhar retorno",
+    titulo: "Cadastrar e acompanhar patrocinadores",
     destaque: true,
     ordem: 41,
     conteudo:
-      "No módulo Financeiro > Patrocinadores:\n- Cadastre marca, plano, vigência e mídia vinculada.\n- Atualize logo e links com UTM quando necessário.\n- Acompanhe entregas e status para evitar patrocinador expirado sem ação.\n- Confirme visibilidade no site público do racha após salvar.",
-    tags: ["patrocinadores", "receita", "mídia"],
+      "Em Financeiro > Patrocinadores:\n- Cadastre o nome e o ramo do patrocinador, escolha o plano e informe o valor.\n- Adicione a logo obrigatória e, se desejar, um link para o patrocinador.\n- Confira a situação e as informações de pagamento no cadastro.\n- Após salvar, verifique a visibilidade do patrocinador no site público do grupo.",
+    tags: ["patrocinadores", "receita", "plano"],
   },
   {
     id: "personalizacao-identidade",
     categoria: "Personalização",
-    titulo: "Identidade visual do racha",
+    titulo: "Identidade visual do grupo",
     destaque: true,
     ordem: 50,
     conteudo:
-      "1. Em Personalização > Identidade Visual, atualize nome, escudo, slogan e descrição.\n2. Use arquivos de imagem leves e legíveis em mobile.\n3. Depois de salvar, valide no botão Ver o Site se o resultado ficou correto em desktop e celular.\n4. Evite textos muito longos no cabeçalho para não quebrar layout.",
+      "1. Em Personalização > Identidade Visual, confira o nome e a logo do grupo.\n2. Se precisar, atualize o nome ou envie uma nova logo.\n3. Salve as alterações e abra o site público para conferir o resultado.\n4. Lembre-se de que a mudança do nome pode alterar o endereço público do grupo.",
     tags: ["identidade visual", "logo", "branding"],
   },
   {
     id: "personalizacao-paginas",
     categoria: "Personalização",
-    titulo: "Editar páginas públicas (Sobre nós, Estatuto, Contatos)",
+    titulo: "Editar páginas públicas (Nossa História, Estatuto, Contatos)",
     destaque: false,
     ordem: 51,
     conteudo:
-      "Use Personalização > Editar Páginas para manter o site público atualizado.\n- Sobre nós: história, timeline e conteúdo institucional.\n- Estatuto: regras oficiais do racha.\n- Contatos: canais de comunicação atualizados.\nSempre revise ortografia e coerência antes de publicar.",
+      "Use Personalização > Páginas do Sobre Nós para atualizar o conteúdo público do grupo.\n- Nossa História: conte como a comunidade começou e registre seus momentos importantes.\n- Estatuto: mantenha as regras do grupo atualizadas.\n- Contatos: confira os canais de comunicação.\nRevise as informações antes de publicar.",
     tags: ["sobre nós", "estatuto", "contatos"],
   },
   {
@@ -161,7 +161,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: false,
     ordem: 52,
     conteudo:
-      "1. Em Personalização > Footer e Redes Sociais, ajuste links oficiais do racha.\n2. Evite links quebrados ou sem https.\n3. Mantenha somente canais ativos para evitar frustração do atleta.\n4. Após salvar, confira no site público se os ícones abriram corretamente.",
+      "1. Use Personalização > Rodapé/Footer para ajustar as informações do rodapé.\n2. Use Personalização > Redes Sociais para atualizar os canais oficiais do grupo.\n3. Depois de salvar, abra o site público e confira os links e ícones.\n4. Mantenha somente canais ativos e endereços válidos.",
     tags: ["footer", "redes sociais", "links"],
   },
   {
@@ -171,7 +171,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 60,
     conteudo:
-      "1. Acesse Administração > Administradores.\n2. Convide apenas pessoas responsáveis pela operação do racha.\n3. Defina função adequada (Presidente, Vice, Diretor de Futebol, Diretor Financeiro).\n4. Revogue acessos de quem saiu da gestão imediatamente.\n5. Sempre revise permissões após mudanças de equipe.",
+      "1. Acesse Administração > Administradores.\n2. Confira quem ocupa cada cargo na gestão do grupo.\n3. O Presidente pode enviar ou cancelar convites para os cargos administrativos. O acesso só é concedido após o aceite.\n4. Quando a equipe mudar, revise os ocupantes e consulte Administração > Permissões.",
     tags: ["administradores", "rbac", "segurança"],
   },
   {
@@ -187,7 +187,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
   {
     id: "administracao-transferencia",
     categoria: "Administração",
-    titulo: "Transferência de propriedade do racha",
+    titulo: "Transferência de propriedade do grupo",
     destaque: false,
     ordem: 62,
     conteudo:
@@ -207,7 +207,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
   {
     id: "comunicacao-enquetes",
     categoria: "Comunicação",
-    titulo: "Enquetes para decisões do racha",
+    titulo: "Enquetes para decisões do grupo",
     destaque: true,
     ordem: 71,
     conteudo:
@@ -221,7 +221,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 72,
     conteudo:
-      "A página de Sugestões é rastreável por status.\n- Atleta envia no site do racha.\n- Admin marca como lida e pode encaminhar para o Fut7Pro.\n- SuperAdmin avalia e responde.\nAcompanhe status como Encaminhada, Em avaliação, Planejada, Concluída ou Rejeitada.",
+      "A página de Sugestões mostra o andamento das ideias enviadas pelos atletas do grupo.\n- O atleta envia uma sugestão pelo site público.\n- A equipe administrativa pode marcar como lida e encaminhar para o Fut7Pro.\n- A equipe Fut7Pro avalia e atualiza o andamento.\nAcompanhe os status exibidos na página, como Encaminhada, Em avaliação, Planejada, Concluída ou Rejeitada.",
     tags: ["sugestões", "feedback", "fut7pro"],
   },
   {
@@ -231,7 +231,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 73,
     conteudo:
-      "Notificações do Admin são diferentes das notificações do site público.\nNo painel Admin:\n1. Acompanhe badge no cabeçalho.\n2. Abra Comunicação > Notificações para ver lista completa.\n3. Marque como lida ou ler todas.\n4. Use o link da notificação para abrir o item relacionado (ex.: sugestão específica).",
+      "As notificações do painel administrativo são diferentes das notificações do site público.\n1. Acompanhe os avisos no cabeçalho.\n2. Abra Comunicação > Notificações para ver a lista completa.\n3. Marque uma notificação como lida ou use Marcar todas como lidas.\n4. Quando houver um link, abra o item relacionado para consultar os detalhes.",
     tags: ["notificações", "badge", "admin"],
   },
   {
@@ -251,7 +251,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 75,
     conteudo:
-      "Abra chamado quando houver: erro de sistema, dúvida operacional bloqueante, divergência de dados ou sugestão técnica.\nPara acelerar atendimento, inclua:\n- O que aconteceu\n- Onde aconteceu (módulo/rota)\n- Impacto no racha\n- Passo a passo para reproduzir",
+      "Abra um chamado em Comunicação > Suporte quando encontrar um erro, uma dúvida que impeça o uso do painel ou uma divergência de dados.\nPara facilitar o atendimento, informe:\n- O que aconteceu\n- Em qual tela aconteceu\n- Como isso afeta o grupo\n- Quais passos permitem reproduzir o problema",
     tags: ["suporte", "chamado", "incidente"],
   },
   {
@@ -261,7 +261,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 80,
     conteudo:
-      "Se houver bloqueio de assinatura, alguns módulos podem ficar restritos.\nVerifique em Admin > Status da assinatura:\n1. Situação atual (trial, ativo, vencido etc.)\n2. Prazo de regularização\n3. Próxima cobrança\nApós regularizar, atualizações podem levar alguns minutos para refletir.",
+      "Acesse Financeiro > Planos & Limites para acompanhar a assinatura do grupo.\n- Confira o plano atual, o status financeiro e o status de acesso.\n- Veja o período do plano e a data do próximo vencimento.\n- Use Ver faturas para consultar as cobranças disponíveis.\n- Se houver pagamento pendente, siga as orientações de regularização exibidas nessa página.",
     tags: ["assinatura", "plano", "bloqueio"],
   },
   {
@@ -277,11 +277,11 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
   {
     id: "boas-praticas-operacao-diaria",
     categoria: "Boas práticas",
-    titulo: "Checklist diário de operação do racha",
+    titulo: "Checklist para organizar a rotina do grupo",
     destaque: true,
     ordem: 90,
     conteudo:
-      "Antes da rodada: confirmar agenda, participantes e pendências.\nApós a rodada: lançar resultado, validar estatísticas e publicar destaques.\nSemanalmente: revisar financeiro, patrocinadores, solicitações pendentes e comunicados.\nMensalmente: exportar prestação de contas e revisar qualidade dos dados.",
+      "Antes da rodada: confirmar agenda, participantes e pendências.\nApós a rodada: lançar resultado, validar estatísticas e publicar destaques.\nSemanalmente: revisar financeiro, patrocinadores, solicitações pendentes e comunicados.\nMensalmente: conferir receitas, despesas e qualidade dos dados.",
     tags: ["checklist", "rotina", "governança"],
   },
   {
@@ -297,11 +297,11 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
   {
     id: "boas-praticas-suporte-eficiente",
     categoria: "Boas práticas",
-    titulo: "Como reduzir chamados de suporte no seu racha",
+    titulo: "Como evitar problemas comuns e agilizar o suporte",
     destaque: false,
     ordem: 92,
     conteudo:
-      "- Padronize o processo da equipe admin com um responsável por módulo.\n- Atualize a Central de Ajuda interna com dúvidas recorrentes da diretoria.\n- Use comunicados claros para reduzir dúvidas dos atletas.\n- Revise configurações do painel após mudanças de gestão.\n- Escalone para suporte apenas quando houver bloqueio real ou bug.",
+      "- Combine as responsabilidades da equipe administrativa.\n- Reúna dúvidas recorrentes da equipe e encaminhe sugestões de melhoria ao suporte do Fut7Pro.\n- Use comunicados claros para reduzir dúvidas dos atletas.\n- Revise configurações do painel após mudanças de gestão.\n- Abra um chamado de suporte quando precisar de ajuda com o funcionamento da plataforma.",
     tags: ["suporte", "eficiência", "processo"],
   },
   {
@@ -311,7 +311,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 100,
     conteudo:
-      "1. Confirme e-mail e senha.\n2. Use recuperação de senha em /admin/esqueci-senha.\n3. Verifique se sua conta ainda possui vínculo de administrador no racha.\n4. Se o problema persistir, abra chamado no suporte informando e-mail e horário do erro.",
+      "1. Confira o e-mail e a senha usados no login.\n2. Se esqueceu a senha, use Esqueci minha senha na página de login administrativo.\n3. Se o acesso ao painel não aparecer, confirme com a equipe do grupo se você ainda ocupa um cargo administrativo.\n4. Se o problema continuar, procure o suporte e informe o e-mail e o horário do erro.",
     tags: ["acesso", "login", "senha"],
   },
   {
@@ -321,7 +321,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 101,
     conteudo:
-      "Em geral a atualização é rápida, mas pode levar alguns minutos de cache.\nChecklist:\n- Confirme se você salvou sem erro.\n- Recarregue a página pública.\n- Verifique se o racha ativo é o correto.\n- Se continuar sem refletir, abra suporte com print da edição e URL pública.",
+      "Se uma alteração não aparecer no site público:\n- Confira se ela foi salva sem erro.\n- Recarregue a página pública.\n- Confirme que você está administrando o grupo correto.\n- Se o problema continuar, procure o suporte com uma captura da tela editada e o endereço da página pública.",
     tags: ["cache", "publicação", "site público"],
   },
   {
@@ -331,7 +331,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: false,
     ordem: 102,
     conteudo:
-      "- Público: páginas do racha e dados liberados para visitantes/atletas.\n- Admin do racha: gestão operacional e dados internos do tenant.\n- SuperAdmin Fut7Pro: visão global da plataforma.\nEsse isolamento protege dados e evita vazamento entre rachas.",
+      "- Visitantes e atletas: informações disponíveis nas páginas públicas do grupo.\n- Administração do grupo: recursos do painel conforme o cargo e as permissões.\n- Equipe Fut7Pro: administração global da plataforma.\nO acesso a dados internos depende das permissões de cada área.",
     tags: ["multi-tenant", "permissões", "privacidade"],
   },
 ];

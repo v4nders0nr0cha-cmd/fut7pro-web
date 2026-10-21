@@ -151,28 +151,25 @@ export default function CentralAjudaPage() {
               <span className="font-bold text-red-500 text-lg">{config.youtubeChannelLabel}</span>
             </div>
             <p className="text-sm text-zinc-300 md:flex-1 md:px-3">
-              Conteúdo em vídeo será publicado em breve. Enquanto isso, use este guia completo para
-              operar o painel admin com segurança e padronização.
+              Consulte os vídeos disponíveis no canal e as orientações abaixo para usar o painel
+              administrativo.
             </p>
             <a
               href={config.youtubeChannelUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 transition shadow"
-              title="Acessar canal oficial do Fut7Pro"
+              title="Abrir canal de vídeos"
             >
               <FaYoutube className="text-xl" /> Ir para o YouTube
             </a>
           </div>
 
           <div className="rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow p-4 text-sm text-zinc-200">
-            <p className="font-semibold text-yellow-300">
-              Base operacional completa do painel admin Fut7Pro
-            </p>
+            <p className="font-semibold text-yellow-300">Orientações para usar o painel Fut7Pro</p>
             <p className="mt-1">
-              Esta central foi estruturada para reduzir dúvidas recorrentes e padronizar a gestão do
-              grupo: rotina diária, partidas, jogadores, financeiro, comunicação, segurança e boas
-              práticas.
+              Encontre orientações sobre partidas, jogadores, financeiro, comunicação e gestão do
+              grupo. Se precisar de ajuda adicional, acesse Comunicação &gt; Suporte.
             </p>
           </div>
 
