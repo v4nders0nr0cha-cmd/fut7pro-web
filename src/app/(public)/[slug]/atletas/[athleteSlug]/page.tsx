@@ -85,8 +85,7 @@ export default function PerfilAtletaSlugPage() {
         <div className="mt-6 rounded-xl border border-red-500/40 bg-red-950/25 p-5 text-red-100">
           <h1 className="text-xl font-bold">Perfil premium indisponível</h1>
           <p className="mt-2 text-sm text-red-100/80">
-            Não foi possível carregar o contrato oficial do Perfil Premium deste atleta. Tente
-            novamente em instantes.
+            Não foi possível carregar o perfil deste atleta. Tente novamente em instantes.
           </p>
           {premiumError && <p className="mt-3 text-xs text-red-200/70">{premiumError}</p>}
         </div>

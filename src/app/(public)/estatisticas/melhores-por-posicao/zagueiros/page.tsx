@@ -61,7 +61,7 @@ export default function RankingZagueirosPage() {
         <title>Ranking dos Melhores Zagueiros | Estatísticas</title>
         <meta
           name="description"
-          content="Veja o ranking dos zagueiros mais bem pontuados do seu racha, por quadrimestre, temporada atual ou histórico completo. Descubra quem são os destaques na posição!"
+          content="Veja o ranking de zagueiros do grupo por quadrimestre, temporada atual ou histórico completo."
         />
         <meta
           name="keywords"

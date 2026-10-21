@@ -54,7 +54,7 @@ function BoxRegras() {
       <div className="text-[14px] text-zinc-800 font-medium mt-1">
         <span className="text-brand-strong font-bold">Obs:</span> Esses critérios valorizam quem
         ajudou o time a ser campeão, mesmo que não seja o maior artilheiro ou assistente geral do
-        racha.
+        grupo.
       </div>
     </div>
   );

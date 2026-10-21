@@ -66,7 +66,7 @@ export default function MatchdayLiveClient() {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}`
-                : "Aguardando registros do admin"}
+                : "Aguardando registros da administração"}
             </span>
           </div>
         </header>

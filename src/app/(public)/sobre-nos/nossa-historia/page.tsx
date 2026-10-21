@@ -31,17 +31,17 @@ import type {
 import type { Admin } from "@/types/racha";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
-const DEFAULT_RACHA_NAME = "seu racha";
-const DEFAULT_PRESIDENTE_NAME = "o presidente do racha";
+const DEFAULT_RACHA_NAME = "de futebol entre amigos";
+const DEFAULT_PRESIDENTE_NAME = "a administração";
 const DESCRICAO_TEMPLATE =
-  "O racha {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por {nomePresidente}, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.";
+  "O grupo {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Com {nomePresidente}, os encontros viraram tradição, dentro e fora de campo. Nossa história é feita de jogos, gols e momentos compartilhados, sempre com respeito e espírito esportivo.";
 const LEGACY_ANO_REGEX = /^ano\s*\d+/i;
 const GOLEADA_FALLBACK =
   "Ainda não há partidas suficientes para calcular a maior goleada. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
 const INVICTO_FALLBACK =
   "Ainda não há partidas suficientes para calcular a maior sequência invicta. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
 const DEFAULT_DEPOIMENTO_TEXTO =
-  "Esse racha é mais do que jogo, é encontro, amizade e respeito. Aqui a disputa é saudável, a resenha é garantida e todo mundo faz parte da história. Vamos manter essa tradição viva e continuar fazendo história juntos.";
+  "Nosso grupo é mais do que jogo: é encontro, amizade e respeito. A disputa é saudável, a resenha faz parte e cada pessoa ajuda a construir essa história.";
 const AUTO_GOLEADA_ID = "auto-maior-goleada";
 const AUTO_INVICTO_ID = "auto-sequencia-invicta";
 
@@ -52,7 +52,7 @@ const roleLabels: Record<string, string> = {
   diretorfinanceiro: "Diretor Financeiro",
 };
 
-const DEFAULT_GALERIA_DESCRICAO = "Registro especial do racha.";
+const DEFAULT_GALERIA_DESCRICAO = "Um momento especial da história do grupo.";
 
 type LegacyCategoriaFotos = {
   nome?: string;
@@ -317,7 +317,7 @@ function normalizeGaleriaFotos(
         const src = sanitizeUrl(foto?.src);
         if (!src) return;
         const descricao = sanitizeText(foto?.alt) || DEFAULT_GALERIA_DESCRICAO;
-        const titulo = tituloBase || sanitizeText(foto?.alt) || "Foto do racha";
+        const titulo = tituloBase || sanitizeText(foto?.alt) || "Foto do grupo";
         converted.push({
           id: `galeria-${converted.length + 1}`,
           src,
@@ -750,7 +750,7 @@ export default function NossaHistoriaPage() {
       }
       setShareFeedback({
         tone: "warning",
-        message: "Copie o link abaixo para compartilhar a história do racha.",
+        message: "Copie o link abaixo para compartilhar a história do grupo.",
         copyUrl: url,
       });
     } catch {
@@ -794,7 +794,7 @@ export default function NossaHistoriaPage() {
         <title>Nossa História | Sobre Nós | Fut7Pro</title>
         <meta
           name="description"
-          content="Linha do tempo, fotos, vídeos, curiosidades e depoimentos sobre a história do racha. Conteúdo dinamicado por tenant."
+          content="Conheça a história do grupo por meio de fotos, vídeos, curiosidades, depoimentos e momentos marcantes."
         />
       </Head>
       <main className="w-full flex flex-col gap-10 pt-20">
@@ -876,7 +876,7 @@ export default function NossaHistoriaPage() {
               {galeriaFotosRender.map((foto, idx) => {
                 const titulo = foto.titulo || `Foto ${idx + 1}`;
                 const descricao = foto.descricao || "";
-                const alt = `Galeria do racha ${rachaNome}: ${titulo}`;
+                const alt = `Galeria do grupo ${rachaNome}: ${titulo}`;
                 return (
                   <div
                     key={foto.id ?? `galeria-${idx}`}
@@ -933,14 +933,14 @@ export default function NossaHistoriaPage() {
                           {thumb ? (
                             <Image
                               src={thumb}
-                              alt={`Vídeo do racha ${rachaNome}: ${titulo}`}
+                              alt={`Vídeo do grupo ${rachaNome}: ${titulo}`}
                               width={640}
                               height={360}
                               className="w-full h-full object-cover"
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-neutral-300">
-                              Preview indisponivel
+                              Prévia indisponível
                             </div>
                           )}
                           <div className="absolute inset-0 flex items-center justify-center">
@@ -971,7 +971,7 @@ export default function NossaHistoriaPage() {
 
         {curiosidades.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-brand-soft mb-4">Curiosidades do Racha</h2>
+            <h2 className="text-2xl font-bold text-brand-soft mb-4">Curiosidades do Grupo</h2>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {curiosidades
                 .slice()
@@ -989,7 +989,7 @@ export default function NossaHistoriaPage() {
                       <span className="text-white flex-1">{item.texto}</span>
                       <button
                         type="button"
-                        title={jaCurtiu ? "Voce ja curtiu" : "Curtir curiosidade"}
+                        title={jaCurtiu ? "Você já curtiu" : "Curtir curiosidade"}
                         onClick={() => handleCurtirCuriosidade(id, item.curtidas ?? 0)}
                         disabled={jaCurtiu || curtindo}
                         className={`flex items-center gap-1 px-2 py-1 rounded-md border text-sm transition ${
@@ -1125,7 +1125,7 @@ export default function NossaHistoriaPage() {
         {diretoria.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand mb-4 mt-10 flex items-center gap-2">
-              <FaMedal className="text-brand" /> Presidencia e Diretoria
+              <FaMedal className="text-brand" /> Presidência e Diretoria
             </h2>
             <div className="flex flex-wrap gap-4">
               {diretoria.map((membro, idx) => (

@@ -61,7 +61,7 @@ export default function RankingGoleirosPage() {
         <title>Ranking dos Melhores Goleiros | Estatísticas</title>
         <meta
           name="description"
-          content="Veja o ranking dos goleiros mais bem pontuados do seu racha, por quadrimestre, temporada atual ou histórico completo. Descubra quem são os destaques na posição!"
+          content="Veja o ranking de goleiros do grupo por quadrimestre, temporada atual ou histórico completo."
         />
         <meta
           name="keywords"

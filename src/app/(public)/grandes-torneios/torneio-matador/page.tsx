@@ -29,7 +29,7 @@ export default function TorneioMatadorPage() {
         {/* Informações do torneio */}
         <div className="text-center mb-8">
           <p className="text-lg text-gray-300 mb-2">
-            Edição especial realizada em 2025 com os melhores jogadores do racha.
+            Edição especial realizada em 2025 com jogadores do grupo.
           </p>
           <p className="text-sm text-gray-400 italic">Período: Janeiro a Março de 2025</p>
         </div>

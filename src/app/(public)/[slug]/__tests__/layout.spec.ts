@@ -7,6 +7,7 @@ jest.mock("react", () => {
 });
 
 import { isPrestacaoDeContasPathForSlug } from "../layout-path-utils";
+import { resolvePublicPageSeo } from "../layout";
 
 describe("PublicSlugLayout helpers", () => {
   it("identifica rota de prestacao de contas para o slug informado", () => {
@@ -29,5 +30,23 @@ describe("PublicSlugLayout helpers", () => {
     expect(
       isPrestacaoDeContasPathForSlug("/outro-racha/sobre-nos/prestacao-de-contas", "nome-do-racha")
     ).toBe(false);
+  });
+
+  it.each(["Pelada da Sexta", "Baba dos Amigos", "Racha de Domingo", "Futebol dos Parceiros"])(
+    "usa o nome integral do grupo sem pressupor gênero: %s",
+    (tenantName) => {
+      const home = resolvePublicPageSeo("/grupo", tenantName);
+      const history = resolvePublicPageSeo("/grupo/sobre-nos/nossa-historia", tenantName);
+
+      expect(home.title).toContain(tenantName);
+      expect(home.description).toContain(`do grupo ${tenantName}`);
+      expect(history.description).toContain(`do grupo ${tenantName}`);
+      expect(home).not.toHaveProperty("noindex");
+    }
+  );
+
+  it("mantém as páginas de acesso fora da indexação", () => {
+    expect(resolvePublicPageSeo("/grupo/login", "Pelada da Sexta").noindex).toBe(true);
+    expect(resolvePublicPageSeo("/grupo/register", "Pelada da Sexta").noindex).toBe(true);
   });
 });

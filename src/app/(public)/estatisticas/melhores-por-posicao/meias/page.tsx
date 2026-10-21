@@ -55,7 +55,7 @@ export default function RankingMeiasPage() {
         <title>Ranking dos Melhores Meias | Estatísticas</title>
         <meta
           name="description"
-          content="Confira o ranking dos meias com mais destaque, seja por quadrimestre, na temporada atual ou no histórico completo do seu racha. Veja quem lidera na posição!"
+          content="Confira o ranking de meias do grupo por quadrimestre, temporada atual ou histórico completo."
         />
         <meta
           name="keywords"

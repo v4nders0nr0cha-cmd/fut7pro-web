@@ -47,7 +47,7 @@ export default function RankingGeralPage() {
         <title>Ranking Geral de Pontos | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Ranking geral de pontos do futebol 7. Veja quem são os atletas mais bem pontuados em cada quadrimestre, na temporada atual ou em todas as temporadas. Inspire-se para subir na tabela. Estatísticas sempre atualizadas. Fut7Pro - Plataforma para racha, futebol 7 e futebol amador."
+          content="Veja o ranking geral de pontos dos atletas do grupo por quadrimestre, na temporada atual ou em todas as temporadas."
         />
         <meta
           name="keywords"

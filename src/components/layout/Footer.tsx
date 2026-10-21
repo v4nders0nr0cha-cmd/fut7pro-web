@@ -170,14 +170,14 @@ export default function Footer() {
         <div className="relative overflow-hidden group mb-12">
           <button
             onClick={() => handleManualScroll("left")}
-            aria-label="Scroll left"
+            aria-label="Ver patrocinadores anteriores"
             className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/60 p-2 rounded-full text-brand hover:bg-brand hover:text-black"
           >
             &#9664;
           </button>
           <button
             onClick={() => handleManualScroll("right")}
-            aria-label="Scroll right"
+            aria-label="Ver próximos patrocinadores"
             className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/60 p-2 rounded-full text-brand hover:bg-brand hover:text-black"
           >
             &#9654;

@@ -70,126 +70,129 @@ const fetchPublicTenantLayoutData = cache(async (slug?: string | null) => {
   }
 });
 
-function resolvePublicPageSeo(canonicalPath: string, tenantName: string) {
+export function resolvePublicPageSeo(
+  canonicalPath: string,
+  tenantName: string
+): { title: string; description: string; noindex?: boolean } {
   const segments = canonicalPath.split("/").filter(Boolean);
   const path = `/${segments.slice(1).join("/")}`;
 
   const routeSeo: Record<string, { title: string; description: string; noindex?: boolean }> = {
     "/": {
-      title: `${tenantName} | Site oficial do racha no Fut7Pro`,
-      description: `Acompanhe partidas, atletas, rankings, campeões e comunicados do ${tenantName} no site público do Fut7Pro.`,
+      title: `${tenantName} | Futebol entre amigos no Fut7Pro`,
+      description: `Acompanhe partidas, atletas, rankings, campeões e comunicados do grupo ${tenantName} no Fut7Pro.`,
     },
     "/atletas": {
-      title: `Atletas do ${tenantName} | Fut7Pro`,
-      description: `Veja a lista de atletas do ${tenantName}, perfis, estatísticas, histórico e conquistas no Fut7Pro.`,
+      title: `Atletas do grupo ${tenantName} | Fut7Pro`,
+      description: `Veja os atletas do grupo ${tenantName}, seus perfis, estatísticas, histórico e conquistas.`,
     },
     "/partidas": {
-      title: `Partidas do ${tenantName} | Fut7Pro`,
-      description: `Confira partidas recentes, resultados, Times do Dia e histórico de jogos do ${tenantName}.`,
+      title: `Partidas do grupo ${tenantName} | Fut7Pro`,
+      description: `Confira partidas recentes, resultados, Times do Dia e histórico de jogos do grupo ${tenantName}.`,
     },
     "/partidas/historico": {
-      title: `Histórico de partidas do ${tenantName} | Fut7Pro`,
-      description: `Consulte o histórico de partidas, placares e registros oficiais do ${tenantName}.`,
+      title: `Histórico de partidas | ${tenantName} | Fut7Pro`,
+      description: `Consulte o histórico de partidas e placares do grupo ${tenantName}.`,
     },
     "/partidas/times-do-dia": {
-      title: `Times do Dia do ${tenantName} | Fut7Pro`,
-      description: `Veja os times sorteados para a rodada do ${tenantName} no Fut7Pro.`,
+      title: `Times do Dia | ${tenantName} | Fut7Pro`,
+      description: `Veja os Times do Dia da rodada do grupo ${tenantName} no Fut7Pro.`,
     },
     "/estatisticas": {
-      title: `Estatísticas do ${tenantName} | Fut7Pro`,
-      description: `Acompanhe rankings, artilheiros, assistências, classificação dos times e métricas do ${tenantName}.`,
+      title: `Estatísticas | ${tenantName} | Fut7Pro`,
+      description: `Acompanhe rankings, artilheiros, assistências e classificação dos times do grupo ${tenantName}.`,
     },
     "/estatisticas/ranking-geral": {
-      title: `Ranking geral do ${tenantName} | Fut7Pro`,
-      description: `Veja a classificação geral dos atletas do ${tenantName} com pontuação e desempenho acumulado.`,
+      title: `Ranking geral | ${tenantName} | Fut7Pro`,
+      description: `Veja a classificação geral dos atletas do grupo ${tenantName}, com pontuação e desempenho acumulado.`,
     },
     "/estatisticas/artilheiros": {
-      title: `Artilheiros do ${tenantName} | Fut7Pro`,
-      description: `Confira os maiores goleadores do ${tenantName} no ranking de artilharia do Fut7Pro.`,
+      title: `Artilheiros | ${tenantName} | Fut7Pro`,
+      description: `Confira os maiores goleadores do grupo ${tenantName} no ranking de artilharia.`,
     },
     "/estatisticas/assistencias": {
-      title: `Assistências do ${tenantName} | Fut7Pro`,
-      description: `Veja os atletas com mais assistências registradas no ${tenantName}.`,
+      title: `Assistências | ${tenantName} | Fut7Pro`,
+      description: `Veja os atletas com mais assistências registradas no grupo ${tenantName}.`,
     },
     "/estatisticas/classificacao-dos-times": {
-      title: `Classificação dos times do ${tenantName} | Fut7Pro`,
-      description: `Acompanhe a classificação dos times, vitórias, derrotas e desempenho coletivo do ${tenantName}.`,
+      title: `Classificação dos times | ${tenantName} | Fut7Pro`,
+      description: `Acompanhe a classificação dos times, vitórias e desempenho coletivo do grupo ${tenantName}.`,
     },
     "/estatisticas/melhores-por-posicao": {
-      title: `Melhores por posição do ${tenantName} | Fut7Pro`,
-      description: `Compare goleiros, zagueiros, meias e atacantes do ${tenantName} por desempenho no Fut7Pro.`,
+      title: `Melhores por posição | ${tenantName} | Fut7Pro`,
+      description: `Compare goleiros, zagueiros, meias e atacantes do grupo ${tenantName} por desempenho.`,
     },
     "/estatisticas/tira-teima": {
-      title: `Tira-teima do ${tenantName} | Fut7Pro`,
-      description: `Compare atletas do ${tenantName} lado a lado com estatísticas e histórico no Fut7Pro.`,
+      title: `Tira-teima | ${tenantName} | Fut7Pro`,
+      description: `Compare atletas do grupo ${tenantName} lado a lado com estatísticas e histórico.`,
     },
     "/os-campeoes": {
-      title: `Campeões do ${tenantName} | Fut7Pro`,
-      description: `Veja os campeões, títulos e conquistas oficiais do ${tenantName}.`,
+      title: `Campeões | ${tenantName} | Fut7Pro`,
+      description: `Veja os campeões, títulos e conquistas do grupo ${tenantName}.`,
     },
     "/grandes-torneios": {
-      title: `Grandes torneios do ${tenantName} | Fut7Pro`,
-      description: `Acompanhe torneios especiais, campeões e memória competitiva do ${tenantName}.`,
+      title: `Grandes torneios | ${tenantName} | Fut7Pro`,
+      description: `Acompanhe torneios especiais, campeões e momentos marcantes do grupo ${tenantName}.`,
     },
     "/sobre-nos": {
-      title: `Sobre o ${tenantName} | Fut7Pro`,
-      description: `Conheça a história, estatuto, contatos, parceiros e informações institucionais do ${tenantName}.`,
+      title: `Sobre o grupo ${tenantName} | Fut7Pro`,
+      description: `Conheça a história, as regras, os contatos e os parceiros do grupo ${tenantName}.`,
     },
     "/sobre-nos/nossa-historia": {
-      title: `Nossa história | ${tenantName} no Fut7Pro`,
-      description: `Leia a história oficial do ${tenantName} publicada no site público do Fut7Pro.`,
+      title: `Nossa história | ${tenantName} | Fut7Pro`,
+      description: `Conheça a trajetória, as lembranças e os momentos marcantes do grupo ${tenantName}.`,
     },
     "/sobre-nos/nossos-parceiros": {
-      title: `Parceiros do ${tenantName} | Fut7Pro`,
-      description: `Conheça patrocinadores, parceiros e apoiadores do ${tenantName}.`,
+      title: `Parceiros | ${tenantName} | Fut7Pro`,
+      description: `Conheça os patrocinadores, parceiros e apoiadores do grupo ${tenantName}.`,
     },
     "/sobre-nos/prestacao-de-contas": {
-      title: `Prestação de contas do ${tenantName} | Fut7Pro`,
-      description: `Veja informações públicas de transparência e prestação de contas do ${tenantName}.`,
+      title: `Prestação de contas | ${tenantName} | Fut7Pro`,
+      description: `Veja as informações financeiras compartilhadas pelo grupo ${tenantName}.`,
     },
     "/comunicacao": {
-      title: `Comunicação do ${tenantName} | Fut7Pro`,
-      description: `Acesse comunicados, enquetes, sugestões e canais de relacionamento do ${tenantName}.`,
+      title: `Comunicação | ${tenantName} | Fut7Pro`,
+      description: `Acesse comunicados, enquetes e canais de contato do grupo ${tenantName}.`,
     },
     "/comunicacao/comunicados": {
-      title: `Comunicados do ${tenantName} | Fut7Pro`,
-      description: `Leia os comunicados oficiais publicados pelo ${tenantName}.`,
+      title: `Comunicados | ${tenantName} | Fut7Pro`,
+      description: `Leia os comunicados publicados pela administração do grupo ${tenantName}.`,
     },
     "/comunicacao/enquetes": {
-      title: `Enquetes do ${tenantName} | Fut7Pro`,
-      description: `Participe e acompanhe decisões coletivas do ${tenantName} no Fut7Pro.`,
+      title: `Enquetes | ${tenantName} | Fut7Pro`,
+      description: `Acompanhe as enquetes do grupo ${tenantName} no Fut7Pro.`,
     },
     "/sorteio-inteligente": {
-      title: `Sorteio inteligente do ${tenantName} | Fut7Pro`,
-      description: `Entenda como o ${tenantName} usa sorteio inteligente para formar times equilibrados.`,
+      title: `Sorteio Inteligente | ${tenantName} | Fut7Pro`,
+      description: `Entenda como o grupo ${tenantName} usa o Sorteio Inteligente para formar times.`,
     },
     "/contato": {
-      title: `Contato do ${tenantName} | Fut7Pro`,
-      description: `Veja os canais de contato oficiais do ${tenantName}.`,
+      title: `Contato | ${tenantName} | Fut7Pro`,
+      description: `Veja os canais de contato do grupo ${tenantName}.`,
     },
     "/entrar": {
-      title: `Entrar no ${tenantName} | Fut7Pro`,
-      description: `Área de acesso dos atletas e administradores do ${tenantName}.`,
+      title: `Entrar | ${tenantName} | Fut7Pro`,
+      description: `Área de acesso dos atletas e administradores do grupo ${tenantName}.`,
       noindex: true,
     },
     "/login": {
-      title: `Login do ${tenantName} | Fut7Pro`,
-      description: `Área de login dos atletas e administradores do ${tenantName}.`,
+      title: `Login | ${tenantName} | Fut7Pro`,
+      description: `Área de login dos atletas e administradores do grupo ${tenantName}.`,
       noindex: true,
     },
     "/register": {
-      title: `Cadastro no ${tenantName} | Fut7Pro`,
-      description: `Solicite acesso ou crie sua conta para participar do ${tenantName}.`,
+      title: `Cadastro | ${tenantName} | Fut7Pro`,
+      description: `Solicite acesso ou crie sua conta para participar do grupo ${tenantName}.`,
       noindex: true,
     },
     "/esqueci-senha": {
-      title: `Recuperar senha | ${tenantName} no Fut7Pro`,
-      description: `Área de recuperação de senha do ${tenantName}.`,
+      title: `Recuperar senha | ${tenantName} | Fut7Pro`,
+      description: `Recupere o acesso à sua conta no grupo ${tenantName}.`,
       noindex: true,
     },
     "/resetar-senha": {
-      title: `Redefinir senha | ${tenantName} no Fut7Pro`,
-      description: `Área de redefinição de senha do ${tenantName}.`,
+      title: `Redefinir senha | ${tenantName} | Fut7Pro`,
+      description: `Redefina a senha da sua conta no grupo ${tenantName}.`,
       noindex: true,
     },
   };
@@ -203,10 +206,10 @@ function resolvePublicPageSeo(canonicalPath: string, tenantName: string) {
     .join(" - ");
 
   return {
-    title: readable ? `${readable} | ${tenantName} no Fut7Pro` : `${tenantName} | Fut7Pro`,
+    title: readable ? `${readable} | ${tenantName} | Fut7Pro` : `${tenantName} | Fut7Pro`,
     description: readable
-      ? `Página ${readable} do ${tenantName} no site público do Fut7Pro.`
-      : `Acompanhe o ${tenantName} no Fut7Pro.`,
+      ? `Página ${readable} do grupo ${tenantName} no Fut7Pro.`
+      : `Acompanhe o grupo ${tenantName} no Fut7Pro.`,
   };
 }
 

@@ -52,13 +52,13 @@ export default function ContatoPage() {
         ))}
       </ul>
 
-      <h2>Contato do seu racha</h2>
+      <h2>Contato do seu grupo</h2>
       <p>
-        Os canais específicos de cada racha (WhatsApp, e-mail e redes sociais do administrador) são
-        publicados na página de contatos do próprio racha.
+        Os canais específicos de cada grupo, quando cadastrados, aparecem na página de contatos do
+        grupo.
       </p>
       <p>
-        <Link href="/sobre-nos/contatos">Acessar contatos do racha</Link>
+        <Link href="/sobre-nos/contatos">Acessar contatos do grupo</Link>
       </p>
 
       <h2>Prazo de resposta</h2>

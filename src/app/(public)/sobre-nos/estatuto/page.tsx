@@ -51,7 +51,7 @@ export default function EstatutoPage() {
         <title>Estatuto | Sobre Nós | Fut7Pro</title>
         <meta
           name="description"
-          content="Conheça o estatuto oficial do racha: regras de pontuação, multas, penalidades, prioridades e boas práticas definidas pelo admin."
+          content="Consulte as regras do grupo para os jogos e a convivência entre os participantes."
         />
         <meta
           name="keywords"
@@ -63,8 +63,8 @@ export default function EstatutoPage() {
         <section>
           <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">Estatuto do grupo</h1>
           <p className="text-white text-base md:text-lg mb-4">
-            O Estatuto reúne todas as regras, critérios e boas práticas que regem o funcionamento do
-            grupo. O conteúdo abaixo é carregado do painel e atualizado pela administração do grupo.
+            Consulte as regras e os combinados do grupo para os jogos e a convivência entre os
+            participantes. A administração mantém este conteúdo atualizado.
           </p>
           <button
             onClick={handleDownload}
@@ -98,7 +98,7 @@ export default function EstatutoPage() {
         </section>
         <section>
           <h2 className="text-2xl font-bold text-brand-soft mb-4">
-            Perguntas Frequentes do Estatuto (FAQ)
+            Perguntas frequentes sobre as regras
           </h2>
           <div className="flex flex-col gap-3">
             {topicos.map((topico, idx) => (

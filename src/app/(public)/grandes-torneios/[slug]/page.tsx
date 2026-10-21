@@ -106,8 +106,7 @@ export default function DetalheTorneioPage() {
           {torneio?.nome || "Torneio"}
         </h1>
         <p className="text-center text-gray-400 mb-6 text-sm md:text-base">
-          Edição especial realizada em {torneio?.ano || "----"} com os jogadores mais lendários do
-          racha!
+          Edição especial de {torneio?.ano || "ano não informado"} com jogadores do grupo.
         </p>
 
         <div className="relative w-full h-64 md:h-96 mb-4">

@@ -68,7 +68,7 @@ const ShareablePremiumCardStory = forwardRef<HTMLDivElement, ShareablePremiumCar
             {displayName}
           </h1>
           <p className="mt-5 text-[27px] text-zinc-300">
-            {tenant?.name || tenant?.slug || "Racha"} • {legendaryProgress.seasonLabel}
+            {tenant?.name || tenant?.slug || "Grupo"} • {legendaryProgress.seasonLabel}
           </p>
         </header>
 

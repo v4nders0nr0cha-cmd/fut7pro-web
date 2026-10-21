@@ -133,7 +133,7 @@ export default function ConfirmarEmailPublicClient() {
             href={publicHref("/entrar")}
             className="text-yellow-300 underline hover:text-yellow-200"
           >
-            Voltar para a entrada do racha
+            Voltar para a entrada do grupo
           </Link>
         </div>
       </section>
