@@ -4,6 +4,7 @@ const BACKEND_CHANGELOG_REPO =
   process.env.BACKEND_CHANGELOG_REPO || "v4nders0nr0cha-cmd/fut7pro-backend";
 const BACKEND_CHANGELOG_PATH =
   process.env.BACKEND_CHANGELOG_PATH || "src/modules/changelog/changelog.entries.ts";
+const EDITORIAL_LABEL = "editorial-no-changelog";
 
 function parseLabels(raw) {
   if (!raw) return [];
@@ -29,7 +30,82 @@ function parseChangedFiles(raw) {
 }
 
 function hasNoChangelogJustification(body) {
-  return /motivo\s+do\s+no-changelog\s*:\s*\S.{10,}/i.test(String(body || ""));
+  const reason = String(body || "")
+    .match(/^Motivo do no-changelog:[ \t]*(.*)$/im)?.[1]
+    ?.trim();
+  return Boolean(reason && reason.length >= 11);
+}
+
+function hasEditorialDeclaration(body) {
+  return /^\s*-\s*\[[xX]\]\s*Correção exclusivamente editorial, sem mudança funcional e sem anúncio de produto\.\s*$/im.test(
+    String(body || "")
+  );
+}
+
+function hasFunctionalDeclaration(body) {
+  return /^\s*-\s*\[[xX]\]\s*(?:Funcionalidade nova ou melhoria funcional|Funcionalidade ou melhoria visível)\.?\s*$/im.test(
+    String(body || "")
+  );
+}
+
+function hasCoordinatedPublicationDeclaration(body) {
+  return /^\s*-\s*\[[xX]\]\s*Publicação coordenada com changelog do backend\.\s*$/im.test(
+    String(body || "")
+  );
+}
+
+function hasChangelogUpdatedDeclaration(body) {
+  return /^\s*-\s*\[[xX]\]\s*Central de Atualizações atualizada\s*$/im.test(String(body || ""));
+}
+
+function hasChangelogReferenceLine(body) {
+  return /^Changelog PR:[ \t]*\S[^\r\n]*$/im.test(String(body || ""));
+}
+
+function hasEditorialJustification(body) {
+  const reason = String(body || "").match(/^Motivo do editorial-no-changelog:[ \t]*(.*)$/im)?.[1];
+  if (!reason || /^(?:todo|pendente|a definir|n\/a)$/i.test(reason.trim())) return false;
+  const words = reason.match(/[\p{L}\p{N}]+/gu) || [];
+  return (
+    words.join("").length >= 40 &&
+    words.length >= 5 &&
+    new Set(words.map((word) => word.toLowerCase())).size >= 4
+  );
+}
+
+function hasOwnerEditorialConfirmation(body, owner = {}) {
+  const {
+    headSha,
+    authorLogin,
+    authorType,
+    eventActorLogin,
+    eventActorType,
+    repositoryOwner,
+    authorizedOwner,
+  } = owner;
+  if (
+    !/^[0-9a-f]{40}$/i.test(headSha || "") ||
+    !authorizedOwner ||
+    !repositoryOwner ||
+    authorType !== "User" ||
+    eventActorType !== "User" ||
+    !authorLogin ||
+    !eventActorLogin ||
+    repositoryOwner.toLowerCase() !== authorizedOwner.toLowerCase() ||
+    authorLogin.toLowerCase() !== authorizedOwner.toLowerCase() ||
+    eventActorLogin.toLowerCase() !== authorizedOwner.toLowerCase()
+  ) {
+    return false;
+  }
+
+  const confirmation = String(body || "").match(
+    /^Confirmação editorial do responsável:[ \t]*@([A-Za-z0-9-]+)[ \t]+revisou o diff do commit[ \t]+([0-9a-f]{40})[ \t]+e confirma que não há mudanças funcionais\.[ \t]*$/im
+  );
+  return Boolean(
+    confirmation &&
+      confirmation[1].toLowerCase() === authorizedOwner.toLowerCase() &&
+      confirmation[2].toLowerCase() === headSha.toLowerCase()
+  );
 }
 
 function parseChangelogPrReference(body, defaultRepo = BACKEND_CHANGELOG_REPO) {
@@ -147,11 +223,52 @@ async function evaluateChangelogRequirement({
   labels,
   body,
   validateReference = validateBackendChangelogPr,
+  editorialOwner,
 }) {
   const normalizedLabels = labels.map((label) => label.toLowerCase());
   const hasNoChangelog = normalizedLabels.includes("no-changelog");
+  const hasEditorialNoChangelog = normalizedLabels.includes(EDITORIAL_LABEL);
+  const editorialDeclared = hasEditorialDeclaration(body);
+
+  if (hasEditorialNoChangelog) {
+    if (
+      hasNoChangelog ||
+      hasFunctionalDeclaration(body) ||
+      hasCoordinatedPublicationDeclaration(body) ||
+      hasChangelogUpdatedDeclaration(body) ||
+      hasChangelogReferenceLine(body)
+    ) {
+      return { ok: false, reason: "Classificações de changelog contraditórias no PR." };
+    }
+    if (!editorialDeclared) {
+      return {
+        ok: false,
+        reason: "Marque a declaração de correção exclusivamente editorial no corpo do PR.",
+      };
+    }
+    if (!hasEditorialJustification(body)) {
+      return {
+        ok: false,
+        reason: "Informe 'Motivo do editorial-no-changelog:' com ao menos 40 caracteres úteis.",
+      };
+    }
+    if (!hasOwnerEditorialConfirmation(body, editorialOwner)) {
+      return {
+        ok: false,
+        reason: "A dispensa editorial exige confirmação do responsável com o SHA atual do PR.",
+      };
+    }
+    return { ok: true, reason: "Dispensa editorial justificada e confirmada pelo responsável." };
+  }
+
+  if (editorialDeclared) {
+    return { ok: false, reason: `A declaração editorial exige a label ${EDITORIAL_LABEL}.` };
+  }
 
   if (hasNoChangelog) {
+    if (hasFunctionalDeclaration(body) || hasCoordinatedPublicationDeclaration(body)) {
+      return { ok: false, reason: "Classificações de changelog contraditórias no PR." };
+    }
     if (hasNoChangelogJustification(body)) {
       return { ok: true, reason: "no-changelog aplicado com justificativa." };
     }
@@ -186,6 +303,15 @@ async function main() {
     changedFiles: parseChangedFiles(readChangedFilesFromDisk()),
     labels: parseLabels(process.env.PR_LABELS_JSON || process.env.PR_LABELS || ""),
     body: process.env.PR_BODY || "",
+    editorialOwner: {
+      headSha: process.env.PR_HEAD_SHA,
+      authorLogin: process.env.PR_AUTHOR_LOGIN,
+      authorType: process.env.PR_AUTHOR_TYPE,
+      eventActorLogin: process.env.PR_EVENT_ACTOR_LOGIN,
+      eventActorType: process.env.PR_EVENT_ACTOR_TYPE,
+      repositoryOwner: process.env.GITHUB_REPOSITORY_OWNER,
+      authorizedOwner: process.env.AUTHORIZED_EDITORIAL_OWNER,
+    },
   });
 
   if (!result.ok) {
@@ -206,6 +332,9 @@ if (require.main === module) {
 module.exports = {
   evaluateChangelogRequirement,
   hasNoChangelogJustification,
+  hasEditorialDeclaration,
+  hasEditorialJustification,
+  hasOwnerEditorialConfirmation,
   parseChangedFiles,
   parseChangelogPrReference,
   parseLabels,
