@@ -54,7 +54,7 @@ export default function RankingArtilheirosPage() {
         <title>Ranking dos Artilheiros | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja o ranking dos artilheiros do racha de futebol 7. Descubra quem fez mais gols na temporada atual, por quadrimestre ou em todas as temporadas do Fut7Pro."
+          content="Veja quem marcou mais gols nas partidas do grupo, por quadrimestre, na temporada atual ou em todo o histórico."
         />
         <meta
           name="keywords"
@@ -64,7 +64,7 @@ export default function RankingArtilheirosPage() {
 
       <main className="min-h-screen bg-fundo text-white pb-16 pt-6 w-full">
         <h1 className="sr-only">
-          Ranking dos Artilheiros do Racha de Futebol 7 - Jogadores com Mais Gols, Estatísticas
+          Ranking dos Artilheiros do Grupo - Jogadores com Mais Gols, Estatísticas
         </h1>
 
         <div className="w-full flex flex-col items-center justify-center">
@@ -75,7 +75,7 @@ export default function RankingArtilheirosPage() {
               detailsTitle="Como funciona o Ranking dos Artilheiros"
               details={
                 <>
-                  <p>Esta página destaca quem mais fez gols nas partidas publicadas do racha.</p>
+                  <p>Esta página destaca quem mais fez gols nas partidas publicadas do grupo.</p>
                   <p>
                     Compare o desempenho por quadrimestre, temporada atual ou todas as temporadas. O
                     filtro de busca ajuda a encontrar rapidamente um atleta específico.

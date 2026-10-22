@@ -59,7 +59,7 @@ export default function ComunicacaoPage() {
         <title>Comunicação | Central de Avisos e Mensagens | Fut7Pro</title>
         <meta
           name="description"
-          content="Central de comunicação do Fut7Pro: notificações, mensagens do admin, comunicados, sugestões, enquetes, ajuda e suporte do grupo."
+          content="Acompanhe notificações, mensagens, comunicados e enquetes do grupo. Envie sugestões e encontre ajuda no Fut7Pro."
         />
         <meta
           name="keywords"
@@ -70,8 +70,8 @@ export default function ComunicacaoPage() {
         Central de Comunicação
       </h1>
       <p className="text-center text-sm text-gray-300 mb-10 max-w-2xl mx-auto">
-        Acesse todas as notificações, mensagens, comunicados, sugestões, enquetes e suporte do grupo
-        em um só lugar. Fique por dentro de tudo que acontece no Fut7Pro!
+        Acompanhe os avisos do grupo, participe das enquetes, envie sugestões e encontre ajuda em um
+        só lugar.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {items.map((item) => (

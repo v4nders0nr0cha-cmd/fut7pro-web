@@ -763,7 +763,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
             {isEntryVariant ? "Acesso do atleta" : "Acesso exclusivo"}
           </p>
           <p className="text-sm text-gray-200">
-            Login do Atleta no <span className="font-semibold text-brand">{nomeDoRacha}</span>
+            Acesso de atletas | <span className="font-semibold text-brand">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
             Use seu e-mail cadastrado ou entre com o Google para acessar seu perfil no{" "}

@@ -98,7 +98,7 @@ export default function ComunicadosLoginGate() {
     <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center px-4">
       <div className="bg-[#1d1d1d] rounded-xl p-6 w-full max-w-xl shadow-lg">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-lg font-bold text-yellow-300">Comunicado do Racha</div>
+          <div className="text-lg font-bold text-yellow-300">Comunicado do Grupo</div>
           <button
             type="button"
             className="text-gray-300 text-xl"

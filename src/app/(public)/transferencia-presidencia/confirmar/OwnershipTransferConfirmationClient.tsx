@@ -157,7 +157,7 @@ export default function OwnershipTransferConfirmationClient() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-300">
               Transferência segura
             </p>
-            <h1 className="text-2xl font-bold">Presidência da pelada</h1>
+            <h1 className="text-2xl font-bold">Presidência do grupo</h1>
           </div>
         </div>
 
@@ -191,8 +191,8 @@ export default function OwnershipTransferConfirmationClient() {
             </p>
             <dl className="mt-5 grid gap-4 rounded-xl border border-white/10 bg-white/5 p-5 sm:grid-cols-2">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-zinc-500">Pelada</dt>
-                <dd className="mt-1 font-semibold">{request.tenantName || "Pelada Fut7Pro"}</dd>
+                <dt className="text-xs uppercase tracking-wide text-zinc-500">Grupo</dt>
+                <dd className="mt-1 font-semibold">{request.tenantName || "Grupo Fut7Pro"}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-zinc-500">Presidente atual</dt>

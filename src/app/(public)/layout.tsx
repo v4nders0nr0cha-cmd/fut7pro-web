@@ -20,7 +20,7 @@ export const revalidate = 0;
 export const metadata: Metadata = {
   title: "Fut7Pro - Sistema Completo para Futebol 7 entre Amigos",
   description:
-    "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatísticas e muito mais!",
+    "Acompanhe partidas, atletas, rankings e resultados de grupos de futebol entre amigos no Fut7Pro, de peladas a rachas.",
   keywords: [
     "fut7",
     "racha",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     siteName: "Fut7Pro",
     title: "Fut7Pro - Sistema Completo para Futebol 7 entre Amigos",
     description:
-      "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatísticas e muito mais!",
+      "Acompanhe partidas, atletas, rankings e resultados de grupos de futebol entre amigos no Fut7Pro, de peladas a rachas.",
     images: [
       {
         url: "https://app.fut7pro.com.br/og-image.jpg",
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Fut7Pro - Sistema Completo para Futebol 7 entre Amigos",
     description:
-      "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatísticas e muito mais!",
+      "Acompanhe partidas, atletas, rankings e resultados de grupos de futebol entre amigos no Fut7Pro, de peladas a rachas.",
     images: ["https://app.fut7pro.com.br/og-image.jpg"],
   },
 };

@@ -44,6 +44,7 @@ function MembershipStatusCard({
   }
 
   const isRequest = variant === "request";
+  const groupReference = rachaName === "grupo" ? "neste grupo" : `no grupo ${rachaName}`;
   const title =
     variant === "active"
       ? "Mensalista neste grupo"
@@ -52,10 +53,10 @@ function MembershipStatusCard({
         : "Solicitar vaga de mensalista";
   const description =
     variant === "active"
-      ? `Você já tem status de mensalista no ${rachaName}.`
+      ? `Você já tem status de mensalista ${groupReference}.`
       : variant === "pending"
-        ? `Seu pedido de mensalista no ${rachaName} foi enviado e está aguardando avaliação do administrador.`
-        : `Solicite uma vaga de mensalista no ${rachaName}. O administrador irá avaliar e aprovar caso exista vaga disponível.`;
+        ? `Seu pedido de mensalista ${groupReference} foi enviado e está aguardando avaliação do administrador.`
+        : `Solicite uma vaga de mensalista ${groupReference}. O administrador irá avaliar e aprovar caso exista vaga disponível.`;
 
   return (
     <>
@@ -92,7 +93,7 @@ function MembershipStatusCard({
               Solicitar vaga de mensalista
             </div>
             <div className="mb-6 text-center text-sm text-zinc-100">
-              Ao confirmar, seu pedido de mensalista no {rachaName} será enviado ao administrador.
+              Ao confirmar, seu pedido de mensalista {groupReference} será enviado ao administrador.
               <br />
               <span className="text-[#ffe08a]">
                 A aprovação depende da disponibilidade de vaga e das regras do grupo.
@@ -440,8 +441,7 @@ export default function PerfilUsuarioPage() {
         <div className="rounded-xl border border-red-500/40 bg-red-950/25 p-5">
           <h1 className="text-xl font-bold">Perfil premium indisponível</h1>
           <p className="mt-2 text-sm text-red-100/80">
-            Não foi possível carregar o contrato oficial do seu Perfil Premium neste grupo. Tente
-            novamente em instantes.
+            Não foi possível carregar seu perfil neste grupo. Tente novamente em instantes.
           </p>
           {premiumError && <p className="mt-3 text-xs text-red-200/70">{premiumError}</p>}
         </div>

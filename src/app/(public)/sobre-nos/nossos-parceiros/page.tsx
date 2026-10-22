@@ -74,7 +74,7 @@ export default function NossosParceiros() {
   }, [parceiros, slug]);
 
   const seoTitle = `Nossos Parceiros | ${brandName}`;
-  const seoDescription = `Conheça os patrocinadores e apoiadores do ${brandName}.`;
+  const seoDescription = `Conheça os patrocinadores e apoiadores do grupo ${brandName}.`;
   const seoUrl = `${APP_URL}/${slug}/sobre-nos/nossos-parceiros`;
 
   return (
@@ -98,10 +98,8 @@ export default function NossosParceiros() {
             Nossos Parceiros
           </h1>
           <p className="text-center text-base md:text-lg text-neutral-200 mb-10 max-w-2xl font-medium">
-            Conheça quem fortalece o nosso grupo! <br />
-            Valorize quem acredita na nossa equipe. Siga, prestigie e dê preferência aos nossos
-            parceiros, empresas e profissionais que apoiam o grupo com descontos, patrocínios,
-            produtos e serviços de qualidade.
+            Conheça as empresas e pessoas que apoiam o nosso grupo. <br />
+            Visite os parceiros e saiba mais sobre o trabalho de cada um.
           </p>
 
           {isLoading && <div className="text-gray-300 py-6">Carregando patrocinadores...</div>}
@@ -170,7 +168,7 @@ export default function NossosParceiros() {
           )}
 
           <p className="text-center text-neutral-400 text-sm md:text-base mb-10 max-w-2xl">
-            Quer apoiar nosso grupo, divulgar sua empresa e fortalecer o futebol 7 entre amigos?
+            Quer apoiar nosso grupo e fazer parte do futebol entre amigos?
             <br />
             Fale com a administração e saiba como ser um parceiro.
           </p>

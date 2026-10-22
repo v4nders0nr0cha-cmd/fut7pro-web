@@ -43,7 +43,7 @@ export default function RankingAnualPage() {
         <title>Ranking Anual de Pontos | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Ranking anual de pontos dos atletas do racha. Veja o desempenho no ano, compare e busque atletas. Estatísticas de futebol 7 sempre atualizadas no Fut7Pro."
+          content="Ranking anual de pontos dos atletas do grupo. Compare o desempenho no ano e busque jogadores na classificação."
         />
         <meta
           name="keywords"
@@ -53,7 +53,7 @@ export default function RankingAnualPage() {
 
       <main className="min-h-screen bg-fundo text-white p-2 sm:p-4 md:p-6">
         <h1 className="sr-only">
-          Ranking Anual de Pontos do Racha de Futebol 7 - Atletas, Pontuação, Estatísticas
+          Ranking Anual de Pontos do Grupo - Atletas, Pontuação, Estatísticas
         </h1>
 
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">

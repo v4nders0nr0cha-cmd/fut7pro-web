@@ -20,7 +20,7 @@ export default function PartidasPage() {
         </title>
         <meta
           name="description"
-          content="Navegue pelo histórico de partidas, confira os times do dia e conheça o sistema de sorteio inteligente do Fut7Pro. Plataforma premium para rachas de Futebol 7."
+          content="Confira os Times do Dia, acompanhe os placares e consulte o histórico de partidas do grupo no Fut7Pro."
         />
         <meta
           name="keywords"
@@ -33,7 +33,7 @@ export default function PartidasPage() {
         headingLevel="h1"
         variant="main-page"
         className="mt-10"
-        summary="Acesse histórico, times do dia e recursos operacionais das partidas."
+        summary="Acompanhe os jogos, confira os Times do Dia e consulte o histórico de partidas."
         detailsTitle="O que você encontra em Partidas"
         details={
           <>
@@ -61,7 +61,7 @@ export default function PartidasPage() {
                 Times do Dia
               </span>
               <span className="text-textoSuave text-center mb-4 sm:mb-6 text-xs sm:text-base">
-                Confira os times sorteados e a escalação oficial do próximo jogo.
+                Confira a escalação dos Times do Dia quando ela for publicada.
               </span>
               <span className="mt-auto px-5 py-2 rounded-xl bg-brand text-black font-semibold group-hover:bg-black group-hover:text-brand transition text-xs sm:text-base">
                 Acessar
@@ -97,7 +97,7 @@ export default function PartidasPage() {
                 Histórico de Partidas
               </span>
               <span className="text-textoSuave text-center mb-4 sm:mb-6 text-xs sm:text-base">
-                Veja todos os jogos já realizados, com placares, locais e filtros detalhados.
+                Consulte os jogos registrados, com placares, locais e filtros.
               </span>
               <span className="mt-auto px-5 py-2 rounded-xl bg-brand text-black font-semibold group-hover:bg-black group-hover:text-brand transition text-xs sm:text-base">
                 Acessar

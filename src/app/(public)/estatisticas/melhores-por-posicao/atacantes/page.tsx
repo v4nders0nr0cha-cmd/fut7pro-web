@@ -61,7 +61,7 @@ export default function RankingAtacantesPage() {
         <title>Ranking dos Melhores Atacantes | Estatísticas</title>
         <meta
           name="description"
-          content="Veja o ranking dos melhores atacantes por quadrimestre, temporada atual ou histórico completo. Descubra os destaques de cada posição no seu racha de futebol 7."
+          content="Veja o ranking de atacantes do grupo por quadrimestre, temporada atual ou histórico completo."
         />
         <meta
           name="keywords"

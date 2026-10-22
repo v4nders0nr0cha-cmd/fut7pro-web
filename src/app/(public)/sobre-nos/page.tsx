@@ -25,31 +25,31 @@ export default function SobreNosPage() {
       href: "/sobre-nos/nossa-historia",
       icon: <FaBookOpen className="text-3xl text-brand" />,
       title: "Nossa História",
-      desc: "Conheça a trajetória do grupo, seus marcos, curiosidades e evolução.",
+      desc: "Conheça a trajetória do grupo, suas lembranças e seus momentos marcantes.",
     },
     {
       href: "/sobre-nos/estatuto",
       icon: <FaGavel className="text-3xl text-brand" />,
       title: "Estatuto",
-      desc: "Regras oficiais do grupo publicadas e atualizadas pelo painel administrativo.",
+      desc: "Conheça as regras que ajudam a organizar os jogos e a convivência do grupo.",
     },
     {
       href: "/sobre-nos/aniversariantes",
       icon: <FaBirthdayCake className="text-3xl text-brand" />,
       title: "Aniversariantes",
-      desc: "Veja quem faz aniversário no mês e fortaleça o engajamento da turma.",
+      desc: "Veja quem faz aniversário neste mês e celebre com a turma.",
     },
     {
       href: "/sobre-nos/nossos-parceiros",
       icon: <FaHandshake className="text-3xl text-brand" />,
       title: "Nossos Parceiros",
-      desc: "Acesse patrocinadores ativos, benefícios e parceiros que apoiam o grupo.",
+      desc: "Conheça os patrocinadores e parceiros que apoiam o grupo.",
     },
     {
       href: "/sobre-nos/contatos",
       icon: <FaPhoneAlt className="text-3xl text-brand" />,
       title: "Contatos",
-      desc: "Fale com a administração, suporte e responsáveis do grupo.",
+      desc: "Encontre os canais para falar com os responsáveis pelo grupo.",
     },
   ];
 
@@ -58,7 +58,7 @@ export default function SobreNosPage() {
       href: "/sobre-nos/prestacao-de-contas",
       icon: <FaFileInvoiceDollar className="text-3xl text-brand" />,
       title: "Prestação de Contas",
-      desc: "Transparência financeira: entradas e despesas do racha.",
+      desc: "Acompanhe as receitas e despesas compartilhadas pelo grupo.",
     });
   }
 
@@ -68,7 +68,7 @@ export default function SobreNosPage() {
         <title>Sobre Nós | {racha?.nome || rachaConfig.nome}</title>
         <meta
           name="description"
-          content="Saiba tudo sobre nosso futebol entre amigos: história, missão, regras, aniversariantes, parceiros, administração, prestação de contas e muito mais."
+          content="Conheça a história, as regras, os aniversariantes, os parceiros e os canais de contato do grupo."
         />
         <meta
           name="keywords"
@@ -80,8 +80,8 @@ export default function SobreNosPage() {
           Sobre Nós
         </h1>
         <p className="mb-10 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
-          Esta seção reúne informações sobre o grupo: governança, regras, comunicação, histórico,
-          parceiros e transparência operacional.
+          Aqui você conhece melhor o grupo: sua história, as regras, os aniversariantes, os
+          parceiros e os canais de contato.
         </p>
         <section className="w-full max-w-5xl">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

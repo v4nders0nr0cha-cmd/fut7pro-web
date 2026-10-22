@@ -47,8 +47,7 @@ export default function AniversariantesPage() {
   }, [birthdays]);
 
   const seoTitle = "Aniversariantes do mês | Fut7Pro";
-  const seoDescription =
-    "Veja quem são os aniversariantes do mês no Fut7Pro. Parabéns automático pelo sistema no dia do aniversário!";
+  const seoDescription = "Veja quem faz aniversário neste mês no grupo de futebol entre amigos.";
 
   return (
     <>
@@ -107,7 +106,7 @@ export default function AniversariantesPage() {
 
             {!isLoading && aniversariantesDoMes.length === 0 && (
               <div className="col-span-full text-center text-gray-400 text-lg py-8">
-                <span>Nenhum aniversariante neste mês ainda!</span>
+                <span>Nenhum aniversariante neste mês.</span>
               </div>
             )}
 

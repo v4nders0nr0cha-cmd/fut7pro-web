@@ -42,7 +42,7 @@ export default function MelhoresPorPosicaoPage() {
         <title>Melhores por Posição | Estatísticas</title>
         <meta
           name="description"
-          content="Ranking dos melhores jogadores por posição: atacante, meia, zagueiro e goleiro. Veja quem são os destaques de cada função em qualquer racha de futebol 7."
+          content="Veja os destaques do grupo por posição: atacantes, meias, zagueiros e goleiros nas partidas registradas."
         />
         <meta
           name="keywords"

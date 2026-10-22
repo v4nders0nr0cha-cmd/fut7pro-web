@@ -821,8 +821,8 @@ function ShareReadyModal({
             </h2>
             <p className="mt-3 max-w-xl text-base leading-relaxed text-zinc-300">
               {isLegendary
-                ? "Compartilhe seu Card Lendário da temporada com o racha."
-                : "Compartilhe seu Card Oficial Fut7Pro com o racha."}
+                ? "Compartilhe seu Card Lendário da temporada com o grupo."
+                : "Compartilhe seu Card Oficial Fut7Pro com o grupo."}
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">

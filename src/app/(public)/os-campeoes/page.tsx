@@ -256,10 +256,10 @@ export default function CampeoesPage() {
   return (
     <>
       <Head>
-        <title>Os Campeões | Hall da Fama do Racha | Fut7Pro</title>
+        <title>Os Campeões | Hall da Fama do Grupo | Fut7Pro</title>
         <meta
           name="description"
-          content="Hall da Fama oficial do racha com campeões do ano e de cada quadrimestre, baseado em rankings reais de pontos, gols, assistências e desempenho por posição."
+          content="Conheça os campeões do grupo por ano e quadrimestre, com base nos rankings de pontos, gols, assistências e desempenho por posição."
         />
         <meta
           name="keywords"

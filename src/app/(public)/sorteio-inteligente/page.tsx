@@ -33,7 +33,7 @@ const etapas = [
 const regras = [
   "Evita concentrações repetidas de atletas no mesmo time.",
   "Usa histórico recente para reduzir distorções de curto prazo.",
-  "Mantém transparência: os resultados publicados ficam visíveis no site do racha.",
+  "Os resultados publicados ficam visíveis no site do grupo.",
 ];
 
 export default function SorteioInteligentePage() {

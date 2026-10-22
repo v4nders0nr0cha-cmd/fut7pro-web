@@ -660,7 +660,7 @@ export default function Home({
           {/* CARDS PRINCIPAIS COM LINKS E ORDEM CORRETA */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
             <Link href={publicHref("/atletas")}>
-              <Card title="Conquistas" description="Colecione medalhas e evolua seu perfil." />
+              <Card title="Conquistas" description="Conheça os atletas e suas conquistas." />
             </Link>
             <Link href={publicHref("/estatisticas/ranking-geral")}>
               <Card title="Ranking" description="Compare seu desempenho com os melhores." />
@@ -675,7 +675,10 @@ export default function Home({
               />
             </Link>
             <Link href={publicHref("/estatisticas")}>
-              <Card title="Estatísticas" description="Acompanhe sua performance em tempo real." />
+              <Card
+                title="Estatísticas"
+                description="Acompanhe o desempenho nas partidas registradas."
+              />
             </Link>
             {/* Sorteio Inteligente so e clicavel para admin */}
             {isAdmin ? (

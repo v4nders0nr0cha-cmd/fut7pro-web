@@ -10,7 +10,7 @@ export default function HistoricoPage() {
         <title>Histórico de Partidas | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja o histórico de partidas do seu racha, com datas, locais, placares e detalhes completos."
+          content="Consulte o histórico de partidas do grupo, com datas, locais, placares e detalhes dos jogos."
         />
         <meta
           name="keywords"
