@@ -32,16 +32,15 @@ import type { Admin } from "@/types/racha";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_RACHA_NAME = "de futebol entre amigos";
-const DEFAULT_PRESIDENTE_NAME = "a administração";
 const DESCRICAO_TEMPLATE =
-  "O grupo {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Com {nomePresidente}, os encontros viraram tradição, dentro e fora de campo. Nossa história é feita de jogos, gols e momentos compartilhados, sempre com respeito e espírito esportivo.";
+  "Nossa história começou com a amizade e a paixão pelo futebol. Com o tempo, os encontros viraram tradição, dentro e fora de campo. Seguimos construindo essa história a cada jogo, com respeito, resenha e momentos compartilhados.";
 const LEGACY_ANO_REGEX = /^ano\s*\d+/i;
 const GOLEADA_FALLBACK =
   "Ainda não há partidas suficientes para calcular a maior goleada. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
 const INVICTO_FALLBACK =
   "Ainda não há partidas suficientes para calcular a maior sequência invicta. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
 const DEFAULT_DEPOIMENTO_TEXTO =
-  "Nosso grupo é mais do que jogo: é encontro, amizade e respeito. A disputa é saudável, a resenha faz parte e cada pessoa ajuda a construir essa história.";
+  "Nosso futebol é mais do que jogo: é encontro, amizade e respeito. A disputa é saudável, a resenha faz parte e cada pessoa ajuda a construir essa história.";
 const AUTO_GOLEADA_ID = "auto-maior-goleada";
 const AUTO_INVICTO_ID = "auto-sequencia-invicta";
 
@@ -52,7 +51,7 @@ const roleLabels: Record<string, string> = {
   diretorfinanceiro: "Diretor Financeiro",
 };
 
-const DEFAULT_GALERIA_DESCRICAO = "Um momento especial da história do grupo.";
+const DEFAULT_GALERIA_DESCRICAO = "Um momento especial da nossa história.";
 
 type LegacyCategoriaFotos = {
   nome?: string;
@@ -281,13 +280,6 @@ function isLegacyMarcos(marcos?: { ano?: string }[] | null) {
   return marcos.every((marco) => LEGACY_ANO_REGEX.test((marco.ano ?? "").trim()));
 }
 
-function buildDescricaoPadrao(nomeDoRacha: string, nomePresidente: string) {
-  return DESCRICAO_TEMPLATE.replace("{nomeDoRacha}", nomeDoRacha).replace(
-    "{nomePresidente}",
-    nomePresidente
-  );
-}
-
 function sanitizeText(value?: string | null) {
   return value ? value.toString().trim() : "";
 }
@@ -317,7 +309,7 @@ function normalizeGaleriaFotos(
         const src = sanitizeUrl(foto?.src);
         if (!src) return;
         const descricao = sanitizeText(foto?.alt) || DEFAULT_GALERIA_DESCRICAO;
-        const titulo = tituloBase || sanitizeText(foto?.alt) || "Foto do grupo";
+        const titulo = tituloBase || sanitizeText(foto?.alt) || "Foto da nossa turma";
         converted.push({
           id: `galeria-${converted.length + 1}`,
           src,
@@ -371,12 +363,8 @@ export default function NossaHistoriaPage() {
     .curiosidadesCurtidas;
   const admins = useMemo(() => racha?.admins ?? [], [racha?.admins]);
 
-  const presidenteNome = useMemo(() => {
-    const presidente = admins.find((admin) => admin.role === "presidente");
-    return presidente?.nome?.trim() || presidente?.email?.trim() || DEFAULT_PRESIDENTE_NAME;
-  }, [admins]);
   const rachaNome = racha?.nome?.trim() || DEFAULT_RACHA_NAME;
-  const descricaoPadrao = buildDescricaoPadrao(rachaNome, presidenteNome);
+  const descricaoPadrao = DESCRICAO_TEMPLATE;
   const descricaoFonte = data.descricao?.trim();
   const descricao =
     !descricaoFonte || descricaoFonte === DEFAULT_NOSSA_HISTORIA.descricao
@@ -750,7 +738,7 @@ export default function NossaHistoriaPage() {
       }
       setShareFeedback({
         tone: "warning",
-        message: "Copie o link abaixo para compartilhar a história do grupo.",
+        message: "Copie o link abaixo para compartilhar nossa história.",
         copyUrl: url,
       });
     } catch {
@@ -794,7 +782,7 @@ export default function NossaHistoriaPage() {
         <title>Nossa História | Sobre Nós | Fut7Pro</title>
         <meta
           name="description"
-          content="Conheça a história do grupo por meio de fotos, vídeos, curiosidades, depoimentos e momentos marcantes."
+          content="Conheça nossa história por meio de fotos, vídeos, curiosidades, depoimentos e momentos marcantes."
         />
       </Head>
       <main className="w-full flex flex-col gap-10 pt-20">
@@ -971,7 +959,7 @@ export default function NossaHistoriaPage() {
 
         {curiosidades.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-brand-soft mb-4">Curiosidades do Grupo</h2>
+            <h2 className="text-2xl font-bold text-brand-soft mb-4">Nossas Curiosidades</h2>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {curiosidades
                 .slice()

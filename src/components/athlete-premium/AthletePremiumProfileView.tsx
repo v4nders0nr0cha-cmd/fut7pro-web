@@ -99,16 +99,15 @@ const METRIC_HELP = {
     "Mostra quantos dias o atleta participou na temporada. Conta presença por dia de jogo, não por quantidade de partidas.",
   legendaryChampion: "Mostra quantas vezes o atleta fez parte do Time Campeão do Dia na temporada.",
   level:
-    "Representa a evolução do atleta dentro do grupo, considerando volume de jogos e participação registrada.",
+    "Representa a evolução do atleta em nossas partidas, considerando volume de jogos e participação registrada.",
   fut7ProScore:
-    "Nota visual do Card Fut7Pro. Ela considera desempenho, posição, volume, constância e impacto do atleta no grupo.",
+    "Nota visual do Card Fut7Pro. Ela considera desempenho, posição, volume, constância e impacto do atleta em campo.",
   games: "Total de partidas registradas para este atleta no período selecionado.",
   goals: "Total de gols marcados pelo atleta no período selecionado.",
   assists: "Total de assistências registradas para o atleta no período selecionado.",
-  titles:
-    "Quantidade de conquistas registradas para o atleta, incluindo torneios e premiações do grupo.",
+  titles: "Quantidade de conquistas registradas para o atleta, incluindo torneios e premiações.",
   winRate: "Percentual médio de vitórias do atleta nas partidas em que participou.",
-  points: "Pontuação do atleta no ranking do grupo, calculada com base nos resultados registrados.",
+  points: "Pontuação do atleta no ranking, calculada com base nos resultados registrados.",
   championOfDay:
     "Quantidade de vezes em que o atleta fez parte do Time Campeão do Dia no período selecionado.",
   attendance: "Percentual de presença do atleta nos dias de jogo do período selecionado.",
@@ -677,7 +676,7 @@ function AchievementsSection({ groups }: { groups?: PremiumAchievementGroups }) 
       </div>
       {!hasAny && (
         <p className="mt-4 rounded-lg border border-[#f8c64a]/15 bg-black/30 p-3 text-sm text-zinc-400">
-          As conquistas do atleta aparecerão aqui conforme forem registradas no grupo.
+          As conquistas do atleta aparecerão aqui conforme forem registradas.
         </p>
       )}
     </PremiumPanel>
@@ -1129,7 +1128,7 @@ export default function AthletePremiumProfileView({
             {athleteName}
           </h1>
           <p className="mt-1.5 text-sm text-zinc-300 md:text-base">
-            Status, conquistas e desempenho do atleta dentro do grupo.
+            Status, conquistas e desempenho do atleta em nossas partidas.
           </p>
         </header>
 

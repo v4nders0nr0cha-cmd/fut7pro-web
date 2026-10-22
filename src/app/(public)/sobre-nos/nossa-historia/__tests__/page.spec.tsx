@@ -50,10 +50,12 @@ describe("NossaHistoriaPage", () => {
   it("apresenta o modelo legado com o nome intacto e mantém as seções ilustrativas", () => {
     render(<NossaHistoriaPage />);
 
-    expect(screen.getByText(/O grupo Pelada da Sexta nasceu da amizade/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Nossa história começou com a amizade e a paixão pelo futebol/)
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Linha do Tempo" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Galeria de Fotos" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Curiosidades do Grupo" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nossas Curiosidades" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Depoimentos" })).toBeInTheDocument();
   });
 
@@ -68,7 +70,19 @@ describe("NossaHistoriaPage", () => {
     expect(
       screen.getByText("Nossa história foi escrita pela administração do Baba dos Amigos.")
     ).toBeInTheDocument();
-    expect(screen.queryByText(/O grupo Baba dos Amigos nasceu da amizade/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Nossa história começou com a amizade/)).not.toBeInTheDocument();
+  });
+
+  it("não atribui a origem da história ao presidente atual no texto padrão", () => {
+    mockedUseRachaPublic.mockReturnValue({
+      racha: { nome: "Baba dos Amigos", admins: [{ role: "presidente", nome: "Maria" }] },
+    });
+
+    render(<NossaHistoriaPage />);
+
+    expect(screen.getByText(/Nossa história começou com a amizade/)).toBeInTheDocument();
+    expect(screen.queryByText(/Com Maria, os encontros/)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Linha do Tempo" })).toBeInTheDocument();
   });
 
   it("preserva marcos e fotos personalizados", () => {
