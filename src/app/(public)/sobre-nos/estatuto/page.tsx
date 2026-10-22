@@ -42,7 +42,7 @@ export default function EstatutoPage() {
       window.open(estatuto.pdfUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    setPdfFeedback("O PDF do estatuto ainda não está disponível para este grupo.");
+    setPdfFeedback("O PDF do estatuto ainda não está disponível.");
   };
 
   return (
@@ -51,7 +51,7 @@ export default function EstatutoPage() {
         <title>Estatuto | Sobre Nós | Fut7Pro</title>
         <meta
           name="description"
-          content="Consulte as regras do grupo para os jogos e a convivência entre os participantes."
+          content="Consulte as regras para nossos jogos e para a convivência entre os participantes."
         />
         <meta
           name="keywords"
@@ -61,9 +61,9 @@ export default function EstatutoPage() {
 
       <main className="max-w-3xl mx-auto px-4 pt-20 flex flex-col gap-8">
         <section>
-          <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">Estatuto do grupo</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">Nosso Estatuto</h1>
           <p className="text-white text-base md:text-lg mb-4">
-            Consulte as regras e os combinados do grupo para os jogos e a convivência entre os
+            Consulte as regras e os combinados para nossos jogos e para a convivência entre os
             participantes. A administração mantém este conteúdo atualizado.
           </p>
           <button
@@ -87,9 +87,7 @@ export default function EstatutoPage() {
               </div>
             </div>
           )}
-          {isLoading && (
-            <div className="text-sm text-neutral-400">Carregando estatuto do grupo...</div>
-          )}
+          {isLoading && <div className="text-sm text-neutral-400">Carregando o estatuto...</div>}
           {isError && (
             <div className="text-sm text-red-400">
               Não foi possível carregar o estatuto. Tente novamente em instantes.

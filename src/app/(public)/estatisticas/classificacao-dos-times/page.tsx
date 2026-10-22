@@ -44,7 +44,7 @@ export default function ClassificacaoTimesPage() {
         <title>Classificação dos Times | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja a classificação dos times do grupo: pontos, jogos, vitórias, empates e derrotas calculados a partir das partidas registradas."
+          content="Veja a classificação dos nossos times: pontos, jogos, vitórias, empates e derrotas calculados a partir das partidas registradas."
         />
         <meta
           name="keywords"
@@ -72,7 +72,7 @@ export default function ClassificacaoTimesPage() {
                 </p>
                 <p>
                   Você pode comparar 1º, 2º e 3º Quadrimestre, Temporada Atual ou Todas as
-                  Temporadas para acompanhar a evolução dos times do grupo.
+                  Temporadas para acompanhar a evolução dos nossos times.
                 </p>
                 <p>
                   Pontos, jogos, vitórias, empates e derrotas são recalculados automaticamente

@@ -50,7 +50,7 @@ export default function RankingQuadrimestralPage() {
         <title>Ranking Quadrimestral de Pontos | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Ranking quadrimestral de pontos dos atletas do grupo. Compare o desempenho por período e busque jogadores na classificação."
+          content="Ranking quadrimestral de pontos dos nossos atletas. Compare o desempenho por período e busque jogadores na classificação."
         />
         <meta
           name="keywords"
@@ -60,7 +60,7 @@ export default function RankingQuadrimestralPage() {
 
       <main className="min-h-screen bg-fundo text-white p-2 sm:p-4 md:p-6">
         <h1 className="sr-only">
-          Ranking Quadrimestral de Pontos do Grupo - Atletas, Pontuação, Estatísticas
+          Ranking Quadrimestral de Pontos - Atletas, Pontuação, Estatísticas
         </h1>
 
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">

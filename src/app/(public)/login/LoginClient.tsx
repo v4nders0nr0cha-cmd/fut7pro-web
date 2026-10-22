@@ -313,7 +313,9 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     }
 
     if (membershipStatus === "SUSPENSO" || membershipStatus === "REJEITADO") {
-      setErro(`Seu acesso a ${nomeDoRacha} não está liberado. Fale com o administrador.`);
+      setErro(
+        "Seu acesso aos recursos dos atletas não está liberado. Fale com nossa administração."
+      );
       return;
     }
 
@@ -375,7 +377,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
     if (!hasUsableSession && !canRequestJoin) {
       setNotMemberMessage(
-        `Entre com código enviado por e-mail ou com sua senha para solicitar entrada em ${nomeDoRacha}.`
+        "Entre com o código enviado por e-mail ou com sua senha para solicitar entrada neste grupo."
       );
       return;
     }
@@ -491,7 +493,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     }
 
     if (code === "REQUEST_REJECTED") {
-      setErro("Sua solicitação foi rejeitada. Fale com o administrador do grupo.");
+      setErro("Sua solicitação não foi aprovada. Fale com nossa administração.");
       return true;
     }
 
@@ -782,12 +784,11 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
         {requestJoinIntent ? (
           <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-3 text-left text-sm text-amber-100">
-            <p className="font-semibold text-amber-200">
-              Você ainda não faz parte de {nomeDoRacha}
-            </p>
+            <p className="font-semibold text-amber-200">Você ainda não participa deste grupo</p>
             <p className="mt-1">
               Entre com código enviado por e-mail ou com sua senha para solicitar entrada. Assim que
-              o administrador aprovar, você entra nos rankings, estatísticas e comunicação do grupo.
+              nossa administração aprovar, você poderá acompanhar rankings, estatísticas e
+              comunicados.
             </p>
             <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.16em] text-amber-200">
               Mensagem para o administrador, opcional
@@ -1038,9 +1039,8 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                   Solicitação pendente
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Sua entrada em <span className="font-semibold text-brand">{nomeDoRacha}</span>{" "}
-                  ainda está aguardando aprovação. Assim que os administradores aprovarem, você
-                  poderá acessar normalmente.
+                  Sua solicitação de entrada neste grupo ainda está aguardando aprovação. Assim que
+                  nossa administração aprovar, você poderá acessar normalmente.
                 </p>
                 <p className="mt-2 text-xs text-gray-400">
                   Entre em contato com os administradores e solicite sua aprovação.
@@ -1094,13 +1094,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                   Solicitar entrada
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Sua Conta Fut7Pro está pronta. Agora envie sua solicitação para participar de{" "}
-                  <span className="font-semibold text-brand">{nomeDoRacha}</span>.
+                  Sua Conta Fut7Pro está pronta. Agora envie sua solicitação para participar deste
+                  grupo.
                 </p>
                 <p className="mt-2 text-sm text-gray-300">
-                  Criar sua conta no Fut7Pro não aprova automaticamente sua entrada em{" "}
-                  <span className="font-semibold text-brand">{nomeDoRacha}</span>. O administrador
-                  poderá aprovar ou recusar seu pedido.
+                  Criar sua conta no Fut7Pro não aprova automaticamente sua entrada neste grupo.
+                  Nossa administração poderá aprovar ou recusar seu pedido.
                 </p>
                 <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.16em] text-gray-300">
                   Mensagem para o administrador, opcional
@@ -1143,7 +1142,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                     disabled={requestJoinLoading}
                     className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {requestJoinLoading ? "Solicitando..." : `Solicitar entrada em ${nomeDoRacha}`}
+                    {requestJoinLoading ? "Solicitando..." : "Solicitar entrada neste grupo"}
                   </button>
                 </div>
               </Dialog.Panel>

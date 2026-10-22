@@ -10,7 +10,7 @@ export default function HistoricoPage() {
         <title>Histórico de Partidas | Fut7Pro</title>
         <meta
           name="description"
-          content="Consulte o histórico de partidas do grupo, com datas, locais, placares e detalhes dos jogos."
+          content="Consulte o histórico das nossas partidas, com datas, locais, placares e detalhes dos jogos."
         />
         <meta
           name="keywords"
@@ -22,7 +22,7 @@ export default function HistoricoPage() {
         <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-brand mb-2">Histórico de Partidas</h1>
           <p className="text-textoSuave text-base md:text-lg">
-            Consulte datas, locais, placares e detalhes das partidas do grupo.
+            Consulte datas, locais, placares e detalhes das nossas partidas.
           </p>
         </div>
         <HistoricoPartidas />

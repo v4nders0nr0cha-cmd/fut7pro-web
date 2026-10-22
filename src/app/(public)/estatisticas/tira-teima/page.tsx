@@ -445,7 +445,7 @@ export default function TiraTeimaPage() {
         <title>Tira Teima | Compare Atletas | Fut7Pro</title>
         <meta
           name="description"
-          content="Compare as estatísticas registradas de dois atletas do grupo: jogos, gols, assistências e pontos."
+          content="Compare as estatísticas de dois atletas: jogos, gols, assistências e pontos."
         />
       </Head>
       <main className="max-w-5xl mx-auto px-2 py-10">
@@ -457,7 +457,7 @@ export default function TiraTeimaPage() {
           details={
             <>
               <p>
-                O Tira Teima compara dois atletas usando os dados do grupo: jogos, gols,
+                O Tira Teima compara dois atletas usando os dados das nossas partidas: jogos, gols,
                 assistências, pontos, aproveitamento e conquistas.
               </p>
               <p>

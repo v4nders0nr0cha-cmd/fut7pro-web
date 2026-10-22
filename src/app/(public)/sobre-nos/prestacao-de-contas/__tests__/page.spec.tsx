@@ -52,7 +52,7 @@ describe("PrestacaoDeContasPage", () => {
     expect(
       screen.getByRole("heading", { name: "Prestação de contas indisponível" })
     ).toBeInTheDocument();
-    expect(screen.getByText(/ainda não publicou lançamentos financeiros/i)).toBeInTheDocument();
+    expect(screen.getByText(/ainda não publicamos lançamentos financeiros/i)).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Grupo não encontrado" })).not.toBeInTheDocument();
     expect(mockedUseFinanceiroPublic).toHaveBeenCalledWith("vitrine", { enabled: true });
   });

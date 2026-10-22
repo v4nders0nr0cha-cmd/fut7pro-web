@@ -20,7 +20,7 @@ export default function PartidasPage() {
         </title>
         <meta
           name="description"
-          content="Confira os Times do Dia, acompanhe os placares e consulte o histórico de partidas do grupo no Fut7Pro."
+          content="Confira os Times do Dia, acompanhe os placares e consulte o histórico das nossas partidas no Fut7Pro."
         />
         <meta
           name="keywords"
@@ -43,7 +43,7 @@ export default function PartidasPage() {
             </p>
             <p>
               Administradores também podem acessar o sorteio inteligente para gerar times
-              equilibrados usando os dados do grupo.
+              equilibrados usando os dados das partidas.
             </p>
           </>
         }

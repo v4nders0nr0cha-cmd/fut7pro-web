@@ -113,7 +113,7 @@ export default function PerfilAtletaSlugPage() {
         <title>{displayName} | Fut7Pro</title>
         <meta
           name="description"
-          content={`Perfil público do atleta ${displayName} com estatísticas do grupo.`}
+          content={`Perfil público de ${displayName}, com estatísticas das nossas partidas.`}
         />
       </Head>
       <main>

@@ -16,31 +16,31 @@ const items = [
     label: "Notificações",
     href: "/comunicacao/notificacoes",
     icon: <FaRegBell className="text-brand" size={22} />,
-    description: "Alertas importantes sobre jogos, times e novidades do grupo.",
+    description: "Alertas importantes sobre nossos jogos, times e novidades.",
   },
   {
     label: "Mensagens do Admin",
     href: "/comunicacao/mensagens",
     icon: <FaCommentDots className="text-brand" size={22} />,
-    description: "Mensagens diretas enviadas pela administração do grupo.",
+    description: "Mensagens diretas enviadas pela nossa administração.",
   },
   {
     label: "Comunicados",
     href: "/comunicacao/comunicados",
     icon: <FaClipboardList className="text-brand" size={22} />,
-    description: "Comunicados gerais, regras e avisos oficiais do grupo.",
+    description: "Comunicados gerais, regras e avisos oficiais.",
   },
   {
     label: "Sugestões",
     href: "/comunicacao/sugestoes",
     icon: <FaLightbulb className="text-brand" size={22} />,
-    description: "Envie ideias e sugestões para melhorar o grupo.",
+    description: "Envie ideias e sugestões para melhorar a experiência de todos.",
   },
   {
     label: "Enquetes",
     href: "/comunicacao/enquetes",
     icon: <FaClipboardList className="text-brand" size={22} />,
-    description: "Participe das enquetes e ajude nas decisões do grupo.",
+    description: "Participe das enquetes e ajude a decidir os próximos passos.",
   },
   {
     label: "Ajuda",
@@ -59,7 +59,7 @@ export default function ComunicacaoPage() {
         <title>Comunicação | Central de Avisos e Mensagens | Fut7Pro</title>
         <meta
           name="description"
-          content="Acompanhe notificações, mensagens, comunicados e enquetes do grupo. Envie sugestões e encontre ajuda no Fut7Pro."
+          content="Acompanhe notificações, mensagens, comunicados e enquetes. Envie sugestões e encontre ajuda no Fut7Pro."
         />
         <meta
           name="keywords"
@@ -70,8 +70,8 @@ export default function ComunicacaoPage() {
         Central de Comunicação
       </h1>
       <p className="text-center text-sm text-gray-300 mb-10 max-w-2xl mx-auto">
-        Acompanhe os avisos do grupo, participe das enquetes, envie sugestões e encontre ajuda em um
-        só lugar.
+        Acompanhe nossos avisos, participe das enquetes, envie sugestões e encontre ajuda em um só
+        lugar.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {items.map((item) => (
