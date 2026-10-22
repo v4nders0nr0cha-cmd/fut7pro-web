@@ -9,6 +9,10 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { usePublicAthletes } from "@/hooks/usePublicAthletes";
 import {
+  DEFAULT_NOSSA_HISTORIA_DESCRIPTION,
+  isDefaultNossaHistoriaDescription,
+} from "@/lib/nossa-historia-description";
+import {
   DEFAULT_GALERIA_FOTOS,
   DEFAULT_NOSSA_HISTORIA,
   MAX_GALERIA_FOTOS,
@@ -46,11 +50,7 @@ const buttonGhost =
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const DEFAULT_RACHA_NAME = "seu racha";
-const DEFAULT_PRESIDENTE_NAME = "o presidente do racha";
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
-const DESCRICAO_TEMPLATE =
-  "O racha {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por {nomePresidente}, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.";
 const LEGACY_ANO_REGEX = /^ano\s*\d+/i;
 const DEFAULT_DEPOIMENTO_TEXTO =
   "Esse racha é mais do que jogo, é encontro, amizade e respeito. Aqui a disputa é saudável, a resenha é garantida e todo mundo faz parte da história. Vamos manter essa tradição viva e continuar fazendo história juntos.";
@@ -169,13 +169,6 @@ function moveItem<T>(items: T[], index: number, direction: -1 | 1) {
   next[target] = next[index];
   next[index] = temp;
   return next;
-}
-
-function buildDescricaoPadrao(nomeDoRacha: string, nomePresidente: string) {
-  return DESCRICAO_TEMPLATE.replace("{nomeDoRacha}", nomeDoRacha).replace(
-    "{nomePresidente}",
-    nomePresidente
-  );
 }
 
 type FeedbackModalProps = {
@@ -493,16 +486,11 @@ export default function NossaHistoriaEditor() {
     const key = normalizeLookup(presidenteAdmin.nome);
     return key ? (athletesByName.get(key) ?? null) : null;
   }, [presidenteAdmin, athletesById, athletesByName]);
-  const presidenteNome = useMemo(() => {
-    const presidente = presidenteAdmin;
-    return presidente?.nome?.trim() || presidente?.email?.trim() || DEFAULT_PRESIDENTE_NAME;
-  }, [presidenteAdmin]);
-  const rachaNome = racha?.nome?.trim() || DEFAULT_RACHA_NAME;
   const defaultContent = useMemo(
     () => ({
       ...DEFAULT_NOSSA_HISTORIA,
       titulo: "Nossa História",
-      descricao: buildDescricaoPadrao(rachaNome, presidenteNome),
+      descricao: DEFAULT_NOSSA_HISTORIA_DESCRIPTION,
       depoimentos: [
         {
           id: "depoimento-presidente",
@@ -512,7 +500,7 @@ export default function NossaHistoriaEditor() {
         },
       ],
     }),
-    [rachaNome, presidenteNome, presidenteAthlete?.id, presidenteAdmin?.athleteId]
+    [presidenteAthlete?.id, presidenteAdmin?.athleteId]
   );
 
   const uploadImage = useCallback(async (file: File) => {
@@ -629,10 +617,7 @@ export default function NossaHistoriaEditor() {
       if (!parsedData.titulo?.trim()) {
         resolved.titulo = base.titulo;
       }
-      if (!parsedData.descricao?.trim()) {
-        resolved.descricao = base.descricao;
-      }
-      if (parsedData.descricao?.trim() === DEFAULT_NOSSA_HISTORIA.descricao) {
+      if (isDefaultNossaHistoriaDescription(parsedData.descricao)) {
         resolved.descricao = base.descricao;
       }
       if (!parsedData.marcos?.length || isLegacyMarcos(parsedData.marcos)) {

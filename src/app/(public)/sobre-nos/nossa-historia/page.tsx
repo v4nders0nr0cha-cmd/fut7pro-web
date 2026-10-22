@@ -21,6 +21,10 @@ import {
   MAX_GALERIA_FOTOS,
 } from "@/utils/schemas/nossaHistoria.schema";
 import { buildMapsEmbedUrl } from "@/utils/maps";
+import {
+  DEFAULT_NOSSA_HISTORIA_DESCRIPTION,
+  isDefaultNossaHistoriaDescription,
+} from "@/lib/nossa-historia-description";
 import { normalizeYouTubeUrl, youtubeThumb, youtubeWatchUrl } from "@/utils/youtube";
 import type { PublicMatch } from "@/types/partida";
 import type {
@@ -32,8 +36,6 @@ import type { Admin } from "@/types/racha";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_RACHA_NAME = "de futebol entre amigos";
-const DESCRICAO_TEMPLATE =
-  "Nossa história começou com a amizade e a paixão pelo futebol. Com o tempo, os encontros viraram tradição, dentro e fora de campo. Seguimos construindo essa história a cada jogo, com respeito, resenha e momentos compartilhados.";
 const LEGACY_ANO_REGEX = /^ano\s*\d+/i;
 const GOLEADA_FALLBACK =
   "Ainda não há partidas suficientes para calcular a maior goleada. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
@@ -364,12 +366,10 @@ export default function NossaHistoriaPage() {
   const admins = useMemo(() => racha?.admins ?? [], [racha?.admins]);
 
   const rachaNome = racha?.nome?.trim() || DEFAULT_RACHA_NAME;
-  const descricaoPadrao = DESCRICAO_TEMPLATE;
   const descricaoFonte = data.descricao?.trim();
-  const descricao =
-    !descricaoFonte || descricaoFonte === DEFAULT_NOSSA_HISTORIA.descricao
-      ? descricaoPadrao
-      : descricaoFonte;
+  const descricao = isDefaultNossaHistoriaDescription(descricaoFonte)
+    ? DEFAULT_NOSSA_HISTORIA_DESCRIPTION
+    : descricaoFonte;
   const titulo = data.titulo?.trim() || "Nossa História";
 
   const rawMarcos =

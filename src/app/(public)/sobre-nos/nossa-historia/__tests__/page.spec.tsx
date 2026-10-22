@@ -59,6 +59,28 @@ describe("NossaHistoriaPage", () => {
     expect(screen.getByRole("heading", { name: "Depoimentos" })).toBeInTheDocument();
   });
 
+  it.each([
+    ["", "vazia"],
+    [DEFAULT_NOSSA_HISTORIA.descricao, "padrão do schema"],
+    [
+      "O racha Pelada da Sexta nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por Maria Silva, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.",
+      "modelo antigo com nomes reais",
+    ],
+    [
+      "O racha seu racha nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por o presidente do racha, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.",
+      "modelo antigo com nomes padrão",
+    ],
+  ])("apresenta a nova narrativa para descrição %s (%s)", (descricao) => {
+    mockedUseAboutPublic.mockReturnValue({ about: { descricao } });
+
+    render(<NossaHistoriaPage />);
+
+    expect(
+      screen.getByText(/Nossa história começou com a amizade e a paixão pelo futebol/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Fundado por/)).not.toBeInTheDocument();
+  });
+
   it("mantém a descrição personalizada acima do texto padrão", () => {
     mockedUseRachaPublic.mockReturnValue({ racha: { nome: "Baba dos Amigos", admins: [] } });
     mockedUseAboutPublic.mockReturnValue({
@@ -70,6 +92,17 @@ describe("NossaHistoriaPage", () => {
     expect(
       screen.getByText("Nossa história foi escrita pela administração do Baba dos Amigos.")
     ).toBeInTheDocument();
+    expect(screen.queryByText(/Nossa história começou com a amizade/)).not.toBeInTheDocument();
+  });
+
+  it("preserva descrição personalizada com palavras do modelo antigo", () => {
+    const descricao =
+      "O racha Pelada da Sexta nasceu no bairro. Fundado por amigos, segue com encontros semanais.";
+    mockedUseAboutPublic.mockReturnValue({ about: { descricao } });
+
+    render(<NossaHistoriaPage />);
+
+    expect(screen.getByText(descricao)).toBeInTheDocument();
     expect(screen.queryByText(/Nossa história começou com a amizade/)).not.toBeInTheDocument();
   });
 
