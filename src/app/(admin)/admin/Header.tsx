@@ -231,6 +231,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     Trocar de grupo
                   </Link>
                 )}
+                <Link
+                  href="/admin/guia-fut7pro"
+                  className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                  onClick={() => setDropdownOpen(false)}
+                >
+                  Ajuda · Guia Fut7Pro
+                </Link>
                 {publicProfileHref && (
                   <Link
                     href={publicProfileHref}

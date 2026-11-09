@@ -1,5 +1,6 @@
 export type AdminGuideAction =
   | "WELCOME_SEEN"
+  | "DASHBOARD_INVITE_DISMISSED"
   | "PUBLIC_SITE_OPENED"
   | "TIP_KNOWN"
   | "TIP_DISMISSED"
@@ -11,6 +12,7 @@ export type AdminGuideAction =
 export type AdminGuidePedagogicalState = {
   revision: number;
   welcomeSeenAt?: string;
+  dashboardInviteDismissedAt?: string;
   publicSiteOpenedAt?: string;
   firstMatchMode?: "INTELLIGENT_DRAW" | "CLASSIC_MATCH";
   monthlyModel?: "HAS_MONTHLY_PLAYERS" | "CASUAL_ONLY" | "DECIDE_LATER";
@@ -46,7 +48,10 @@ export type AdminGuideData = {
 };
 
 export type AdminGuidePatch =
-  | { action: "WELCOME_SEEN" | "PUBLIC_SITE_OPENED"; expectedRevision?: number }
+  | {
+      action: "WELCOME_SEEN" | "DASHBOARD_INVITE_DISMISSED" | "PUBLIC_SITE_OPENED";
+      expectedRevision?: number;
+    }
   | { action: "TIP_KNOWN" | "TIP_DISMISSED"; tipId: string; expectedRevision?: number }
   | { action: "TIP_SNOOZED"; tipId: string; snoozedUntil: string; expectedRevision?: number }
   | {

@@ -169,14 +169,12 @@ export default function AdminGuideClient() {
                   >
                     Começar
                   </button>
-                  <button
-                    type="button"
-                    disabled={updating}
-                    onClick={() => void update({ action: "WELCOME_SEEN" })}
-                    className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10 disabled:opacity-60"
+                  <Link
+                    href="/admin/dashboard"
+                    className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"
                   >
                     Agora não
-                  </button>
+                  </Link>
                 </div>
               </section>
             )}
@@ -189,6 +187,18 @@ export default function AdminGuideClient() {
                   ? "O Guia mudou em outra sessão. Confira o estado atualizado e tente novamente."
                   : "Não foi possível salvar sua escolha. Tente novamente."}
               </p>
+            )}
+            {!guide.pedagogicalState.dashboardInviteDismissedAt && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={updating}
+                  onClick={() => void update({ action: "DASHBOARD_INVITE_DISMISSED" })}
+                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:opacity-60"
+                >
+                  Ocultar guia da Dashboard
+                </button>
+              </div>
             )}
             <section className="rounded-xl border border-yellow-400/25 bg-[#23272F] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -228,39 +238,36 @@ export default function AdminGuideClient() {
                 </div>
               )}
             </section>
-            <section className="rounded-xl border border-white/10 bg-[#23272F] p-5">
-              <div className="flex items-start gap-3">
-                <Sparkles className="mt-1 shrink-0 text-yellow-300" aria-hidden="true" />
-                <div>
-                  <h2 className="text-xl font-bold">Próximo passo</h2>
-                  <p className="mt-2 text-zinc-200">
-                    {guide.nextAction?.title ||
-                      (guide.activationProgress.complete
-                        ? "Sua jornada inicial está concluída. Você pode consultar o Guia quando quiser."
-                        : "Nenhuma ação disponível para sua função no momento.")}
-                  </p>
-                  {nextGuideDestination(guide) && (
-                    <Link
-                      href={nextGuideDestination(guide)!}
-                      target={guide.nextAction?.taskId === "PUBLIC_SITE" ? "_blank" : undefined}
-                      rel={
-                        guide.nextAction?.taskId === "PUBLIC_SITE"
-                          ? "noopener noreferrer"
-                          : undefined
-                      }
-                      onClick={
-                        guide.nextAction?.taskId === "PUBLIC_SITE"
-                          ? () => void update({ action: "PUBLIC_SITE_OPENED" })
-                          : undefined
-                      }
-                      className="mt-4 inline-block rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300"
-                    >
-                      Continuar
-                    </Link>
-                  )}
+            {!guide.activationProgress.complete && guide.nextAction && (
+              <section className="rounded-xl border border-white/10 bg-[#23272F] p-5">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="mt-1 shrink-0 text-yellow-300" aria-hidden="true" />
+                  <div>
+                    <h2 className="text-xl font-bold">Próximo passo</h2>
+                    <p className="mt-2 text-zinc-200">{guide.nextAction.title}</p>
+                    {nextGuideDestination(guide) && (
+                      <Link
+                        href={nextGuideDestination(guide)!}
+                        target={guide.nextAction?.taskId === "PUBLIC_SITE" ? "_blank" : undefined}
+                        rel={
+                          guide.nextAction?.taskId === "PUBLIC_SITE"
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
+                        onClick={
+                          guide.nextAction?.taskId === "PUBLIC_SITE"
+                            ? () => void update({ action: "PUBLIC_SITE_OPENED" })
+                            : undefined
+                        }
+                        className="mt-4 inline-block rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300"
+                      >
+                        Continuar
+                      </Link>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
             <AdminGuidePreparationSection
               guide={guide}
               onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}

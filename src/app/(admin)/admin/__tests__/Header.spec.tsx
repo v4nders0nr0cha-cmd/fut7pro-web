@@ -92,4 +92,16 @@ describe("Admin Header", () => {
       "/admin/selecionar-racha"
     );
   });
+
+  it.each([375, 1280])("mantém a Ajuda no perfil com largura %i", (width) => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+    render(<Header />);
+
+    fireEvent.click(screen.getByTestId("admin-avatar"));
+
+    expect(screen.getByRole("link", { name: "Ajuda · Guia Fut7Pro" })).toHaveAttribute(
+      "href",
+      "/admin/guia-fut7pro"
+    );
+  });
 });

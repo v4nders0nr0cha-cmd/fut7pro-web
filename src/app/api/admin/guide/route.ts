@@ -15,6 +15,7 @@ export const revalidate = 0;
 
 const ACTION_FIELDS: Record<string, string[]> = {
   WELCOME_SEEN: [],
+  DASHBOARD_INVITE_DISMISSED: [],
   PUBLIC_SITE_OPENED: [],
   TIP_KNOWN: ["tipId"],
   TIP_DISMISSED: ["tipId"],
