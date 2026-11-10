@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { FaBell, FaEnvelope, FaUserPlus, FaUser, FaSignOutAlt, FaBars } from "react-icons/fa";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
 import { useSession, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { IconType } from "react-icons";
 import { useMe } from "@/hooks/useMe";
 import { buildPublicHref } from "@/utils/public-links";
@@ -89,6 +89,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const canSwitchRacha = Array.isArray(hubData) && hubData.length > 1;
   const isLoggedIn = !!session?.user;
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
+  const profileMenuRef = useRef<HTMLElement>(null);
   const displayName =
     session?.user?.name?.trim() ||
     me?.athlete?.firstName?.trim() ||
@@ -110,6 +113,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
     if (!tenantSlug) return;
     setStoredTenantSlug(tenantSlug);
   }, [tenantSlug]);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    profileMenuRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!profileRef.current?.contains(event.target as Node)) setDropdownOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [dropdownOpen]);
 
   return (
     <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-brand shadow-md flex items-center px-4 py-2 h-[56px] fixed">
@@ -179,23 +193,56 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </button>
         ) : (
           <div
-            className="flex items-center gap-2 group relative cursor-pointer"
-            onClick={() => setDropdownOpen((v) => !v)}
-            tabIndex={0}
+            ref={profileRef}
+            className="relative"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                setDropdownOpen(false);
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && dropdownOpen) {
+                event.preventDefault();
+                setDropdownOpen(false);
+                profileButtonRef.current?.focus();
+              }
+            }}
           >
-            <AvatarFut7Pro
-              src={displayAvatar}
-              alt={displayName}
-              width={38}
-              height={38}
-              fallbackSrc={DEFAULT_ADMIN_AVATAR}
-              className="rounded-full border-2 border-brand"
-            />
-            <span className="text-brand-soft font-bold text-base hidden md:inline">
-              {displayName}
-            </span>
+            <button
+              ref={profileButtonRef}
+              type="button"
+              className="flex items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+              aria-label={`${dropdownOpen ? "Fechar" : "Abrir"} menu do perfil de ${displayName}`}
+              aria-haspopup="true"
+              aria-controls="admin-profile-menu"
+              aria-expanded={dropdownOpen}
+              onClick={() => setDropdownOpen((open) => !open)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setDropdownOpen((open) => !open);
+                }
+              }}
+            >
+              <AvatarFut7Pro
+                src={displayAvatar}
+                alt={displayName}
+                width={38}
+                height={38}
+                fallbackSrc={DEFAULT_ADMIN_AVATAR}
+                className="rounded-full border-2 border-brand"
+              />
+              <span className="text-brand-soft font-bold text-base hidden md:inline">
+                {displayName}
+              </span>
+            </button>
             {dropdownOpen && (
-              <div className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-44 py-2 z-50 flex flex-col">
+              <nav
+                ref={profileMenuRef}
+                id="admin-profile-menu"
+                aria-label="Menu do perfil"
+                className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-44 py-2 z-50 flex flex-col"
+              >
                 <Link
                   href="/perfil"
                   className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
@@ -256,7 +303,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   <FaSignOutAlt size={18} />
                   Sair da conta
                 </button>
-              </div>
+              </nav>
             )}
           </div>
         )}
