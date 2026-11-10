@@ -113,21 +113,29 @@ export default function AdminGuidePreparationSection({
   const entries = PREPARATION.flatMap((entry) => {
     const task = guide.tasks.find((item) => item.id === entry.id);
     return task ? [{ entry, task }] : [];
+  }).sort((a, b) => {
+    const order = ["ACTIVE_PLAYERS", "OFFICIAL_TEAMS", "SCHEDULE", "IDENTITY", "PUBLIC_SITE"];
+    return order.indexOf(a.entry.id) - order.indexOf(b.entry.id);
   });
 
   return (
     <section aria-labelledby="guide-preparation-title" className="space-y-4">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-yellow-300">Momento 1/2</p>
-        <h2 id="guide-preparation-title" className="mt-1 text-xl font-bold text-white sm:text-2xl">
-          Prepare seu grupo
+        <p className="text-xs font-semibold uppercase tracking-wide text-yellow-300">Preparação</p>
+        <h2
+          id="guide-preparation-title"
+          className="mt-1 scroll-mt-24 text-xl font-bold text-white sm:text-2xl"
+        >
+          {guide.activationProgress.complete
+            ? "Configuração inicial do grupo"
+            : "Prepare seu grupo"}
         </h2>
         <p className="mt-2 text-sm text-zinc-300">
           Organize as informações do seu grupo, cadastre os jogadores e prepare os times para
           começar.
         </p>
       </div>
-      <ol className="grid gap-3 md:grid-cols-2">
+      <ol className="grid gap-3 xl:grid-cols-2">
         {entries.map(({ entry, task }) => {
           const Icon = entry.icon;
           const link = destination(guide, task);

@@ -93,20 +93,15 @@ describe("Admin Header", () => {
     );
   });
 
-  it.each([375, 1280])("mantém a Ajuda no perfil com largura %i", (width) => {
-    Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+  it("concentra Ajuda fora do perfil desktop e envia o avatar mobile para Mais", () => {
     render(<Header />);
-
+    expect(screen.getByRole("link", { name: "Abrir Mais" })).toHaveAttribute("href", "/admin/mais");
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" }));
-
-    expect(screen.getByRole("link", { name: "Ajuda · Guia Fut7Pro" })).toHaveAttribute(
-      "href",
-      "/admin/guia-fut7pro"
-    );
+    expect(screen.queryByRole("link", { name: "Ajuda · Guia Fut7Pro" })).not.toBeInTheDocument();
   });
 
-  it.each([375, 1280])(
-    "abre por Enter e Espaço e devolve o foco com Escape na largura %i",
+  it.each([768, 1280])(
+    "abre por Enter e Espaço e devolve o foco com Escape na largura desktop %i",
     (width) => {
       Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
       render(<Header />);
@@ -127,11 +122,11 @@ describe("Admin Header", () => {
       fireEvent.keyDown(firstLink, { key: "Escape" });
       expect(trigger).toHaveAttribute("aria-expanded", "false");
       expect(trigger).toHaveFocus();
-      expect(screen.queryByRole("link", { name: "Ajuda · Guia Fut7Pro" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
 
       fireEvent.keyDown(trigger, { key: " " });
       expect(trigger).toHaveAttribute("aria-expanded", "true");
-      expect(screen.getByRole("link", { name: "Ajuda · Guia Fut7Pro" })).toBeInTheDocument();
+      expect(screen.getByRole("navigation", { name: "Menu do perfil" })).toBeInTheDocument();
     }
   );
 

@@ -91,6 +91,12 @@ function TaskList({
 
 export default function AdminGuideClient() {
   const { guide, loading, error, actionError, updating, retry, update } = useAdminGuide();
+  const started = Boolean(guide?.pedagogicalState.welcomeSeenAt);
+  const updateAfterStart = (action: Parameters<typeof update>[0]) =>
+    started ? update(action) : Promise.resolve(false);
+  const canRecordVisit = () => {
+    if (started) void update({ action: "PUBLIC_SITE_OPENED" });
+  };
 
   return (
     <main className="w-full min-w-0 px-4 pb-24 pt-20 text-white md:px-6 md:pb-10 md:pt-7">
@@ -104,6 +110,25 @@ export default function AdminGuideClient() {
             </p>
           </div>
         </header>
+
+        {guide && (
+          <nav aria-label="Assuntos do Guia" className="flex flex-wrap gap-2 text-sm">
+            {[
+              ["Preparação do grupo", "guide-preparation-title"],
+              ["Jogos", "guide-first-match-title"],
+              ["Depois do jogo", "guide-post-match-title"],
+              ["Outros recursos", "guide-resources-title"],
+            ].map(([label, target]) => (
+              <a
+                key={target}
+                href={`#${target}`}
+                className="rounded-full border border-white/20 px-3 py-2 text-zinc-200 hover:border-yellow-400/60 hover:text-yellow-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        )}
 
         {loading && !guide ? (
           <p role="status" className="rounded-xl bg-[#23272F] p-5 text-zinc-300">
@@ -157,7 +182,7 @@ export default function AdminGuideClient() {
                 <h2 className="text-lg font-bold text-yellow-200">Bem-vindo ao Guia Fut7Pro!</h2>
                 <p className="mt-2 text-sm text-zinc-200">
                   {guide.activationProgress.complete
-                    ? "Seu grupo já concluiu a jornada inicial. Consulte as etapas e conheça os recursos da sua função."
+                    ? "Seu grupo já concluiu o primeiro ciclo. Consulte as etapas e conheça os recursos da sua função."
                     : "Vamos acompanhar os primeiros jogos e mostrar os recursos úteis para sua função."}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -188,22 +213,23 @@ export default function AdminGuideClient() {
                   : "Não foi possível salvar sua escolha. Tente novamente."}
               </p>
             )}
-            {!guide.pedagogicalState.dashboardInviteDismissedAt && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  disabled={updating}
-                  onClick={() => void update({ action: "DASHBOARD_INVITE_DISMISSED" })}
-                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:opacity-60"
-                >
-                  Ocultar guia da Dashboard
-                </button>
-              </div>
-            )}
+            {!guide.activationProgress.complete &&
+              !guide.pedagogicalState.dashboardInviteDismissedAt && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={updating}
+                    onClick={() => void update({ action: "DASHBOARD_INVITE_DISMISSED" })}
+                    className="rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:opacity-60"
+                  >
+                    Ocultar guia da Dashboard
+                  </button>
+                </div>
+              )}
             <section className="rounded-xl border border-yellow-400/25 bg-[#23272F] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold">Sua jornada</h2>
+                  <h2 className="text-xl font-bold">Primeiro ciclo do grupo</h2>
                   <p className="mt-1 text-sm text-zinc-300">
                     {guide.activationProgress.completed} de {guide.activationProgress.total} etapas
                     concluídas.
@@ -215,7 +241,7 @@ export default function AdminGuideClient() {
               </div>
               <div
                 role="progressbar"
-                aria-label="Progresso da ativação inicial"
+                aria-label="Progresso do primeiro ciclo do grupo"
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={guide.activationProgress.percentage}
@@ -230,14 +256,32 @@ export default function AdminGuideClient() {
               </div>
               {guide.activationProgress.complete && (
                 <div className="mt-3 text-sm text-yellow-200">
-                  <p className="font-semibold">Seu grupo concluiu a jornada inicial!</p>
+                  <p className="font-semibold">Seu primeiro ciclo está concluído!</p>
                   <p className="mt-1 text-zinc-200">
-                    Os primeiros passos estão completos. Continue utilizando o Fut7Pro para
-                    organizar os jogos e acompanhar a evolução do seu grupo.
+                    As 5 etapas essenciais foram concluídas. Continue organizando os próximos jogos
+                    e acompanhando as partidas atuais.
                   </p>
                 </div>
               )}
             </section>
+            {guide.activationProgress.complete && (
+              <div className="flex flex-wrap gap-2">
+                {guide.capabilities.manageMatchesAndResults && (
+                  <Link
+                    href="/admin/partidas/criar"
+                    className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300"
+                  >
+                    Organizar próximo jogo
+                  </Link>
+                )}
+                <Link
+                  href="/admin/partidas/historico"
+                  className="rounded-lg border border-yellow-400/50 px-4 py-2 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/10"
+                >
+                  Ver partidas e resultados
+                </Link>
+              </div>
+            )}
             {!guide.activationProgress.complete && guide.nextAction && (
               <section className="rounded-xl border border-white/10 bg-[#23272F] p-5">
                 <div className="flex items-start gap-3">
@@ -268,11 +312,18 @@ export default function AdminGuideClient() {
                 </div>
               </section>
             )}
-            <AdminGuidePreparationSection
+            {!guide.activationProgress.complete && !guide.nextAction && (
+              <p className="rounded-xl border border-white/10 bg-[#23272F] p-4 text-sm text-zinc-300">
+                Os próximos marcos dependem de administradores autorizados do grupo. Você pode
+                acompanhar o progresso e consultar as orientações abaixo.
+              </p>
+            )}
+            <AdminGuidePreparationSection guide={guide} onPublicSiteOpen={canRecordVisit} />
+            <AdminGuideFirstMatchSection
               guide={guide}
-              onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
+              updating={updating || !started}
+              update={update}
             />
-            <AdminGuideFirstMatchSection guide={guide} updating={updating} update={update} />
             <AdminGuidePostMatchSection guide={guide} />
             <TaskList
               title="Orientações adicionais"
@@ -284,9 +335,13 @@ export default function AdminGuideClient() {
                   task.applicable
               )}
               guide={guide}
-              onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
+              onPublicSiteOpen={canRecordVisit}
             />
-            <AdminGuideResourcesSection guide={guide} updating={updating} update={update} />
+            <AdminGuideResourcesSection
+              guide={guide}
+              updating={updating || !started}
+              update={updateAfterStart}
+            />
           </>
         )}
       </div>

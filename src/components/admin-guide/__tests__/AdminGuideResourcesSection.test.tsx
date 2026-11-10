@@ -30,6 +30,7 @@ function makeGuide({
     },
     pedagogicalState: {
       revision: 0,
+      welcomeSeenAt: "2026-11-10T00:00:00Z",
       knownTips: [],
       dismissedTips: [],
       snoozedTips: {},
@@ -67,7 +68,7 @@ it("apresenta recursos opcionais com destinos reais sem alterar os cinco marcos"
     screen.getByRole("heading", { name: "Explore mais recursos do Fut7Pro" })
   ).toBeInTheDocument();
   expect(screen.getByText(/recursos são opcionais e não alteram o progresso/)).toBeInTheDocument();
-  expect(screen.getByText(/já concluiu os primeiros passos/)).toBeInTheDocument();
+  expect(screen.getByText(/primeiro ciclo terminou/)).toBeInTheDocument();
   expect(guide.activationProgress).toEqual({
     completed: 5,
     total: 5,

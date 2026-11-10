@@ -92,7 +92,10 @@ export default function AdminGuidePostMatchSection({ guide }: { guide: AdminGuid
   return (
     <section aria-labelledby="guide-post-match-title" className="space-y-4">
       <div>
-        <h2 id="guide-post-match-title" className="text-xl font-bold text-white sm:text-2xl">
+        <h2
+          id="guide-post-match-title"
+          className="scroll-mt-24 text-xl font-bold text-white sm:text-2xl"
+        >
           Depois do jogo
         </h2>
         <p className="mt-1 text-sm font-semibold text-yellow-200">
@@ -131,7 +134,7 @@ export default function AdminGuidePostMatchSection({ guide }: { guide: AdminGuid
         </div>
       )}
 
-      <ol className="grid gap-3 md:grid-cols-2">
+      <ol className="grid gap-3 xl:grid-cols-2">
         {step({
           title: "Registre os resultados",
           description:
