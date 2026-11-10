@@ -16,7 +16,7 @@ env:
 jobs:
   superadmin-legacy-security:
     name: SuperAdmin Legacy Security Smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     steps:
@@ -75,7 +75,7 @@ jobs:
 
   admin-smoke:
     name: Admin Smoke Navigation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     steps:
