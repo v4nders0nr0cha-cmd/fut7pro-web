@@ -16,7 +16,7 @@ env:
 jobs:
   superadmin-legacy-security:
     name: SuperAdmin Legacy Security Smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     steps:
@@ -75,7 +75,7 @@ jobs:
 
   admin-smoke:
     name: Admin Smoke Navigation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     steps:
@@ -152,12 +152,32 @@ jobs:
         env:
           PLAYWRIGHT_WEB_SERVER: "1"
           PLAYWRIGHT_BASE_URL: "http://127.0.0.1:3000"
+          PLAYWRIGHT_JSON_OUTPUT_FILE: "test-results/admin-smoke-report.json"
           E2E_RUN_ACTIVE_SMOKE: "1"
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
           E2E_ACTIVE_TENANT_SLUG: ${{ secrets.E2E_ACTIVE_TENANT_SLUG }}
           E2E_BLOCKED_TENANT_SLUG: ${{ secrets.E2E_BLOCKED_TENANT_SLUG }}
-        run: pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=line
+        run: |
+          pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=line,json
+          node <<'NODE'
+          const report = require('./test-results/admin-smoke-report.json');
+          if (report.stats.skipped > 0) {
+            console.error(`Admin smoke: ${report.stats.skipped} cenário(s) ignorado(s).`);
+            const visit = (suite) => {
+              for (const spec of suite.specs || []) {
+                for (const test of spec.tests || []) {
+                  for (const note of test.annotations || []) {
+                    if (note.type === 'skip') console.error(`${spec.title}: ${note.description}`);
+                  }
+                }
+              }
+              for (const child of suite.suites || []) visit(child);
+            };
+            for (const suite of report.suites || []) visit(suite);
+            process.exit(1);
+          }
+          NODE
 
       - name: Upload Playwright artifacts
         if: always()
