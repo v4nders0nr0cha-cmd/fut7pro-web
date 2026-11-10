@@ -188,6 +188,29 @@ it("não mostra dispensa redundante ou próximo passo após concluir o primeiro 
   });
   render(<AdminGuideClient />);
   expect(screen.getByText("Seu primeiro ciclo está concluído!")).toBeInTheDocument();
+  for (const label of ["Preparação do grupo", "Jogos", "Depois do jogo", "Outros recursos"]) {
+    expect(screen.getByRole("button", { name: new RegExp(label) })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+  }
+  expect(
+    screen.queryByRole("heading", { name: "Configuração inicial do grupo" })
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("link", { name: "Preparação do grupo" }));
+  expect(screen.getByRole("button", { name: /Preparação do grupo/ })).toHaveAttribute(
+    "aria-expanded",
+    "true"
+  );
+  expect(
+    screen.getByRole("heading", { name: "Configuração inicial do grupo" })
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Preparação do grupo/ }));
+  expect(screen.getByRole("button", { name: /Preparação do grupo/ })).toHaveAttribute(
+    "aria-expanded",
+    "false"
+  );
+  expect(update).not.toHaveBeenCalled();
   expect(screen.getByRole("link", { name: "Organizar próximo jogo" })).toHaveAttribute(
     "href",
     "/admin/partidas/criar"
@@ -255,6 +278,8 @@ it("mantém a finalização oficial como orientação recomendada após 100%", (
   });
   render(<AdminGuideClient />);
   expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("link", { name: "Outros recursos" }));
+  fireEvent.click(screen.getByRole("link", { name: "Depois do jogo" }));
   expect(screen.getByText("Finalize oficialmente as partidas")).toBeInTheDocument();
   expect(screen.getByText(/Recomendado · A finalização oficial é recomendada/)).toBeInTheDocument();
   expect(screen.getByText("Seu primeiro ciclo está concluído!")).toBeInTheDocument();
@@ -309,6 +334,7 @@ it("mantém a ativação concluída com revisão pendente em outra rodada, sem a
   });
   render(<AdminGuideClient />);
   expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("link", { name: "Depois do jogo" }));
   const reviewLink = screen.getByRole("link", { name: "Localizar publicação para revisão" });
   expect(reviewLink).toHaveAttribute("href", "/admin/partidas/historico");
   fireEvent.click(reviewLink);
