@@ -160,7 +160,24 @@ jobs:
           E2E_BLOCKED_TENANT_SLUG: ${{ secrets.E2E_BLOCKED_TENANT_SLUG }}
         run: |
           pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=line,json
-          node -e "const report=require('./test-results/admin-smoke-report.json'); if (report.stats.skipped > 0) { console.error('Admin smoke: ' + report.stats.skipped + ' cenário(s) ignorado(s).'); process.exit(1); }"
+          node <<'NODE'
+          const report = require('./test-results/admin-smoke-report.json');
+          if (report.stats.skipped > 0) {
+            console.error(`Admin smoke: ${report.stats.skipped} cenário(s) ignorado(s).`);
+            const visit = (suite) => {
+              for (const spec of suite.specs || []) {
+                for (const test of spec.tests || []) {
+                  for (const note of test.annotations || []) {
+                    if (note.type === 'skip') console.error(`${spec.title}: ${note.description}`);
+                  }
+                }
+              }
+              for (const child of suite.suites || []) visit(child);
+            };
+            for (const suite of report.suites || []) visit(suite);
+            process.exit(1);
+          }
+          NODE
 
       - name: Upload Playwright artifacts
         if: always()
