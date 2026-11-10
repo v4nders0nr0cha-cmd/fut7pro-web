@@ -164,6 +164,8 @@ it("só registra o início ao escolher Começar; Agora não retorna sem alterar 
   expect(
     screen.getByRole("navigation", { name: "Assuntos do Guia" }).querySelectorAll("a")
   ).toHaveLength(4);
+  expect(screen.queryByRole("button", { name: /Preparação do grupo/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Prepare seu grupo" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Agora não" })).toHaveAttribute(
     "href",
     "/admin/dashboard"
@@ -197,19 +199,21 @@ it("não mostra dispensa redundante ou próximo passo após concluir o primeiro 
   expect(
     screen.queryByRole("heading", { name: "Configuração inicial do grupo" })
   ).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("link", { name: "Preparação do grupo" }));
-  expect(screen.getByRole("button", { name: /Preparação do grupo/ })).toHaveAttribute(
-    "aria-expanded",
-    "true"
-  );
-  expect(
-    screen.getByRole("heading", { name: "Configuração inicial do grupo" })
-  ).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /Preparação do grupo/ }));
-  expect(screen.getByRole("button", { name: /Preparação do grupo/ })).toHaveAttribute(
-    "aria-expanded",
-    "false"
-  );
+  for (const label of ["Preparação do grupo", "Jogos", "Depois do jogo", "Outros recursos"]) {
+    const link = screen.getByRole("link", { name: label });
+    expect(document.querySelector(link.getAttribute("href")!)).toBeInTheDocument();
+    fireEvent.click(link);
+    const button = screen.getByRole("button", { name: new RegExp(label) });
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById(button.getAttribute("aria-controls")!)).toBeInTheDocument();
+    if (label === "Preparação do grupo") {
+      expect(
+        screen.getByRole("heading", { name: "Configuração inicial do grupo" })
+      ).toBeInTheDocument();
+    }
+    fireEvent.click(button);
+    expect(button).toHaveAttribute("aria-expanded", "false");
+  }
   expect(update).not.toHaveBeenCalled();
   expect(screen.getByRole("link", { name: "Organizar próximo jogo" })).toHaveAttribute(
     "href",
