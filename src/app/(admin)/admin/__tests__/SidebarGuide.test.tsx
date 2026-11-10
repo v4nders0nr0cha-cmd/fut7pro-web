@@ -23,15 +23,12 @@ beforeEach(() => {
   });
 });
 
-it("mantém o Guia acessível na navegação administrativa sem exigir Presidência", () => {
+it("remove o Guia da navegação lateral principal", () => {
   render(<Sidebar />);
-  expect(screen.getByRole("link", { name: "Guia Fut7Pro" })).toHaveAttribute(
-    "href",
-    "/admin/guia-fut7pro"
-  );
+  expect(screen.queryByRole("link", { name: "Guia Fut7Pro" })).not.toBeInTheDocument();
 });
 
-it("oferece o mesmo acesso no menu móvel", () => {
+it("remove o mesmo item do menu móvel", () => {
   render(<Sidebar mobile isOpen />);
-  expect(screen.getByRole("link", { name: "Guia Fut7Pro" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Guia Fut7Pro" })).not.toBeInTheDocument();
 });

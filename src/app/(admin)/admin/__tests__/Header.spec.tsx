@@ -85,11 +85,64 @@ describe("Admin Header", () => {
   it("envia Trocar de grupo para /admin/selecionar-racha", () => {
     render(<Header />);
 
-    fireEvent.click(screen.getByText("Felipe"));
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" }));
 
     expect(screen.getByRole("link", { name: /Trocar de grupo/i })).toHaveAttribute(
       "href",
       "/admin/selecionar-racha"
     );
+  });
+
+  it.each([375, 1280])("mantém a Ajuda no perfil com largura %i", (width) => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" }));
+
+    expect(screen.getByRole("link", { name: "Ajuda · Guia Fut7Pro" })).toHaveAttribute(
+      "href",
+      "/admin/guia-fut7pro"
+    );
+  });
+
+  it.each([375, 1280])(
+    "abre por Enter e Espaço e devolve o foco com Escape na largura %i",
+    (width) => {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+      render(<Header />);
+      const trigger = screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" });
+
+      trigger.focus();
+      fireEvent.keyDown(trigger, { key: "Enter" });
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      expect(trigger).toHaveAttribute("aria-haspopup", "true");
+      expect(trigger).toHaveAttribute("aria-controls", "admin-profile-menu");
+      expect(screen.getByRole("navigation", { name: "Menu do perfil" })).toHaveAttribute(
+        "id",
+        "admin-profile-menu"
+      );
+      const firstLink = screen.getByRole("link", { name: "Perfil Global Fut7Pro" });
+      expect(firstLink).toHaveFocus();
+
+      fireEvent.keyDown(firstLink, { key: "Escape" });
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      expect(trigger).toHaveFocus();
+      expect(screen.queryByRole("link", { name: "Ajuda · Guia Fut7Pro" })).not.toBeInTheDocument();
+
+      fireEvent.keyDown(trigger, { key: " " });
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("link", { name: "Ajuda · Guia Fut7Pro" })).toBeInTheDocument();
+    }
+  );
+
+  it("fecha ao sair do menu com Tab sem prender o foco", () => {
+    render(<Header />);
+    const trigger = screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" });
+    fireEvent.click(trigger);
+    const firstLink = screen.getByRole("link", { name: "Perfil Global Fut7Pro" });
+    const outsideLink = screen.getByRole("link", { name: /Notificações/i });
+
+    fireEvent.blur(firstLink, { relatedTarget: outsideLink });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 });

@@ -3,14 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import {
-  MdDashboard,
-  MdMenuBook,
-  MdPerson,
-  MdSettings,
-  MdPeopleAlt,
-  MdPalette,
-} from "react-icons/md";
+import { MdDashboard, MdPerson, MdSettings, MdPeopleAlt, MdPalette } from "react-icons/md";
 import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol, FaExternalLinkAlt } from "react-icons/fa";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
@@ -25,7 +18,6 @@ const APP_PUBLIC_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.
 
 const menu = [
   { label: "Dashboard", icon: MdDashboard, href: "/admin/dashboard" },
-  { label: "Guia Fut7Pro", icon: MdMenuBook, href: "/admin/guia-fut7pro" },
   {
     label: "Jogadores",
     icon: MdPerson,

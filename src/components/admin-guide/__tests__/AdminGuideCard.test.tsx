@@ -67,18 +67,15 @@ beforeEach(() => {
   });
 });
 
-it("mostra progresso real e a rota oficial no card", () => {
+it("oferece um convite compacto sem deslocar o progresso operacional para o card", () => {
   render(<AdminGuideCard />);
-  expect(screen.getByText(/etapas concluídas/)).toHaveTextContent("1 de 5 etapas concluídas");
-  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "20");
-  expect(screen.getByRole("link", { name: "Continuar configuração" })).toHaveAttribute(
-    "href",
-    "/admin/partidas/criar-times"
-  );
-  expect(screen.getByRole("link", { name: "Ver meu Guia" })).toHaveAttribute(
+  expect(screen.getByTestId("admin-guide-invite")).toBeInTheDocument();
+  expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Conhecer o guia" })).toHaveAttribute(
     "href",
     "/admin/guia-fut7pro"
   );
+  expect(screen.getByRole("button", { name: "Não mostrar novamente" })).toBeInTheDocument();
 });
 
 it("mostra o primeiro jogo na seção própria sem duplicar a tarefa genérica", () => {
@@ -120,7 +117,7 @@ it("mostra o primeiro jogo na seção própria sem duplicar a tarefa genérica",
   );
 });
 
-it("leva do card e da página do Guia à configuração editável de horários", () => {
+it("mantém a configuração editável de horários na página do Guia", () => {
   const scheduleTask = {
     ...guide.tasks[0],
     id: "SCHEDULE",
@@ -146,9 +143,9 @@ it("leva do card e da página do Guia à configuração editável de horários",
     update,
   });
   const card = render(<AdminGuideCard />);
-  expect(screen.getByRole("link", { name: "Continuar configuração" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Conhecer o guia" })).toHaveAttribute(
     "href",
-    "/admin/rachas"
+    "/admin/guia-fut7pro"
   );
   card.unmount();
   render(<AdminGuideClient />);
@@ -158,13 +155,17 @@ it("leva do card e da página do Guia à configuração editável de horários",
 it("mostra carregamento sem bloquear o restante do painel", () => {
   mockedHook.mockReturnValue({ guide: null, loading: true, error: null, retry, update });
   render(<AdminGuideCard />);
-  expect(screen.getByRole("status")).toHaveTextContent("Carregando seu progresso");
+  expect(screen.queryByTestId("admin-guide-invite")).not.toBeInTheDocument();
 });
 
-it("não registra boas-vindas ao renderizar, mas persiste após a escolha", async () => {
-  render(<AdminGuideCard />);
+it("só registra o início ao escolher Começar; Agora não retorna sem alterar o estado", async () => {
+  render(<AdminGuideClient />);
   expect(update).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Agora não" }));
+  expect(screen.getByRole("link", { name: "Agora não" })).toHaveAttribute(
+    "href",
+    "/admin/dashboard"
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Começar" }));
   await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_SEEN" }));
 });
 
@@ -185,7 +186,7 @@ it("não oferece ação quando o cargo não pode executá-la", () => {
   });
   render(<AdminGuideCard />);
   expect(screen.queryByRole("link", { name: "Continuar configuração" })).not.toBeInTheDocument();
-  expect(screen.getByText(/Nenhuma ação disponível/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Conhecer o guia" })).toBeInTheDocument();
 });
 
 it("mantém a finalização oficial como orientação recomendada após 100%", () => {
@@ -208,11 +209,7 @@ it("mantém a finalização oficial como orientação recomendada após 100%", (
   expect(screen.getByText("Finalize oficialmente as partidas")).toBeInTheDocument();
   expect(screen.getByText(/Recomendado · A finalização oficial é recomendada/)).toBeInTheDocument();
   expect(screen.getByText("Seu grupo concluiu a jornada inicial!")).toBeInTheDocument();
-  expect(
-    screen.getByText(
-      "Sua jornada inicial está concluída. Você pode consultar o Guia quando quiser."
-    )
-  ).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Próximo passo" })).not.toBeInTheDocument();
   expect(
     screen.getByRole("heading", { name: "Explore mais recursos do Fut7Pro" })
   ).toBeInTheDocument();
@@ -339,9 +336,9 @@ it("mostra progresso em cache e aviso discreto quando a revalidação falha", ()
     retry,
     update,
   });
-  render(<AdminGuideCard />);
+  render(<AdminGuideClient />);
   expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "20");
-  expect(screen.getByRole("link", { name: "Continuar configuração" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Continuar" })).toBeInTheDocument();
   expect(screen.getByText(/As informações anteriores continuam disponíveis/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
   expect(retry).toHaveBeenCalled();
@@ -373,24 +370,18 @@ it("mostra falha discreta sem bloquear o painel", () => {
     update,
   });
   render(<AdminGuideCard />);
-  expect(screen.getByText("Não foi possível carregar o Guia Fut7Pro agora.")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-  expect(retry).toHaveBeenCalled();
+  expect(screen.queryByTestId("admin-guide-invite")).not.toBeInTheDocument();
 });
 
-it("abre o site da pelada correta e registra a orientação pedagógica", () => {
+it("abre o site do grupo correto pela página e registra a orientação pedagógica", () => {
   mockedHook.mockReturnValue({
     guide: {
       ...guide,
-      nextAction: {
-        taskId: "PUBLIC_SITE",
-        title: "Conheça o site da sua pelada",
-        route: "/",
-      },
+      nextAction: null,
       tasks: [
         {
           id: "PUBLIC_SITE",
-          title: "Conheça o site da sua pelada",
+          title: "Conheça o site do seu grupo",
           requirement: "OPTIONAL",
           completed: false,
           canAct: true,
@@ -406,8 +397,9 @@ it("abre o site da pelada correta e registra a orientação pedagógica", () => 
     retry,
     update,
   });
-  render(<AdminGuideCard />);
-  const link = screen.getByRole("link", { name: "Continuar configuração" });
+  render(<AdminGuideClient />);
+  expect(screen.queryByRole("heading", { name: "Próximo passo" })).not.toBeInTheDocument();
+  const link = screen.getByRole("link", { name: "Ver meu site" });
   expect(link).toHaveAttribute("href", "/seu-racha");
   expect(link).toHaveAttribute("target", "_blank");
   fireEvent.click(link);
@@ -424,6 +416,108 @@ it("orienta novamente após conflito de revisão", () => {
     retry,
     update,
   });
-  render(<AdminGuideCard />);
+  render(<AdminGuideClient />);
   expect(screen.getByRole("alert")).toHaveTextContent("Confira o estado atualizado");
+});
+
+it("mantém o convite para administradores antigos com jornada parcial", () => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      pedagogicalState: { ...guide.pedagogicalState, welcomeSeenAt: "2026-10-16T00:00:00Z" },
+      activationProgress: { completed: 2, total: 5, percentage: 40, complete: false },
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideCard />);
+  expect(screen.getByRole("link", { name: "Continuar guia" })).toHaveAttribute(
+    "href",
+    "/admin/guia-fut7pro"
+  );
+  expect(screen.getByRole("button", { name: "Não mostrar novamente" })).toBeInTheDocument();
+});
+
+it("salva a dispensa explícita pelo convite sem marcar o início", async () => {
+  render(<AdminGuideCard />);
+  fireEvent.click(screen.getByRole("button", { name: "Não mostrar novamente" }));
+  await waitFor(() =>
+    expect(update).toHaveBeenCalledWith({ action: "DASHBOARD_INVITE_DISMISSED" })
+  );
+  expect(update).not.toHaveBeenCalledWith({ action: "WELCOME_SEEN" });
+});
+
+it("permite dispensar na página depois de iniciar sem apagar o progresso", async () => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      pedagogicalState: { ...guide.pedagogicalState, welcomeSeenAt: "2026-10-16T00:00:00Z" },
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideClient />);
+  expect(screen.getByText("1 de 5 etapas concluídas.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Ocultar guia da Dashboard" }));
+  await waitFor(() =>
+    expect(update).toHaveBeenCalledWith({ action: "DASHBOARD_INVITE_DISMISSED" })
+  );
+});
+
+it.each(["dispensada", "concluída"])("oculta a faixa quando a jornada está %s", (condition) => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      pedagogicalState: {
+        ...guide.pedagogicalState,
+        ...(condition === "dispensada"
+          ? { dashboardInviteDismissedAt: "2026-11-09T12:00:00Z" }
+          : {}),
+      },
+      activationProgress:
+        condition === "concluída"
+          ? { completed: 5, total: 5, percentage: 100, complete: true }
+          : guide.activationProgress,
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideCard />);
+  expect(screen.queryByTestId("admin-guide-invite")).not.toBeInTheDocument();
+});
+
+it("permite consultar novamente após a dispensa sem reativar a faixa", () => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      pedagogicalState: {
+        ...guide.pedagogicalState,
+        dashboardInviteDismissedAt: "2026-11-09T12:00:00Z",
+      },
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideClient />);
+  expect(screen.getByRole("heading", { name: "Guia Fut7Pro" })).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Ocultar guia da Dashboard" })
+  ).not.toBeInTheDocument();
+  expect(update).not.toHaveBeenCalled();
 });

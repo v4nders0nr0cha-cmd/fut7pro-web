@@ -152,7 +152,6 @@ export default function AdminDashboard() {
 
       <div className="flex flex-col gap-6 w-full px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <BannerNotificacoes />
-        <AdminGuideCard />
 
         <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-3">
           <div className="relative">
@@ -204,6 +203,7 @@ export default function AdminDashboard() {
             </Link>
           </div>
         </section>
+        <AdminGuideCard />
 
         <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-2">
           <div className="relative">
