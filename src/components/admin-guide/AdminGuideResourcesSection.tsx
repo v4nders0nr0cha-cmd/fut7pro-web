@@ -79,7 +79,10 @@ export default function AdminGuideResourcesSection({
   return (
     <section aria-labelledby="guide-resources-title" className="space-y-4">
       <div>
-        <h2 id="guide-resources-title" className="text-xl font-bold text-white sm:text-2xl">
+        <h2
+          id="guide-resources-title"
+          className="scroll-mt-24 text-xl font-bold text-white sm:text-2xl"
+        >
           Explore mais recursos do Fut7Pro
         </h2>
         <p className="mt-2 text-sm text-zinc-300">
@@ -89,11 +92,11 @@ export default function AdminGuideResourcesSection({
         </p>
         {guide.activationProgress.complete && (
           <p className="mt-2 text-sm font-semibold text-yellow-200">
-            Seu grupo já concluiu os primeiros passos. Continue aproveitando o Fut7Pro!
+            O primeiro ciclo terminou. Estes recursos continuam opcionais.
           </p>
         )}
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid items-start gap-3 xl:grid-cols-2">
         <ResourceCard
           title="Dê visibilidade aos patrocinadores do grupo"
           description="Divulgue as empresas que apoiam o grupo e valorize essas parcerias."
@@ -181,7 +184,7 @@ export default function AdminGuideResourcesSection({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => {
-                          if (!viewed && !updating)
+                          if (guide.pedagogicalState.welcomeSeenAt && !viewed && !updating)
                             void update({ action: "RESOURCE_VIEWED", resourceId: video.id });
                         }}
                         className="mt-2 inline-block rounded-lg border border-yellow-400/50 px-3 py-2 font-semibold text-yellow-200 hover:bg-yellow-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"

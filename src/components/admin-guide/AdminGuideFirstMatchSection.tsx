@@ -56,7 +56,10 @@ export default function AdminGuideFirstMatchSection({
   const levelCoverage = count(guide, "athleteLevelCoverage");
   const matchDestination = matchTask ? guideDestination(guide, matchTask) : null;
   const canChooseMode = Boolean(
-    matchTask?.applicable && matchTask.canAct && guide.capabilities.manageMatchesAndResults
+    guide.pedagogicalState.welcomeSeenAt &&
+      matchTask?.applicable &&
+      matchTask.canAct &&
+      guide.capabilities.manageMatchesAndResults
   );
   const teamDestination = teamTask ? guideDestination(guide, teamTask) : null;
   const levelDestination = levelTask ? guideDestination(guide, levelTask) : null;
@@ -65,9 +68,14 @@ export default function AdminGuideFirstMatchSection({
   return (
     <section aria-labelledby="guide-first-match-title" className="space-y-4">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-yellow-300">Momento 2/2</p>
-        <h2 id="guide-first-match-title" className="mt-1 text-xl font-bold text-white sm:text-2xl">
-          Prepare seu primeiro jogo
+        <p className="text-xs font-semibold uppercase tracking-wide text-yellow-300">Jogos</p>
+        <h2
+          id="guide-first-match-title"
+          className="mt-1 scroll-mt-24 text-xl font-bold text-white sm:text-2xl"
+        >
+          {guide.operationalState.validMatchCount
+            ? "Organize seu próximo jogo"
+            : "Prepare seu primeiro jogo"}
         </h2>
         <p className="mt-2 text-sm text-zinc-300">
           Escolha como deseja organizar os jogos e conheça os recursos disponíveis antes de entrar
@@ -75,7 +83,13 @@ export default function AdminGuideFirstMatchSection({
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      {!guide.pedagogicalState.welcomeSeenAt && (
+        <p className="text-sm text-yellow-200">
+          Escolhas ficam disponíveis após clicar em Começar. Você pode consultar o conteúdo antes
+          disso.
+        </p>
+      )}
+      <div className="grid gap-3 xl:grid-cols-2">
         {MODES.map((option) => {
           const selected = mode === option.mode;
           return (
@@ -186,7 +200,11 @@ export default function AdminGuideFirstMatchSection({
                   key={choice.value}
                   type="button"
                   aria-pressed={monthlyModel === choice.value}
-                  disabled={updating || monthlyModel === choice.value}
+                  disabled={
+                    updating ||
+                    !guide.pedagogicalState.welcomeSeenAt ||
+                    monthlyModel === choice.value
+                  }
                   onClick={() =>
                     void update({ action: "MONTHLY_MODEL_SELECTED", monthlyModel: choice.value })
                   }
@@ -216,7 +234,7 @@ export default function AdminGuideFirstMatchSection({
         <div className="rounded-xl border border-yellow-400/25 bg-[#23272F] p-4 sm:p-5">
           <h3 className="flex items-center gap-2 font-semibold text-white">
             <Trophy aria-hidden="true" size={19} className="text-yellow-300" />
-            Primeiro jogo preparado
+            {matchTask.completed ? "Jogos do grupo" : "Primeiro jogo preparado"}
           </h3>
           <p className="mt-2 text-sm text-zinc-200">
             {matchTask.completed
@@ -232,7 +250,9 @@ export default function AdminGuideFirstMatchSection({
                 ? "Abrir Sorteio Inteligente"
                 : mode === "CLASSIC_MATCH"
                   ? "Criar Partida Clássica"
-                  : "Escolher como criar a partida"}
+                  : matchTask.completed
+                    ? "Organizar próximo jogo"
+                    : "Escolher como criar a partida"}
             </Link>
           )}
           {!matchTask.canAct && !matchTask.completed && (

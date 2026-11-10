@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import BottomMenuAdmin from "@/components/layout/BottomMenuAdmin";
+import AdminHelpLauncher from "@/components/admin-guide/AdminHelpLauncher";
 import { NotificationProvider } from "@/context/NotificationContext";
 import ToastGlobal from "@/components/ui/ToastGlobal";
 import { useRacha } from "@/context/RachaContext";
@@ -607,6 +608,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
           <main className="flex-1 w-full px-4 sm:px-6 pt-20 md:pt-15 pb-24">{children}</main>
         </div>
         <BottomMenuAdmin />
+        <AdminHelpLauncher />
       </div>
     </NotificationProvider>
   );

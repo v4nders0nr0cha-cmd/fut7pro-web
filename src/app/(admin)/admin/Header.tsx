@@ -150,14 +150,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
           Pro
         </span>
         {rachaNome && rachaNome !== "Fut7Pro" ? (
-          <span className="hidden md:inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-gray-300">
+          <span className="hidden lg:inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-gray-300">
             {rachaNome}
           </span>
         ) : null}
       </Link>
 
       {/* AÇÕES ALINHADAS À DIREITA */}
-      <div className="flex items-center gap-6 ml-auto">
+      <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 ml-auto">
         {menu.map((item) => {
           const baseHref = item.href.split("#")[0];
           const isActive = pathname.startsWith(baseHref);
@@ -167,12 +167,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.label}
               className="relative flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-800 transition"
               tabIndex={0}
               data-testid={`admin-header-link-${slugifyTestId(item.href)}`}
             >
               <item.icon size={20} className="text-brand" />
-              <span className="text-white text-sm font-medium hidden sm:inline">{item.label}</span>
+              <span className="text-white text-sm font-medium hidden lg:inline">{item.label}</span>
               {badgeValue > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1.5 font-bold">
                   {badgeValue}
@@ -192,72 +193,74 @@ export default function Header({ onMenuClick }: HeaderProps) {
             Entrar ou Cadastrar-se
           </button>
         ) : (
-          <div
-            ref={profileRef}
-            className="relative"
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-                setDropdownOpen(false);
-              }
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Escape" && dropdownOpen) {
-                event.preventDefault();
-                setDropdownOpen(false);
-                profileButtonRef.current?.focus();
-              }
-            }}
-          >
-            <button
-              ref={profileButtonRef}
-              type="button"
-              className="flex items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
-              aria-label={`${dropdownOpen ? "Fechar" : "Abrir"} menu do perfil de ${displayName}`}
-              aria-haspopup="true"
-              aria-controls="admin-profile-menu"
-              aria-expanded={dropdownOpen}
-              onClick={() => setDropdownOpen((open) => !open)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  setDropdownOpen((open) => !open);
-                }
-              }}
+          <>
+            <Link
+              href="/admin/mais"
+              className="flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 md:hidden"
+              aria-label="Abrir Mais"
             >
               <AvatarFut7Pro
                 src={displayAvatar}
-                alt={displayName}
+                alt=""
                 width={38}
                 height={38}
                 fallbackSrc={DEFAULT_ADMIN_AVATAR}
                 className="rounded-full border-2 border-brand"
               />
-              <span className="text-brand-soft font-bold text-base hidden md:inline">
-                {displayName}
-              </span>
-            </button>
-            {dropdownOpen && (
-              <nav
-                ref={profileMenuRef}
-                id="admin-profile-menu"
-                aria-label="Menu do perfil"
-                className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-44 py-2 z-50 flex flex-col"
+            </Link>
+            <div
+              ref={profileRef}
+              className="relative hidden md:block"
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                  setDropdownOpen(false);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape" && dropdownOpen) {
+                  event.preventDefault();
+                  setDropdownOpen(false);
+                  profileButtonRef.current?.focus();
+                }
+              }}
+            >
+              <button
+                ref={profileButtonRef}
+                type="button"
+                className="flex items-center gap-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+                aria-label={`${dropdownOpen ? "Fechar" : "Abrir"} menu do perfil de ${displayName}`}
+                aria-haspopup="true"
+                aria-controls="admin-profile-menu"
+                aria-expanded={dropdownOpen}
+                onClick={() => setDropdownOpen((open) => !open)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setDropdownOpen((open) => !open);
+                  }
+                }}
               >
-                <Link
-                  href="/perfil"
-                  className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                  onClick={() => {
-                    if (tenantSlug) {
-                      setStoredTenantSlug(tenantSlug);
-                    }
-                    setDropdownOpen(false);
-                  }}
+                <AvatarFut7Pro
+                  src={displayAvatar}
+                  alt={displayName}
+                  width={38}
+                  height={38}
+                  fallbackSrc={DEFAULT_ADMIN_AVATAR}
+                  className="rounded-full border-2 border-brand"
+                />
+                <span className="text-brand-soft font-bold text-base hidden md:inline">
+                  {displayName}
+                </span>
+              </button>
+              {dropdownOpen && (
+                <nav
+                  ref={profileMenuRef}
+                  id="admin-profile-menu"
+                  aria-label="Menu do perfil"
+                  className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-60 py-2 z-50 flex flex-col"
                 >
-                  Perfil Global Fut7Pro
-                </Link>
-                {rachaPerfilHref && (
                   <Link
-                    href={rachaPerfilHref}
+                    href="/perfil"
                     className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
                     onClick={() => {
                       if (tenantSlug) {
@@ -266,46 +269,53 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       setDropdownOpen(false);
                     }}
                   >
-                    Meu perfil neste grupo
+                    Perfil Global Fut7Pro
                   </Link>
-                )}
-                {canSwitchRacha && (
-                  <Link
-                    href="/admin/selecionar-racha"
-                    className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                    onClick={() => setDropdownOpen(false)}
+                  {rachaPerfilHref && (
+                    <Link
+                      href={rachaPerfilHref}
+                      className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                      onClick={() => {
+                        if (tenantSlug) {
+                          setStoredTenantSlug(tenantSlug);
+                        }
+                        setDropdownOpen(false);
+                      }}
+                    >
+                      Meu perfil neste grupo
+                    </Link>
+                  )}
+                  {canSwitchRacha && (
+                    <Link
+                      href="/admin/selecionar-racha"
+                      className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Trocar de grupo
+                    </Link>
+                  )}
+                  {publicProfileHref && (
+                    <Link
+                      href={publicProfileHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Ver perfil público
+                    </Link>
+                  )}
+                  <button
+                    className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-zinc-800 text-base"
+                    onClick={() => signOut({ callbackUrl: "/admin/login" })}
                   >
-                    Trocar de grupo
-                  </Link>
-                )}
-                <Link
-                  href="/admin/guia-fut7pro"
-                  className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  Ajuda · Guia Fut7Pro
-                </Link>
-                {publicProfileHref && (
-                  <Link
-                    href={publicProfileHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    Ver perfil público
-                  </Link>
-                )}
-                <button
-                  className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-zinc-800 text-base"
-                  onClick={() => signOut({ callbackUrl: "/admin/login" })}
-                >
-                  <FaSignOutAlt size={18} />
-                  Sair da conta
-                </button>
-              </nav>
-            )}
-          </div>
+                    <FaSignOutAlt size={18} />
+                    Sair da conta
+                  </button>
+                </nav>
+              )}
+            </div>
+          </>
         )}
       </div>
     </header>

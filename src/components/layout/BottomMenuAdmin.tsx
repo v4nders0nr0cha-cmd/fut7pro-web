@@ -1,12 +1,12 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaHome, FaBell, FaEnvelope, FaUserPlus, FaUser } from "react-icons/fa";
+import { FaHome, FaBell, FaEnvelope, FaUserPlus, FaUser, FaEllipsisH } from "react-icons/fa";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
 import { useSession } from "next-auth/react";
 import type { IconType } from "react-icons";
 
-type BadgeKey = "dashboard" | "notificacoes" | "mensagens" | "solicitacoes" | "perfil";
+type BadgeKey = "dashboard" | "notificacoes" | "mensagens" | "solicitacoes" | "mais";
 
 interface MenuItem {
   label: string;
@@ -35,7 +35,7 @@ const menu: MenuItem[] = [
     href: "/admin/jogadores/listar-cadastrar#solicitacoes",
     badgeKey: "solicitacoes",
   },
-  { label: "Perfil Global", icon: FaUser, href: "/perfil", badgeKey: "perfil" },
+  { label: "Mais", icon: FaEllipsisH, href: "/admin/mais", badgeKey: "mais" },
 ];
 
 function slugifyTestId(value: string) {
@@ -73,11 +73,11 @@ export default function BottomMenuAdmin() {
 
   // SE LOGADO
   return (
-    <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 py-2 md:hidden animate-slide-down">
+    <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:hidden animate-slide-down">
       {menu.map((item) => {
         const baseHref = item.href.split("#")[0];
         const isActive = pathname.startsWith(baseHref);
-        const badgeValue = badges[item.badgeKey] ?? 0;
+        const badgeValue = item.badgeKey === "mais" ? 0 : (badges[item.badgeKey] ?? 0);
 
         return (
           <Link

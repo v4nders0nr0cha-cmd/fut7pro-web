@@ -10,7 +10,7 @@ const guide: AdminGuideData = {
   guideVersion: 1,
   tenant: { id: "tenant-1", slug: "seu-racha", name: "Seu Racha" },
   administrator: { membershipId: "membership-1", role: "PRESIDENTE", status: "APROVADO" },
-  capabilities: { manageOfficialTeams: true },
+  capabilities: { manageOfficialTeams: true, manageMatchesAndResults: true },
   pedagogicalState: {
     revision: 0,
     knownTips: [],
@@ -109,7 +109,7 @@ it("mostra o primeiro jogo na seção própria sem duplicar a tarefa genérica",
     update,
   });
   render(<AdminGuideClient />);
-  expect(screen.getByText("Momento 2/2")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Prepare seu primeiro jogo" })).toBeInTheDocument();
   expect(screen.getAllByRole("heading", { name: "Primeiro jogo preparado" })).toHaveLength(1);
   expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
     "href",
@@ -161,12 +161,88 @@ it("mostra carregamento sem bloquear o restante do painel", () => {
 it("só registra o início ao escolher Começar; Agora não retorna sem alterar o estado", async () => {
   render(<AdminGuideClient />);
   expect(update).not.toHaveBeenCalled();
+  expect(
+    screen.getByRole("navigation", { name: "Assuntos do Guia" }).querySelectorAll("a")
+  ).toHaveLength(4);
+  expect(screen.queryByRole("button", { name: /Preparação do grupo/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Prepare seu grupo" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Agora não" })).toHaveAttribute(
     "href",
     "/admin/dashboard"
   );
   fireEvent.click(screen.getByRole("button", { name: "Começar" }));
   await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_SEEN" }));
+});
+
+it("não mostra dispensa redundante ou próximo passo após concluir o primeiro ciclo", () => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      activationProgress: { completed: 5, total: 5, percentage: 100, complete: true },
+      nextAction: null,
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideClient />);
+  expect(screen.getByText("Seu primeiro ciclo está concluído!")).toBeInTheDocument();
+  for (const label of ["Preparação do grupo", "Jogos", "Depois do jogo", "Outros recursos"]) {
+    expect(screen.getByRole("button", { name: new RegExp(label) })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+  }
+  expect(
+    screen.queryByRole("heading", { name: "Configuração inicial do grupo" })
+  ).not.toBeInTheDocument();
+  for (const label of ["Preparação do grupo", "Jogos", "Depois do jogo", "Outros recursos"]) {
+    const link = screen.getByRole("link", { name: label });
+    expect(document.querySelector(link.getAttribute("href")!)).toBeInTheDocument();
+    fireEvent.click(link);
+    const button = screen.getByRole("button", { name: new RegExp(label) });
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById(button.getAttribute("aria-controls")!)).toBeInTheDocument();
+    if (label === "Preparação do grupo") {
+      expect(
+        screen.getByRole("heading", { name: "Configuração inicial do grupo" })
+      ).toBeInTheDocument();
+    }
+    fireEvent.click(button);
+    expect(button).toHaveAttribute("aria-expanded", "false");
+  }
+  expect(update).not.toHaveBeenCalled();
+  expect(screen.getByRole("link", { name: "Organizar próximo jogo" })).toHaveAttribute(
+    "href",
+    "/admin/partidas/criar"
+  );
+  expect(
+    screen.queryByRole("button", { name: "Ocultar guia da Dashboard" })
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Próximo passo" })).not.toBeInTheDocument();
+});
+
+it("não oferece criar partida após 100% a quem não administra jogos", () => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      capabilities: { ...guide.capabilities, manageMatchesAndResults: false },
+      activationProgress: { completed: 5, total: 5, percentage: 100, complete: true },
+      nextAction: null,
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideClient />);
+  expect(screen.queryByRole("link", { name: "Organizar próximo jogo" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Ver partidas e resultados" })).toBeInTheDocument();
 });
 
 it("não oferece ação quando o cargo não pode executá-la", () => {
@@ -206,9 +282,11 @@ it("mantém a finalização oficial como orientação recomendada após 100%", (
   });
   render(<AdminGuideClient />);
   expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("link", { name: "Outros recursos" }));
+  fireEvent.click(screen.getByRole("link", { name: "Depois do jogo" }));
   expect(screen.getByText("Finalize oficialmente as partidas")).toBeInTheDocument();
   expect(screen.getByText(/Recomendado · A finalização oficial é recomendada/)).toBeInTheDocument();
-  expect(screen.getByText("Seu grupo concluiu a jornada inicial!")).toBeInTheDocument();
+  expect(screen.getByText("Seu primeiro ciclo está concluído!")).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Próximo passo" })).not.toBeInTheDocument();
   expect(
     screen.getByRole("heading", { name: "Explore mais recursos do Fut7Pro" })
@@ -260,6 +338,7 @@ it("mantém a ativação concluída com revisão pendente em outra rodada, sem a
   });
   render(<AdminGuideClient />);
   expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("link", { name: "Depois do jogo" }));
   const reviewLink = screen.getByRole("link", { name: "Localizar publicação para revisão" });
   expect(reviewLink).toHaveAttribute("href", "/admin/partidas/historico");
   fireEvent.click(reviewLink);
@@ -373,7 +452,7 @@ it("mostra falha discreta sem bloquear o painel", () => {
   expect(screen.queryByTestId("admin-guide-invite")).not.toBeInTheDocument();
 });
 
-it("abre o site do grupo correto pela página e registra a orientação pedagógica", () => {
+it("permite consultar o site antes de Começar sem gravar orientação pedagógica", () => {
   mockedHook.mockReturnValue({
     guide: {
       ...guide,
@@ -403,7 +482,7 @@ it("abre o site do grupo correto pela página e registra a orientação pedagóg
   expect(link).toHaveAttribute("href", "/seu-racha");
   expect(link).toHaveAttribute("target", "_blank");
   fireEvent.click(link);
-  expect(update).toHaveBeenCalledWith({ action: "PUBLIC_SITE_OPENED" });
+  expect(update).not.toHaveBeenCalledWith({ action: "PUBLIC_SITE_OPENED" });
 });
 
 it("orienta novamente após conflito de revisão", () => {

@@ -52,6 +52,7 @@ function makeGuide(
     canManageMatches?: boolean;
     canManageMonthly?: boolean;
     slug?: string;
+    started?: boolean;
   } = {}
 ): AdminGuideData {
   const canManageMatches = options.canManageMatches ?? true;
@@ -72,6 +73,7 @@ function makeGuide(
     },
     pedagogicalState: {
       revision: 1,
+      welcomeSeenAt: options.started === false ? undefined : "2026-11-10T00:00:00Z",
       firstMatchMode: options.mode,
       monthlyModel: options.monthlyModel,
       knownTips: [],
@@ -116,14 +118,22 @@ function show(guide = makeGuide()) {
   return render(<AdminGuideFirstMatchSection guide={guide} updating={false} update={update} />);
 }
 
+it("permite ler as modalidades antes de Começar sem gravar preferências", () => {
+  show(makeGuide({ started: false }));
+  expect(screen.getByText(/Escolhas ficam disponíveis após clicar em Começar/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Escolher Sorteio Inteligente" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Decidir depois" })).toBeDisabled();
+  expect(update).not.toHaveBeenCalled();
+});
+
 it("apresenta o segundo momento e as duas modalidades sem criar partidas", () => {
   show();
-  expect(screen.getByText("Momento 2/2")).toBeInTheDocument();
+  expect(screen.getByText("Jogos")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Sorteio Inteligente" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Partida Clássica" })).toBeInTheDocument();
   expect(
     screen.getByRole("heading", { name: "Sorteio Inteligente" }).closest("article")?.parentElement
-  ).toHaveClass("md:grid-cols-2");
+  ).toHaveClass("xl:grid-cols-2");
   expect(screen.getByText(/Você ainda não possui uma partida registrada/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Escolher como criar a partida" })).toHaveAttribute(
     "href",
