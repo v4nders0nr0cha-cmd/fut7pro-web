@@ -46,7 +46,7 @@ export default function AdminHelpLauncher() {
   return (
     <div
       ref={rootRef}
-      className="fixed bottom-6 right-6 z-40 hidden md:block"
+      className="fixed bottom-6 right-6 z-40 hidden lg:block"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node)) setOpen(false);
       }}
