@@ -88,8 +88,6 @@ const menu = [
       { label: "Comunicados", href: "/admin/comunicacao/comunicados" },
       { label: "Enquetes", href: "/admin/comunicacao/enquetes" },
       { label: "Sugestões", href: "/admin/comunicacao/sugestoes" },
-      { label: "Ajuda", href: "/admin/comunicacao/ajuda" },
-      { label: "Suporte", href: "/admin/comunicacao/suporte" },
     ],
   },
   {

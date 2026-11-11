@@ -96,8 +96,8 @@ export default function MoreClient() {
           No computador, use o menu do perfil e o botão Ajuda Fut7Pro.
         </p>
       </div>
-      <div className="md:hidden">
-        <h1 className="mb-6 text-2xl font-bold">Mais</h1>
+      <div className="pt-2 md:hidden">
+        <h1 className="sr-only">Mais</h1>
         {sections.map((section) => (
           <section key={section.title} className="mb-6" aria-label={section.title}>
             <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-yellow-300">
