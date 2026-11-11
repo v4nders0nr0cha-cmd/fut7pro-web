@@ -11,6 +11,7 @@ jest.mock("@/hooks/useAdminBadges", () => ({ useAdminBadges: () => ({ badges: {}
 it("mantém quatro atalhos e troca apenas Perfil Global por Mais", () => {
   render(<BottomMenuAdmin />);
   const nav = screen.getByRole("navigation");
+  expect(nav).toHaveClass("lg:hidden");
   expect(nav.querySelectorAll("a")).toHaveLength(5);
   expect(screen.getByRole("link", { name: "Mais" })).toHaveAttribute("href", "/admin/mais");
   expect(screen.queryByRole("link", { name: "Perfil Global" })).not.toBeInTheDocument();

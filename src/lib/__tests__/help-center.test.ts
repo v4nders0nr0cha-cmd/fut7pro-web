@@ -138,11 +138,16 @@ describe("Central de Ajuda administrativa", () => {
     expect(sidebar).toContain('label: "Gestão de Mensalistas"');
     expect(sidebar).toContain('label: "Cobrança de Mensalistas"');
     expect(sidebar).toContain('label: "Páginas do Sobre Nós"');
-    expect(sidebar).toContain('label: "Planos & Limites"');
+    expect(sidebar).not.toContain('label: "Planos & Limites"');
+    const profileNavigation = readFileSync(
+      path.join(process.cwd(), "src/app/(admin)/admin/adminProfileNavigation.ts"),
+      "utf8"
+    );
+    expect(profileNavigation).toContain('label: "Plano e cobrança"');
     const subscription = DEFAULT_HELP_CENTER_TOPICS.find(
       (topic) => topic.id === "configuracoes-assinatura"
     );
-    expect(subscription?.conteudo).toContain("Financeiro > Planos & Limites");
+    expect(subscription?.conteudo).toContain("Assinatura Fut7Pro > Plano e cobrança");
   });
 
   it("usa o fallback apenas quando não há tópicos utilizáveis", () => {

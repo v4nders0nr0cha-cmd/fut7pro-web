@@ -6,7 +6,8 @@ it("abre apenas os três destinos de ajuda e devolve o foco com Escape", async (
   render(<AdminHelpLauncher />);
   const trigger = screen.getByRole("button", { name: "Ajuda Fut7Pro" });
   expect(trigger).toHaveAttribute("aria-expanded", "false");
-  expect(trigger.closest("div")).toHaveClass("md:block");
+  expect(trigger.closest("div")).toHaveClass("hidden", "lg:block");
+  expect(trigger.closest("div")).not.toHaveClass("md:block");
   fireEvent.click(trigger);
   expect(trigger).toHaveAttribute("aria-expanded", "true");
   const menu = screen.getByRole("navigation", { name: "Ajuda Fut7Pro" });

@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaBell, FaEnvelope, FaUserPlus, FaUser, FaSignOutAlt, FaBars } from "react-icons/fa";
+import { FaBell, FaEnvelope, FaUserPlus, FaUser, FaBars } from "react-icons/fa";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import type { IconType } from "react-icons";
 import { useMe } from "@/hooks/useMe";
-import { buildPublicHref } from "@/utils/public-links";
 import { useBranding } from "@/hooks/useBranding";
 import useSWR from "swr";
 import { setStoredTenantSlug } from "@/utils/active-tenant";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { DEFAULT_ADMIN_AVATAR, getAvatarSrc } from "@/utils/avatar";
 import { useRacha } from "@/context/RachaContext";
+import { getAdminProfileSections } from "./adminProfileNavigation";
+import { LogOut } from "lucide-react";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
@@ -102,12 +103,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
     DEFAULT_ADMIN_AVATAR
   );
   const tenantSlug = contextTenantSlug || me?.tenant?.tenantSlug || null;
-  const rachaPerfilHref = tenantSlug ? buildPublicHref("/perfil", tenantSlug) : null;
   const athletePublicKey = me?.athlete?.slug || me?.athlete?.id || null;
-  const publicProfileHref =
-    tenantSlug && athletePublicKey
-      ? buildPublicHref(`/atletas/${athletePublicKey}`, tenantSlug)
-      : null;
+  const profileSections = getAdminProfileSections({
+    tenantSlug,
+    athleteKey: athletePublicKey,
+    canSwitchGroup: canSwitchRacha,
+  });
 
   useEffect(() => {
     if (!tenantSlug) return;
@@ -130,7 +131,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
       {/* MOBILE: Botão hamburguer */}
       <button
         onClick={onMenuClick}
-        className="md:hidden flex items-center justify-center mr-2 text-brand hover:bg-zinc-800 p-2 rounded-full"
+        className="lg:hidden flex items-center justify-center mr-2 text-brand hover:bg-zinc-800 p-2 rounded-full"
         aria-label="Abrir menu"
         tabIndex={0}
         data-testid="admin-header-open-menu"
@@ -168,7 +169,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               key={item.href}
               href={item.href}
               aria-label={item.label}
-              className="relative flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-800 transition"
+              className="relative hidden items-center gap-2 rounded px-2 py-1 transition hover:bg-zinc-800 sm:flex"
               tabIndex={0}
               data-testid={`admin-header-link-${slugifyTestId(item.href)}`}
             >
@@ -196,7 +197,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <>
             <Link
               href="/admin/mais"
-              className="flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 md:hidden"
+              className="flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 lg:hidden"
               aria-label="Abrir Mais"
             >
               <AvatarFut7Pro
@@ -210,7 +211,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </Link>
             <div
               ref={profileRef}
-              className="relative hidden md:block"
+              className="relative hidden lg:block"
               onBlur={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node)) {
                   setDropdownOpen(false);
@@ -233,12 +234,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 aria-controls="admin-profile-menu"
                 aria-expanded={dropdownOpen}
                 onClick={() => setDropdownOpen((open) => !open)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setDropdownOpen((open) => !open);
-                  }
-                }}
               >
                 <AvatarFut7Pro
                   src={displayAvatar}
@@ -248,7 +243,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   fallbackSrc={DEFAULT_ADMIN_AVATAR}
                   className="rounded-full border-2 border-brand"
                 />
-                <span className="text-brand-soft font-bold text-base hidden md:inline">
+                <span className="hidden max-w-32 truncate text-base font-bold text-brand-soft xl:inline">
                   {displayName}
                 </span>
               </button>
@@ -257,59 +252,79 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   ref={profileMenuRef}
                   id="admin-profile-menu"
                   aria-label="Menu do perfil"
-                  className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-60 py-2 z-50 flex flex-col"
+                  className="absolute right-0 top-12 z-50 flex max-h-[calc(100dvh-72px)] w-80 max-w-[calc(100vw-24px)] flex-col overflow-y-auto rounded-xl border border-white/15 bg-[#1b1d22] py-2 shadow-2xl"
                 >
-                  <Link
-                    href="/perfil"
-                    className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                    onClick={() => {
-                      if (tenantSlug) {
-                        setStoredTenantSlug(tenantSlug);
-                      }
-                      setDropdownOpen(false);
-                    }}
-                  >
-                    Perfil Global Fut7Pro
-                  </Link>
-                  {rachaPerfilHref && (
-                    <Link
-                      href={rachaPerfilHref}
-                      className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                      onClick={() => {
-                        if (tenantSlug) {
-                          setStoredTenantSlug(tenantSlug);
-                        }
-                        setDropdownOpen(false);
-                      }}
+                  <div className="flex items-center gap-3 border-b border-white/10 px-4 pb-3 pt-2">
+                    <AvatarFut7Pro
+                      src={displayAvatar}
+                      alt=""
+                      width={42}
+                      height={42}
+                      fallbackSrc={DEFAULT_ADMIN_AVATAR}
+                      className="shrink-0 rounded-full border border-brand"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-white" title={displayName}>
+                        {displayName}
+                      </p>
+                      <p
+                        className="truncate text-xs text-zinc-400"
+                        title={session?.user?.email || undefined}
+                      >
+                        {session?.user?.email}
+                      </p>
+                    </div>
+                  </div>
+                  {profileSections.map((section) => (
+                    <div
+                      key={section.id}
+                      className="border-b border-white/10 px-2 py-2 last:border-0"
                     >
-                      Meu perfil neste grupo
-                    </Link>
-                  )}
-                  {canSwitchRacha && (
-                    <Link
-                      href="/admin/selecionar-racha"
-                      className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Trocar de grupo
-                    </Link>
-                  )}
-                  {publicProfileHref && (
-                    <Link
-                      href={publicProfileHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Ver perfil público
-                    </Link>
-                  )}
+                      <p className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-soft">
+                        {section.title}
+                      </p>
+                      {section.items.map((item) => {
+                        const active =
+                          pathname === item.href || pathname.startsWith(`${item.href}/`);
+                        return (
+                          <Link
+                            key={item.id}
+                            href={item.href}
+                            target={"external" in item && item.external ? "_blank" : undefined}
+                            rel={
+                              "external" in item && item.external
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
+                            aria-current={active ? "page" : undefined}
+                            className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-100 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 ${active ? "bg-white/10 text-yellow-300" : ""}`}
+                            onClick={() => {
+                              if (
+                                (item.id === "global-profile" || item.id === "group-profile") &&
+                                tenantSlug
+                              ) {
+                                setStoredTenantSlug(tenantSlug);
+                              }
+                              setDropdownOpen(false);
+                            }}
+                          >
+                            <item.icon
+                              size={18}
+                              aria-hidden="true"
+                              className="shrink-0 text-yellow-300"
+                            />
+                            <span className="min-w-0 flex-1">{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ))}
                   <button
-                    className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-zinc-800 text-base"
+                    type="button"
+                    className="mx-2 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-300 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
                     onClick={() => signOut({ callbackUrl: "/admin/login" })}
                   >
-                    <FaSignOutAlt size={18} />
+                    <LogOut size={18} aria-hidden="true" />
                     Sair da conta
                   </button>
                 </nav>

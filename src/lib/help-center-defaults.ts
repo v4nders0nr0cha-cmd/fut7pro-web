@@ -261,7 +261,7 @@ export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
     destaque: true,
     ordem: 80,
     conteudo:
-      "Acesse Financeiro > Planos & Limites para acompanhar a assinatura do grupo.\n- Confira o plano atual, o status financeiro e o status de acesso.\n- Veja o período do plano e a data do próximo vencimento.\n- Use Ver faturas para consultar as cobranças disponíveis.\n- Se houver pagamento pendente, siga as orientações de regularização exibidas nessa página.",
+      "Acesse seu perfil > Assinatura Fut7Pro > Plano e cobrança para acompanhar a assinatura do grupo.\n- Confira o plano atual, o status financeiro e o status de acesso.\n- Veja o período do plano e a data do próximo vencimento.\n- Use Ver faturas para consultar as cobranças disponíveis.\n- Se houver pagamento pendente, siga as orientações de regularização exibidas nessa página.",
     tags: ["assinatura", "plano", "bloqueio"],
   },
   {
