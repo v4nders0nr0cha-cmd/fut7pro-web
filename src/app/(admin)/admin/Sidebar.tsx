@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { MdDashboard, MdPerson, MdSettings, MdPeopleAlt, MdPalette } from "react-icons/md";
 import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol, FaExternalLinkAlt } from "react-icons/fa";
 import Image from "next/image";
@@ -200,11 +201,11 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                 >
                   <item.icon className="text-brand text-lg mr-3" />
                   <span className="flex-1 font-semibold">{item.label}</span>
-                  <span
-                    className={`transition-transform transform duration-200 ${open === item.label ? "rotate-90" : ""}`}
-                  >
-                    ▶
-                  </span>
+                  <ChevronRight
+                    size={17}
+                    aria-hidden="true"
+                    className={`ml-2 shrink-0 transition-transform duration-200 ${open === item.label ? "rotate-90 text-yellow-200" : "text-zinc-300"}`}
+                  />
                 </button>
                 {open === item.label && (
                   <ul className="ml-6 mt-1 space-y-1 border-l border-brand-strong pl-3">
