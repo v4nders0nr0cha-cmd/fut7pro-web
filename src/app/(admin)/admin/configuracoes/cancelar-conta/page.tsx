@@ -128,8 +128,8 @@ export default function CancelarContaPage() {
           <FaUserSlash /> Cancelar conta do racha
         </h1>
         <p className="text-sm text-zinc-300 mb-6">
-          Esta página cancela apenas o racha ativo ({slug || "sem slug"}). Sua conta global de
-          usuário no Fut7Pro não será excluída.
+          Esta página cancela apenas o grupo selecionado ({slug || "endereço indisponível"}). Sua
+          conta global de usuário no Fut7Pro não será excluída.
         </p>
 
         {!isPresidente ? (

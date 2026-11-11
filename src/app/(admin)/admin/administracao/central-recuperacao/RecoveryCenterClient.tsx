@@ -519,7 +519,7 @@ export default function RecoveryCenterClient() {
         open={Boolean(selectedItem)}
         title="Confirmar restauração"
         eyebrow="Central de Recuperação"
-        description="O Fut7Pro validará novamente o prazo, o tenant e possíveis conflitos antes de concluir."
+        description="O Fut7Pro validará novamente o prazo, o grupo selecionado e possíveis conflitos antes de concluir."
         confirmLabel="Confirmar restauração"
         cancelLabel="Cancelar"
         loading={restoring}

@@ -424,7 +424,7 @@ export default function LogoDoRachaPage() {
           impactItems={[
             "Links antigos divulgados podem deixar de funcionar dependendo da configuração atual.",
             "O novo endereço será usado no site público e nas páginas compartilhadas.",
-            "Confirme apenas se o novo slug já foi revisado.",
+            "Confirme apenas depois de revisar o novo endereço.",
           ]}
           onClose={() => setSlugConfirmOpen(false)}
           onConfirm={() => {

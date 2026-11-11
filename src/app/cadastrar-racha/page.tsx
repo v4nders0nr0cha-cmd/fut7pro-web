@@ -1271,7 +1271,7 @@ function CadastroRachaPageContent() {
       nextErrors.rachaNome = "Nome minimo de 3 caracteres.";
     const slug = rachaSlug.trim().toLowerCase();
     if (!slug) {
-      nextErrors.rachaSlug = "Informe o slug.";
+      nextErrors.rachaSlug = "Informe o endereço do grupo.";
     } else if (!SLUG_REGEX.test(slug) || RESERVED_SLUGS.has(slug)) {
       nextErrors.rachaSlug = "Slug invalido ou reservado.";
     } else if (slugStatus === "unavailable") {
@@ -2220,7 +2220,7 @@ function CadastroRachaPageContent() {
                     </label>
 
                     <div className="text-xs text-gray-400">
-                      Link público: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
+                      Link público: https://app.fut7pro.com.br/{rachaSlug || "endereco-do-grupo"}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
