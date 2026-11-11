@@ -147,6 +147,12 @@ async function fetchJson(url, token) {
   return response.json();
 }
 
+function publishedVersions(source) {
+  const list = String(source).match(/export const CANONICAL_CHANGELOG_ENTRIES[^=]*=\s*\[([\s\S]*?)\n\];/);
+  if (!list) return new Set();
+  return new Set([...list[1].matchAll(/\bversion:\s*"([^"]+)"/g)].map((match) => match[1]));
+}
+
 async function validateBackendChangelogPr(reference, options = {}) {
   if (!reference || !Number.isInteger(reference.number) || reference.number <= 0) {
     return { ok: false, reason: "Changelog PR invalido ou ausente." };
@@ -166,6 +172,10 @@ async function validateBackendChangelogPr(reference, options = {}) {
         `https://api.github.com/repos/${ref.repo}/pulls/${ref.number}/files?per_page=100&page=${page}`,
         token
       ));
+  const fetchSource = options.fetchSource || (async (sha) => {
+    const data = await fetchJson(`https://api.github.com/repos/${repo}/contents/${expectedPath}?ref=${sha}`, token);
+    return Buffer.from(data.content, "base64").toString("utf8");
+  });
 
   if (repo.toLowerCase() !== expectedRepo.toLowerCase()) {
     return {
@@ -202,6 +212,16 @@ async function validateBackendChangelogPr(reference, options = {}) {
         ok: false,
         reason: `Changelog PR #${reference.number} nao altera ${expectedPath}.`,
       };
+    }
+
+    if (!pr.base?.sha || !pr.head?.sha) {
+      return { ok: false, reason: "Changelog PR sem base e HEAD verificáveis." };
+    }
+    const [before, after] = await Promise.all([fetchSource(pr.base.sha), fetchSource(pr.head.sha)]);
+    const oldVersions = publishedVersions(before);
+    const newVersions = publishedVersions(after);
+    if (![...newVersions].some((version) => !oldVersions.has(version))) {
+      return { ok: false, reason: "O Changelog PR contém apenas registro pendente; nenhuma versão foi publicada." };
     }
 
     return {
@@ -338,5 +358,6 @@ module.exports = {
   parseChangedFiles,
   parseChangelogPrReference,
   parseLabels,
+  publishedVersions,
   validateBackendChangelogPr,
 };
