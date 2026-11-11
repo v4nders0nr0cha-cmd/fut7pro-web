@@ -42,7 +42,7 @@ export default function MelhoresPorPosicaoPage() {
         <title>Melhores por Posição | Estatísticas</title>
         <meta
           name="description"
-          content="Veja os destaques do grupo por posição: atacantes, meias, zagueiros e goleiros nas partidas registradas."
+          content="Veja nossos destaques por posição: atacantes, meias, zagueiros e goleiros nas partidas registradas."
         />
         <meta
           name="keywords"

@@ -793,7 +793,7 @@ export default function GlobalPerfilClient() {
                 <strong>
                   {requestJoinGroupName === "este grupo"
                     ? "neste grupo"
-                    : `no ${requestJoinGroupName}`}
+                    : `no grupo de futebol ${requestJoinGroupName}`}
                 </strong>
                 .
               </p>

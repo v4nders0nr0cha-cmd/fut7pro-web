@@ -102,7 +102,7 @@ export default function NotificacoesPage() {
         await acceptInvite(invite.id);
         router.refresh();
         setInviteFeedback(
-          `Convite aceito. Você agora é ${ROLE_LABELS[invite.role]} de ${invite.tenantName}.`
+          `Convite aceito. Você agora é ${ROLE_LABELS[invite.role]} no grupo de futebol ${invite.tenantName}.`
         );
       } else {
         await rejectInvite(invite.id);
@@ -142,8 +142,10 @@ export default function NotificacoesPage() {
     return (
       <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold text-brand mb-2">Notificações do grupo</h1>
-          <p className="text-gray-300 mb-4">Entre para ver notificações e avisos do seu grupo.</p>
+          <h1 className="text-2xl font-bold text-brand mb-2">Notificações</h1>
+          <p className="text-gray-300 mb-4">
+            Entre para ver suas notificações e avisos importantes.
+          </p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/entrar"))}
@@ -159,7 +161,7 @@ export default function NotificacoesPage() {
   return (
     <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
       <h1 className="text-2xl font-bold text-brand mb-5 flex items-center gap-2">
-        <FaBell /> Notificações do grupo
+        <FaBell /> Notificações
       </h1>
       {(invitesLoading || invites.length > 0 || invitesError) && (
         <section className="mb-6" aria-labelledby="admin-invites-title">

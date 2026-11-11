@@ -39,8 +39,9 @@ describe("PublicSlugLayout helpers", () => {
       const history = resolvePublicPageSeo("/grupo/sobre-nos/nossa-historia", tenantName);
 
       expect(home.title).toContain(tenantName);
-      expect(home.description).toContain(`do grupo ${tenantName}`);
-      expect(history.description).toContain(`do grupo ${tenantName}`);
+      expect(home.description).toContain(`${tenantName}:`);
+      expect(history.description).toContain(`${tenantName}:`);
+      expect(home.description).not.toContain(`do grupo ${tenantName}`);
       expect(home).not.toHaveProperty("noindex");
     }
   );

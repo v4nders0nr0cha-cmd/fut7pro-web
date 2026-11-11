@@ -168,7 +168,7 @@ describe("EntrarClient unified athlete auth", () => {
     render(<EntrarClient />);
 
     expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste grupo" }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(

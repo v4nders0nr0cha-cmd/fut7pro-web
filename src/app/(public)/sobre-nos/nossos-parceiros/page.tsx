@@ -16,7 +16,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
 
 const resolveCategoria = (ramo?: string | null) => {
   const trimmed = ramo?.trim();
-  if (!trimmed) return "Parceiro do grupo";
+  if (!trimmed) return "Parceiro do nosso futebol";
   const normalized = trimmed.toLowerCase();
   if (
     normalized === "plano basic" ||
@@ -28,7 +28,7 @@ const resolveCategoria = (ramo?: string | null) => {
     normalized === "pro" ||
     normalized === "naming rights"
   ) {
-    return "Parceiro do grupo";
+    return "Parceiro do nosso futebol";
   }
   return trimmed;
 };
@@ -48,8 +48,7 @@ export default function NossosParceiros() {
         nome: sponsor.name,
         logo: sponsor.logoUrl,
         categoria: resolveCategoria(sponsor.ramo),
-        descricao:
-          sponsor.about || sponsor.benefit || sponsor.coupon || "Patrocinador parceiro do grupo.",
+        descricao: sponsor.about || sponsor.benefit || sponsor.coupon || "Apoia nosso futebol.",
         link: sponsor.link,
         destaque: sponsor.tier === "PRO" || sponsor.showOnFooter,
         status: sponsor.status,
@@ -74,7 +73,7 @@ export default function NossosParceiros() {
   }, [parceiros, slug]);
 
   const seoTitle = `Nossos Parceiros | ${brandName}`;
-  const seoDescription = `Conheça os patrocinadores e apoiadores do grupo ${brandName}.`;
+  const seoDescription = `${brandName}: conheça os parceiros e patrocinadores que apoiam nosso futebol.`;
   const seoUrl = `${APP_URL}/${slug}/sobre-nos/nossos-parceiros`;
 
   return (
@@ -98,7 +97,7 @@ export default function NossosParceiros() {
             Nossos Parceiros
           </h1>
           <p className="text-center text-base md:text-lg text-neutral-200 mb-10 max-w-2xl font-medium">
-            Conheça as empresas e pessoas que apoiam o nosso grupo. <br />
+            Conheça quem apoia nosso futebol. <br />
             Visite os parceiros e saiba mais sobre o trabalho de cada um.
           </p>
 
@@ -168,7 +167,7 @@ export default function NossosParceiros() {
           )}
 
           <p className="text-center text-neutral-400 text-sm md:text-base mb-10 max-w-2xl">
-            Quer apoiar nosso grupo e fazer parte do futebol entre amigos?
+            Quer apoiar nosso futebol e fazer parte dessa história?
             <br />
             Fale com a administração e saiba como ser um parceiro.
           </p>

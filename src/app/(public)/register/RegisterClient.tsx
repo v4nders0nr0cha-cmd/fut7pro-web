@@ -514,21 +514,20 @@ export default function RegisterClient() {
           return;
         }
         if (errorCode === "ALREADY_MEMBER") {
-          setAccountModalMessage(`Você já faz parte de ${nomeDoRacha}. Entre para acessar.`);
+          setAccountModalMessage("Você já participa deste grupo. Entre para acessar.");
           setAccountModalOpen(true);
           return;
         }
         if (errorCode === "ATHLETE_ALREADY_REGISTERED") {
           setAccountModalMessage(
-            `Já existe um perfil de atleta com este e-mail em ${nomeDoRacha}. Entre com sua conta para solicitar entrada.`
+            "Já existe um perfil de atleta com este e-mail neste grupo. Entre com sua conta para solicitar acesso."
           );
           setAccountModalOpen(true);
           return;
         }
         if (errorCode === "ACCOUNT_EXISTS") {
           setAccountModalMessage(
-            message ||
-              `Sua conta Fut7Pro já existe. Falta apenas solicitar entrada em ${nomeDoRacha}.`
+            message || "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada neste grupo."
           );
           setAccountModalOpen(true);
           return;
@@ -598,7 +597,7 @@ export default function RegisterClient() {
 
       clearPublicAuthContext();
       setSucesso(
-        `Solicitação enviada. Seu pedido para entrar em ${nomeDoRacha} foi enviado aos administradores.`
+        "Solicitação enviada. Seu pedido para participar deste grupo foi enviado à nossa administração."
       );
       router.replace(redirectTo);
     } catch (error) {
@@ -657,7 +656,7 @@ export default function RegisterClient() {
             <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Ao concluir, enviaremos sua solicitação de entrada em {nomeDoRacha}.
+            Ao concluir, enviaremos sua solicitação de entrada neste grupo.
           </p>
         </div>
         {isRegistrationBlocked ? (
@@ -676,8 +675,8 @@ export default function RegisterClient() {
 
         <h1 className="text-xl font-bold text-white text-center">Crie sua Conta Fut7Pro</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Complete seus dados para continuar. Ao finalizar, seu pedido para entrar em {nomeDoRacha}{" "}
-          será enviado aos administradores.
+          Complete seus dados para continuar. Ao finalizar, seu pedido para participar deste grupo
+          será enviado à nossa administração.
         </p>
 
         {!isAuthenticated && prefilledFromEntrar ? (
@@ -713,7 +712,7 @@ export default function RegisterClient() {
         {isAuthenticated ? (
           <div className="mt-5 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-200">
             {isGoogleSession
-              ? `Complete sua Conta Fut7Pro para continuar em ${nomeDoRacha}.`
+              ? "Complete sua Conta Fut7Pro para continuar neste grupo."
               : "Preencha os dados mínimos da sua Conta Fut7Pro."}
             {sessionUser?.email ? (
               <div className="mt-1 text-xs text-gray-400">Conta: {sessionUser.email}</div>
@@ -946,16 +945,16 @@ export default function RegisterClient() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-white">
-                  Aparecer na lista de aniversariantes do grupo
+                  Aparecer na nossa lista de aniversariantes
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
-                  Se desligar, seu nome não aparece na página pública de aniversariantes do grupo.
+                  Se desligar, seu nome não aparece na página pública de aniversariantes.
                 </p>
               </div>
               <Switch
                 checked={!ocultarNascimento}
                 onCheckedChange={(checked) => setOcultarNascimento(!checked)}
-                ariaLabel="Aparecer na lista de aniversariantes do grupo"
+                ariaLabel="Aparecer na nossa lista de aniversariantes"
               />
             </div>
           </div>
@@ -1037,7 +1036,7 @@ export default function RegisterClient() {
                 </Dialog.Title>
                 <p className="mt-3 text-sm text-gray-200">
                   {accountModalMessage ||
-                    `Sua conta Fut7Pro já existe. Falta apenas solicitar entrada em ${nomeDoRacha}.`}
+                    "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada neste grupo."}
                 </p>
 
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">

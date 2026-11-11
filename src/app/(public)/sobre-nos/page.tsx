@@ -25,13 +25,13 @@ export default function SobreNosPage() {
       href: "/sobre-nos/nossa-historia",
       icon: <FaBookOpen className="text-3xl text-brand" />,
       title: "Nossa História",
-      desc: "Conheça a trajetória do grupo, suas lembranças e seus momentos marcantes.",
+      desc: "Relembre os momentos que marcaram nossa história dentro e fora de campo.",
     },
     {
       href: "/sobre-nos/estatuto",
       icon: <FaGavel className="text-3xl text-brand" />,
       title: "Estatuto",
-      desc: "Conheça as regras que ajudam a organizar os jogos e a convivência do grupo.",
+      desc: "Conheça as regras que orientam nossos jogos e a convivência dentro e fora de campo.",
     },
     {
       href: "/sobre-nos/aniversariantes",
@@ -43,13 +43,13 @@ export default function SobreNosPage() {
       href: "/sobre-nos/nossos-parceiros",
       icon: <FaHandshake className="text-3xl text-brand" />,
       title: "Nossos Parceiros",
-      desc: "Conheça os patrocinadores e parceiros que apoiam o grupo.",
+      desc: "Conheça os parceiros e patrocinadores que apoiam nosso futebol.",
     },
     {
       href: "/sobre-nos/contatos",
       icon: <FaPhoneAlt className="text-3xl text-brand" />,
       title: "Contatos",
-      desc: "Encontre os canais para falar com os responsáveis pelo grupo.",
+      desc: "Entre em contato com nossa administração.",
     },
   ];
 
@@ -58,7 +58,7 @@ export default function SobreNosPage() {
       href: "/sobre-nos/prestacao-de-contas",
       icon: <FaFileInvoiceDollar className="text-3xl text-brand" />,
       title: "Prestação de Contas",
-      desc: "Acompanhe as receitas e despesas compartilhadas pelo grupo.",
+      desc: "Acompanhe as receitas e despesas que compartilhamos com você.",
     });
   }
 
@@ -68,7 +68,7 @@ export default function SobreNosPage() {
         <title>Sobre Nós | {racha?.nome || rachaConfig.nome}</title>
         <meta
           name="description"
-          content="Conheça a história, as regras, os aniversariantes, os parceiros e os canais de contato do grupo."
+          content="Conheça nossa história, as regras, os aniversariantes, os parceiros e os canais de contato."
         />
         <meta
           name="keywords"
@@ -80,8 +80,8 @@ export default function SobreNosPage() {
           Sobre Nós
         </h1>
         <p className="mb-10 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
-          Aqui você conhece melhor o grupo: sua história, as regras, os aniversariantes, os
-          parceiros e os canais de contato.
+          Aqui você conhece melhor nossa história, as regras, os aniversariantes, os parceiros e os
+          canais de contato.
         </p>
         <section className="w-full max-w-5xl">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

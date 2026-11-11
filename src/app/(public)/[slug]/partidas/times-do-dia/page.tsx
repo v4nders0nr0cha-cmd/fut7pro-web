@@ -16,7 +16,7 @@ export async function generateMetadata(props: TimesDoDiaPageProps): Promise<Meta
   const slug = params.slug;
   const title = `Times do Dia | ${slug} | Fut7Pro`;
   const description =
-    "Veja a escalação dos Times do Dia, os destaques e os confrontos do grupo no Fut7Pro.";
+    "Veja a escalação dos Times do Dia, os destaques e os confrontos da rodada no Fut7Pro.";
   const canonical = `${APP_URL}/${slug}/partidas/times-do-dia`;
 
   return {

@@ -24,6 +24,11 @@ describe("SobreNosPage", () => {
     render(<SobreNosPage />);
 
     expect(screen.getByRole("heading", { name: "Sobre Nós" })).toBeInTheDocument();
+    expect(screen.getByText(/Aqui você conhece melhor nossa história/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Relembre os momentos que marcaram nossa história/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Entre em contato com nossa administração/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Nossa História/i })).toHaveAttribute(
       "href",
       "/pelada-da-sexta/sobre-nos/nossa-historia"
@@ -46,5 +51,6 @@ describe("SobreNosPage", () => {
       "href",
       "/pelada-da-sexta/sobre-nos/prestacao-de-contas"
     );
+    expect(screen.getByText(/receitas e despesas que compartilhamos com você/)).toBeInTheDocument();
   });
 });
