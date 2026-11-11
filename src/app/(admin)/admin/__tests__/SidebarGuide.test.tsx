@@ -33,6 +33,17 @@ it("remove o mesmo item do menu móvel", () => {
   expect(screen.queryByRole("link", { name: "Guia Fut7Pro" })).not.toBeInTheDocument();
 });
 
+it.each([false, true])("mantém Comunicação sem Ajuda ou Suporte no menu móvel=%s", (mobile) => {
+  render(<Sidebar mobile={mobile} isOpen={mobile} />);
+  fireEvent.click(screen.getByTestId("admin-sidebar-toggle-comunicacao"));
+  for (const label of ["Notificações", "Comunicados", "Enquetes", "Sugestões"]) {
+    expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
+  }
+  expect(screen.queryByRole("link", { name: "Ajuda" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Suporte" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Guia Interativo" })).not.toBeInTheDocument();
+});
+
 it.each([false, true])("usa um chevron vetorial no menu %s ao abrir e fechar", (mobile) => {
   render(<Sidebar mobile={mobile} isOpen={mobile} />);
   const toggle = screen.getByTestId("admin-sidebar-toggle-jogadores");

@@ -19,6 +19,11 @@ jest.mock("@/utils/active-tenant", () => ({ setStoredTenantSlug: jest.fn() }));
 
 it("organiza conta, ajuda e saída preservando contexto e destinos existentes", () => {
   render(<MoreClient />);
+  expect(screen.getAllByRole("heading", { name: "Mais" })).toHaveLength(2);
+  expect(screen.getAllByRole("heading", { name: "Mais" })[1]).toHaveClass("sr-only");
+  for (const category of ["Minha conta", "Ajuda e orientação", "Conta"]) {
+    expect(screen.getByRole("heading", { name: category })).toBeInTheDocument();
+  }
   expect(screen.getByRole("link", { name: /Perfil Global Fut7Pro/i })).toHaveAttribute(
     "href",
     "/perfil"
