@@ -102,6 +102,7 @@ function normalizeMatch(raw: any): PublicMatch {
 
   return {
     id: raw?.id ?? `match-${date}`,
+    resultVersion: Number.isSafeInteger(raw?.resultVersion) ? raw.resultVersion : 0,
     date,
     location: raw?.location ?? raw?.local ?? null,
     status: raw?.status,
