@@ -17,6 +17,7 @@ jobs:
   mobile-smoke:
     name: Mobile Smoke Gate
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 60
 
     steps:
@@ -56,9 +57,6 @@ jobs:
             echo "DISABLE_WEB_DIRECT_DB=true"
             echo "NODE_ENV=test"
           } > .env.local
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium webkit
 
       - name: Run mobile smoke gate (mandatory)
         env:

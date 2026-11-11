@@ -17,6 +17,7 @@ jobs:
   superadmin-legacy-security:
     name: SuperAdmin Legacy Security Smoke
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 25
 
     steps:
@@ -53,9 +54,6 @@ jobs:
             echo "NODE_ENV=test"
           } > .env.local
 
-      - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
-
       - name: Run SuperAdmin legacy security smoke (mandatory)
         env:
           PLAYWRIGHT_WEB_SERVER: "1"
@@ -76,6 +74,7 @@ jobs:
   admin-smoke:
     name: Admin Smoke Navigation
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 45
 
     steps:
@@ -144,9 +143,6 @@ jobs:
             echo "DISABLE_WEB_DIRECT_DB=true"
             echo "NODE_ENV=test"
           } > .env.local
-
-      - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run admin smoke (mandatory)
         env:
