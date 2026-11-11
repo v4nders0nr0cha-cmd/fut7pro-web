@@ -688,7 +688,7 @@ type MatchModalProps = {
   onDiscard: () => void;
 };
 
-function MatchModal({
+export function MatchModal({
   match,
   draftScope,
   status,
@@ -710,6 +710,7 @@ function MatchModal({
   const [goalSaveInFlight, setGoalSaveInFlight] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState(Boolean(initialDraft?.conflict));
+  const [clientUpdateRequired, setClientUpdateRequired] = useState(false);
   const [serverResult, setServerResult] = useState<PublicMatch | null>(null);
   const [locked, setLocked] = useState((initialDraft?.status ?? status) === "finished");
   const [scoreMode, setScoreMode] = useState(false);
@@ -846,6 +847,7 @@ function MatchModal({
       statusOverride?: MatchStatus;
     }) => {
       if (options?.silent && lastSavedKey.current === saveKey) return;
+      if (clientUpdateRequired) return;
       if (conflict || (options?.silent && manualSaveOnlyRef.current)) return;
       if (savingRef.current) return;
 
@@ -902,6 +904,14 @@ function MatchModal({
         });
 
         if (!response.ok) {
+          if (response.status === 428) {
+            manualSaveOnlyRef.current = true;
+            setClientUpdateRequired(true);
+            setError(
+              "Esta aba usa uma versão antiga do Fut7Pro. O resultado não foi gravado. Anote suas alterações antes de atualizar a página; depois confira se o rascunho foi recuperado."
+            );
+            return;
+          }
           if (response.status === 409) {
             setConflict(true);
             manualSaveOnlyRef.current = true;
@@ -944,6 +954,7 @@ function MatchModal({
     },
     [
       conflict,
+      clientUpdateRequired,
       draftScope,
       localStatus,
       match.id,
@@ -959,7 +970,7 @@ function MatchModal({
   useEffect(() => {
     if (!AUTO_SAVE_ENABLED) return;
     if (locked) return;
-    if (conflict || manualSaveOnlyRef.current) return;
+    if (conflict || clientUpdateRequired || manualSaveOnlyRef.current) return;
     if (isSaving) return;
     if (lastAttemptedKey.current === saveKey) return;
     if (!didMount.current) {
@@ -971,18 +982,34 @@ function MatchModal({
     }, 700);
 
     return () => clearTimeout(timeout);
-  }, [conflict, events, localStatus, locked, isSaving, persistMatch, saveKey]);
+  }, [
+    conflict,
+    clientUpdateRequired,
+    events,
+    localStatus,
+    locked,
+    isSaving,
+    persistMatch,
+    saveKey,
+  ]);
 
   useEffect(() => {
     const retryAfterRecovery = () => {
-      if (locked || conflict || savingRef.current || lastSavedKey.current === saveKey) return;
+      if (
+        locked ||
+        conflict ||
+        clientUpdateRequired ||
+        savingRef.current ||
+        lastSavedKey.current === saveKey
+      )
+        return;
       if (lastAttemptedKey.current !== saveKey || recoveryRetriesRef.current >= 2) return;
       recoveryRetriesRef.current += 1;
       void persistMatch({ silent: true });
     };
     window.addEventListener("fut7pro:admin-session-recovered", retryAfterRecovery);
     return () => window.removeEventListener("fut7pro:admin-session-recovered", retryAfterRecovery);
-  }, [conflict, locked, persistMatch, saveKey]);
+  }, [conflict, clientUpdateRequired, locked, persistMatch, saveKey]);
 
   const resolveConflict = async (keepDraft: boolean) => {
     setIsSaving(true);
@@ -1376,7 +1403,7 @@ function MatchModal({
           <button
             type="button"
             onClick={() => persistMatch({ closeOnSuccess: true })}
-            disabled={isSaving || conflict}
+            disabled={isSaving || conflict || clientUpdateRequired}
             className="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
           >
             {manualSaveOnlyRef.current
@@ -1389,7 +1416,7 @@ function MatchModal({
             <button
               type="button"
               onClick={handleFinalize}
-              disabled={isSaving || conflict}
+              disabled={isSaving || conflict || clientUpdateRequired}
               className="flex-1 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
             >
               Finalizar partida

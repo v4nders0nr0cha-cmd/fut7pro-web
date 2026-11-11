@@ -812,6 +812,11 @@ function PartidaClassicaClient() {
       });
 
       if (!updateResponse.ok) {
+        if (updateResponse.status === 428) {
+          throw new Error(
+            "A partida foi criada, mas o resultado não foi gravado. Anote o placar e as participações antes de atualizar a aplicação; confira a partida criada para evitar duplicação."
+          );
+        }
         const body = await updateResponse.text();
         throw new Error(body || "Falha ao registrar presencas da partida");
       }

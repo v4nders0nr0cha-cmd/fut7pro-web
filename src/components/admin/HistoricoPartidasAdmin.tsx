@@ -553,6 +553,11 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
       });
 
       if (!response.ok) {
+        if (response.status === 428) {
+          throw new Error(
+            "Esta aba usa uma versão antiga do Fut7Pro. O resultado não foi gravado. Anote suas alterações antes de atualizar a página."
+          );
+        }
         const body = await response.text();
         throw new Error(body || "Falha ao salvar resultado");
       }
