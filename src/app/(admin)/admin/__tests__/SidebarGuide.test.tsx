@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import Sidebar from "../Sidebar";
 import { useMe } from "@/hooks/useMe";
 
@@ -31,4 +31,25 @@ it("remove o Guia da navegação lateral principal", () => {
 it("remove o mesmo item do menu móvel", () => {
   render(<Sidebar mobile isOpen />);
   expect(screen.queryByRole("link", { name: "Guia Fut7Pro" })).not.toBeInTheDocument();
+});
+
+it.each([false, true])("usa um chevron vetorial no menu %s ao abrir e fechar", (mobile) => {
+  render(<Sidebar mobile={mobile} isOpen={mobile} />);
+  const toggle = screen.getByTestId("admin-sidebar-toggle-jogadores");
+  const chevron = toggle.querySelector("svg.lucide-chevron-right");
+
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(chevron).toHaveAttribute("aria-hidden", "true");
+  expect(chevron).toHaveClass("text-zinc-300");
+  expect(toggle).not.toHaveTextContent("▶");
+
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(chevron).toHaveClass("rotate-90", "text-yellow-200");
+  expect(screen.getByRole("link", { name: "Listar/Cadastrar" })).toBeInTheDocument();
+
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(chevron).not.toHaveClass("rotate-90");
+  expect(screen.queryByRole("link", { name: "Listar/Cadastrar" })).not.toBeInTheDocument();
 });

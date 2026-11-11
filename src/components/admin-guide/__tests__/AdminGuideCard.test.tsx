@@ -204,8 +204,11 @@ it("não mostra dispensa redundante ou próximo passo após concluir o primeiro 
     expect(document.querySelector(link.getAttribute("href")!)).toBeInTheDocument();
     fireEvent.click(link);
     const button = screen.getByRole("button", { name: new RegExp(label) });
+    const panel = button.closest("section");
+    const content = document.getElementById(button.getAttribute("aria-controls")!);
     expect(button).toHaveAttribute("aria-expanded", "true");
-    expect(document.getElementById(button.getAttribute("aria-controls")!)).toBeInTheDocument();
+    expect(panel).toHaveClass("border-yellow-400/30");
+    expect(content).toHaveClass("border-t", "bg-[#2B313B]", "rounded-b-xl");
     if (label === "Preparação do grupo") {
       expect(
         screen.getByRole("heading", { name: "Configuração inicial do grupo" })
@@ -213,6 +216,8 @@ it("não mostra dispensa redundante ou próximo passo após concluir o primeiro 
     }
     fireEvent.click(button);
     expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(panel).toHaveClass("border-white/10");
+    expect(content).not.toHaveClass("bg-[#2B313B]");
   }
   expect(update).not.toHaveBeenCalled();
   expect(screen.getByRole("link", { name: "Organizar próximo jogo" })).toHaveAttribute(

@@ -61,13 +61,16 @@ function GuideTopicPanel({
     );
 
   return (
-    <section id={id} className="scroll-mt-24 rounded-xl border border-white/10 bg-[#23272F]">
+    <section
+      id={id}
+      className={`scroll-mt-24 rounded-xl border bg-[#23272F] ${expanded ? "border-yellow-400/30 shadow-lg shadow-black/10" : "border-white/10"}`}
+    >
       <button
         type="button"
         aria-expanded={expanded}
         aria-controls={`${id}-content`}
         onClick={onToggle}
-        className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-white hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+        className={`flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left text-white hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 ${expanded ? "rounded-t-xl" : "rounded-xl"}`}
       >
         <span>
           <strong className="block text-base">{topic.label}</strong>
@@ -81,7 +84,9 @@ function GuideTopicPanel({
       </button>
       <div
         id={`${id}-content`}
-        className={expanded ? "space-y-6 border-t border-white/10 p-4" : ""}
+        className={
+          expanded ? "space-y-6 rounded-b-xl border-t border-white/15 bg-[#2B313B] p-4 sm:p-5" : ""
+        }
       >
         {expanded && children}
       </div>
