@@ -148,7 +148,9 @@ async function fetchJson(url, token) {
 }
 
 function publishedVersions(source) {
-  const list = String(source).match(/export const CANONICAL_CHANGELOG_ENTRIES[^=]*=\s*\[([\s\S]*?)\n\];/);
+  const list = String(source).match(
+    /export const CANONICAL_CHANGELOG_ENTRIES[^=]*=\s*\[([\s\S]*?)\n\];/
+  );
   if (!list) return new Set();
   return new Set([...list[1].matchAll(/\bversion:\s*"([^"]+)"/g)].map((match) => match[1]));
 }
@@ -172,10 +174,15 @@ async function validateBackendChangelogPr(reference, options = {}) {
         `https://api.github.com/repos/${ref.repo}/pulls/${ref.number}/files?per_page=100&page=${page}`,
         token
       ));
-  const fetchSource = options.fetchSource || (async (sha) => {
-    const data = await fetchJson(`https://api.github.com/repos/${repo}/contents/${expectedPath}?ref=${sha}`, token);
-    return Buffer.from(data.content, "base64").toString("utf8");
-  });
+  const fetchSource =
+    options.fetchSource ||
+    (async (sha) => {
+      const data = await fetchJson(
+        `https://api.github.com/repos/${repo}/contents/${expectedPath}?ref=${sha}`,
+        token
+      );
+      return Buffer.from(data.content, "base64").toString("utf8");
+    });
 
   if (repo.toLowerCase() !== expectedRepo.toLowerCase()) {
     return {
@@ -221,7 +228,10 @@ async function validateBackendChangelogPr(reference, options = {}) {
     const oldVersions = publishedVersions(before);
     const newVersions = publishedVersions(after);
     if (![...newVersions].some((version) => !oldVersions.has(version))) {
-      return { ok: false, reason: "O Changelog PR contém apenas registro pendente; nenhuma versão foi publicada." };
+      return {
+        ok: false,
+        reason: "O Changelog PR contém apenas registro pendente; nenhuma versão foi publicada.",
+      };
     }
 
     return {

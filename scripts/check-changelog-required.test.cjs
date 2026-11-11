@@ -24,7 +24,8 @@ const confirmation = (sha = headSha) =>
   `Confirmação editorial do responsável: @${owner} revisou o diff do commit ${sha} e confirma que não há mudanças funcionais.`;
 const editorialBody = (sha = headSha) =>
   `${editorialDeclaration}\nMotivo do editorial-no-changelog: ${editorialReason}\n${confirmation(sha)}`;
-const source = (versions) => `export const CANONICAL_CHANGELOG_ENTRIES = [\n${versions.map((version) => `  { version: "${version}" },`).join("\n")}\n];`;
+const source = (versions) =>
+  `export const CANONICAL_CHANGELOG_ENTRIES = [\n${versions.map((version) => `  { version: "${version}" },`).join("\n")}\n];`;
 const publishedSource = async (sha) => source(sha === "base" ? ["old"] : ["new", "old"]);
 const evaluateEditorial = (options = {}) =>
   evaluateChangelogRequirement({
@@ -85,7 +86,13 @@ async function run() {
   result = await validateBackendChangelogPr(
     { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 201 },
     {
-      fetchPr: async () => ({ number: 201, state: "open", merged_at: null, base: { sha: "base" }, head: { sha: "head" } }),
+      fetchPr: async () => ({
+        number: 201,
+        state: "open",
+        merged_at: null,
+        base: { sha: "base" },
+        head: { sha: "head" },
+      }),
       fetchFilesPage: async () => [{ filename: "src/modules/changelog/changelog.entries.ts" }],
       fetchSource: publishedSource,
     }
@@ -95,7 +102,12 @@ async function run() {
   result = await validateBackendChangelogPr(
     { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 201 },
     {
-      fetchPr: async () => ({ number: 201, state: "open", base: { sha: "base" }, head: { sha: "head" } }),
+      fetchPr: async () => ({
+        number: 201,
+        state: "open",
+        base: { sha: "base" },
+        head: { sha: "head" },
+      }),
       fetchFilesPage: async () => [{ filename: "src/modules/changelog/changelog.entries.ts" }],
       fetchSource: async () => source(["old"]),
     }
@@ -127,7 +139,13 @@ async function run() {
   result = await validateBackendChangelogPr(
     { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 204 },
     {
-      fetchPr: async () => ({ number: 204, state: "open", merged_at: null, base: { sha: "base" }, head: { sha: "head" } }),
+      fetchPr: async () => ({
+        number: 204,
+        state: "open",
+        merged_at: null,
+        base: { sha: "base" },
+        head: { sha: "head" },
+      }),
       fetchSource: publishedSource,
       fetchFilesPage: async (_reference, page) => {
         if (page === 1) {
@@ -246,7 +264,13 @@ async function run() {
   result = await validateBackendChangelogPr(
     { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 205 },
     {
-      fetchPr: async () => ({ number: 205, state: "closed", merged_at: "2026-10-20T00:00:00Z", base: { sha: "base" }, head: { sha: "head" } }),
+      fetchPr: async () => ({
+        number: 205,
+        state: "closed",
+        merged_at: "2026-10-20T00:00:00Z",
+        base: { sha: "base" },
+        head: { sha: "head" },
+      }),
       fetchFilesPage: async () => [{ filename: "src/modules/changelog/changelog.entries.ts" }],
       fetchSource: publishedSource,
     }
