@@ -21,7 +21,7 @@ it("organiza conta, ajuda e saída preservando contexto e destinos existentes", 
   render(<MoreClient />);
   expect(screen.getAllByRole("heading", { name: "Mais" })).toHaveLength(2);
   expect(screen.getAllByRole("heading", { name: "Mais" })[1]).toHaveClass("sr-only");
-  for (const category of ["Minha conta", "Ajuda e orientação", "Conta"]) {
+  for (const category of ["Minha conta", "Assinatura Fut7Pro", "Ajuda e orientação", "Conta"]) {
     expect(screen.getByRole("heading", { name: category })).toBeInTheDocument();
   }
   expect(screen.getByRole("link", { name: /Perfil Global Fut7Pro/i })).toHaveAttribute(
@@ -39,6 +39,10 @@ it("organiza conta, ajuda e saída preservando contexto e destinos existentes", 
   expect(screen.getByRole("link", { name: /Ver perfil público/i })).toHaveAttribute(
     "href",
     "/seu-racha/atletas/felipe"
+  );
+  expect(screen.getByRole("link", { name: /Plano e cobrança/i })).toHaveAttribute(
+    "href",
+    "/admin/financeiro/planos-limites"
   );
   expect(screen.getByRole("link", { name: /Guia Interativo/i })).toHaveAttribute(
     "href",

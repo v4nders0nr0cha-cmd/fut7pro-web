@@ -57,7 +57,7 @@ export default function BottomMenuAdmin() {
   // SE NÃO LOGADO
   if (!isLoggedIn) {
     return (
-      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-center items-center px-1 py-2 md:hidden animate-slide-down">
+      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-center items-center px-1 py-2 lg:hidden animate-slide-down">
         <button
           type="button"
           onClick={() => router.push("/admin/login")}
@@ -73,7 +73,7 @@ export default function BottomMenuAdmin() {
 
   // SE LOGADO
   return (
-    <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:hidden animate-slide-down">
+    <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] lg:hidden animate-slide-down">
       {menu.map((item) => {
         const baseHref = item.href.split("#")[0];
         const isActive = pathname.startsWith(baseHref);

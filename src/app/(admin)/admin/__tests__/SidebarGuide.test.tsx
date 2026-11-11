@@ -33,6 +33,26 @@ it("remove o mesmo item do menu móvel", () => {
   expect(screen.queryByRole("link", { name: "Guia Fut7Pro" })).not.toBeInTheDocument();
 });
 
+it.each([false, true])("mantém finanças do grupo sem assinatura no menu móvel=%s", (mobile) => {
+  render(<Sidebar mobile={mobile} isOpen={mobile} />);
+  fireEvent.click(screen.getByTestId("admin-sidebar-toggle-financeiro"));
+  expect(screen.getByRole("link", { name: "Cobrança de Mensalistas" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Planos & Limites" })).not.toBeInTheDocument();
+});
+
+it("mantém Configurações do grupo restrito ao presidente", () => {
+  const view = render(<Sidebar />);
+  expect(screen.queryByRole("button", { name: "Configurações do grupo" })).not.toBeInTheDocument();
+  mockedUseMe.mockReturnValue({
+    me: {
+      tenant: { tenantSlug: "seu-racha" },
+      membership: { role: "PRESIDENTE", status: "APROVADO" },
+    },
+  });
+  view.rerender(<Sidebar />);
+  expect(screen.getByRole("button", { name: "Configurações do grupo" })).toBeInTheDocument();
+});
+
 it.each([false, true])("mantém Comunicação sem Ajuda ou Suporte no menu móvel=%s", (mobile) => {
   render(<Sidebar mobile={mobile} isOpen={mobile} />);
   fireEvent.click(screen.getByTestId("admin-sidebar-toggle-comunicacao"));

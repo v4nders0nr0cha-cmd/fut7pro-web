@@ -52,7 +52,6 @@ const menu = [
       { label: "Cobrança de Mensalistas", href: "/admin/financeiro/mensalistas" },
       { label: "Patrocinadores", href: "/admin/financeiro/patrocinadores" },
       { label: "Prestação de Contas", href: "/admin/financeiro/prestacao-de-contas" },
-      { label: "Planos & Limites", href: "/admin/financeiro/planos-limites" },
     ],
   },
   {
@@ -91,7 +90,7 @@ const menu = [
     ],
   },
   {
-    label: "Configurações/Extras",
+    label: "Configurações do grupo",
     icon: MdSettings,
     children: [
       { label: "Domínio Próprio", href: "/admin/configuracoes/dominio-proprio" },
@@ -132,7 +131,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
   const visibleMenu = useMemo(
     () =>
       menu
-        .filter((item) => item.label !== "Configurações/Extras" || isPresidente)
+        .filter((item) => item.label !== "Configurações do grupo" || isPresidente)
         .map((item) =>
           item.label === "Administração" && item.children
             ? {
@@ -158,8 +157,8 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
   };
 
   const wrapperClass = mobile
-    ? `fixed z-50 top-0 left-0 w-72 h-full bg-[#181818] border-r border-[#292929] transition-transform duration-300 transform ${isOpen ? "translate-x-0" : "-translate-x-full"}`
-    : "w-72 min-h-screen bg-[#181818] border-r border-[#292929] shadow-lg flex flex-col pt-[65px] pb-8 hidden md:flex z-40";
+    ? `fixed z-50 top-0 left-0 h-full w-72 max-w-[calc(100vw-2rem)] bg-[#181818] border-r border-[#292929] transition-transform duration-300 transform lg:hidden ${isOpen ? "translate-x-0" : "-translate-x-full"}`
+    : "w-72 min-h-screen bg-[#181818] border-r border-[#292929] shadow-lg flex flex-col pt-[65px] pb-8 hidden lg:flex z-40";
 
   return (
     <aside

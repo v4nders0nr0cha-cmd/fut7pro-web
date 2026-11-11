@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { signOut } from "next-auth/react";
 import Header from "../Header";
 
 jest.mock("next/navigation", () => ({
@@ -93,22 +94,33 @@ describe("Admin Header", () => {
     );
   });
 
-  it("concentra Ajuda fora do perfil desktop e envia o avatar mobile para Mais", () => {
+  it("agrupa conta, assinatura e ajuda no perfil desktop e envia o avatar compacto para Mais", () => {
     render(<Header />);
     expect(screen.getByRole("link", { name: "Abrir Mais" })).toHaveAttribute("href", "/admin/mais");
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" }));
-    expect(screen.queryByRole("link", { name: "Ajuda · Guia Fut7Pro" })).not.toBeInTheDocument();
+    expect(screen.getByText("suporte@casadogamer.com")).toBeInTheDocument();
+    for (const category of ["Minha conta", "Assinatura Fut7Pro", "Ajuda e orientação"]) {
+      expect(screen.getByText(category)).toBeInTheDocument();
+    }
+    expect(screen.getByRole("link", { name: "Plano e cobrança" })).toHaveAttribute(
+      "href",
+      "/admin/financeiro/planos-limites"
+    );
+    expect(screen.getByRole("link", { name: "Central de Ajuda" })).toHaveAttribute(
+      "href",
+      "/admin/comunicacao/ajuda"
+    );
   });
 
-  it.each([768, 1280])(
-    "abre por Enter e Espaço e devolve o foco com Escape na largura desktop %i",
+  it.each([1024, 1280])(
+    "abre pelo botão e devolve o foco com Escape na largura expandida %i",
     (width) => {
       Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
       render(<Header />);
       const trigger = screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" });
 
       trigger.focus();
-      fireEvent.keyDown(trigger, { key: "Enter" });
+      fireEvent.click(trigger);
       expect(trigger).toHaveAttribute("aria-expanded", "true");
       expect(trigger).toHaveAttribute("aria-haspopup", "true");
       expect(trigger).toHaveAttribute("aria-controls", "admin-profile-menu");
@@ -124,7 +136,7 @@ describe("Admin Header", () => {
       expect(trigger).toHaveFocus();
       expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
 
-      fireEvent.keyDown(trigger, { key: " " });
+      fireEvent.click(trigger);
       expect(trigger).toHaveAttribute("aria-expanded", "true");
       expect(screen.getByRole("navigation", { name: "Menu do perfil" })).toBeInTheDocument();
     }
@@ -139,5 +151,28 @@ describe("Admin Header", () => {
 
     fireEvent.blur(firstLink, { relatedTarget: outsideLink });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("fecha ao clicar fora ou selecionar um item", () => {
+    render(<Header />);
+    const trigger = screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" });
+    fireEvent.click(trigger);
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
+
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("link", { name: "Plano e cobrança" }));
+    expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
+  });
+
+  it("preserva o logout e os destinos externos do perfil", () => {
+    render(<Header />);
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" }));
+    expect(screen.getByRole("link", { name: "Ver perfil público" })).toHaveAttribute(
+      "rel",
+      "noopener noreferrer"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Sair da conta" }));
+    expect(signOut).toHaveBeenCalledWith({ callbackUrl: "/admin/login" });
   });
 });
