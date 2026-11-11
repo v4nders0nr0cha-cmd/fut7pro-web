@@ -55,6 +55,15 @@ type GoalEvent = {
 
 const MATCH_DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
+type MatchDraft = {
+  events: GoalEvent[];
+  status: MatchStatus;
+  baseline: string;
+  savedAt: number;
+  saveKey?: string;
+  conflict: boolean;
+};
+
 export function matchDraftKey(scope: string, matchId: string) {
   return `fut7pro:match-result-draft:${scope}:${matchId}`;
 }
@@ -65,26 +74,37 @@ export function matchBaseline(match: PublicMatch) {
     scoreA: match.scoreA,
     scoreB: match.scoreB,
     presences: match.presences.map(({ id, goals, assists, updatedAt }) => ({
-      id, goals, assists, updatedAt,
+      id,
+      goals,
+      assists,
+      updatedAt,
     })),
   });
 }
 
-export function readMatchDraft(match: PublicMatch, scope: string): { events: GoalEvent[]; status: MatchStatus } | null {
+export function readMatchDraft(match: PublicMatch, scope: string): MatchDraft | null {
   if (!scope) return null;
   try {
     const raw = window.sessionStorage.getItem(matchDraftKey(scope, match.id));
     if (!raw) return null;
     const draft = JSON.parse(raw);
     if (
-      draft?.baseline === matchBaseline(match) &&
-      Date.now() - draft.savedAt < MATCH_DRAFT_MAX_AGE_MS &&
+      typeof draft?.baseline === "string" &&
+      Number.isFinite(draft?.savedAt) &&
       Array.isArray(draft.events) &&
       ["not_started", "in_progress", "finished"].includes(draft.status)
     ) {
-      return { events: draft.events, status: draft.status };
+      return {
+        events: draft.events,
+        status: draft.status,
+        baseline: draft.baseline,
+        savedAt: draft.savedAt,
+        saveKey: draft.saveKey,
+        conflict:
+          draft.baseline !== matchBaseline(match) ||
+          Date.now() - draft.savedAt >= MATCH_DRAFT_MAX_AGE_MS,
+      };
     }
-    window.sessionStorage.removeItem(matchDraftKey(scope, match.id));
   } catch {
     // Session storage may be unavailable in private browsing.
   }
@@ -107,6 +127,33 @@ type PresencePayload = {
   assists: number;
   status: "AUSENTE" | "TITULAR" | "SUBSTITUTO";
 };
+
+export function matchesPersistedResult(
+  current: PublicMatch,
+  payload: {
+    scoreA: number | null;
+    scoreB: number | null;
+    status: MatchStatus;
+    presences: PresencePayload[];
+  }
+) {
+  return (
+    current.scoreA === payload.scoreA &&
+    current.scoreB === payload.scoreB &&
+    current.status === payload.status &&
+    current.presences.length === payload.presences.length &&
+    payload.presences.every((entry) =>
+      current.presences.some(
+        (presence) =>
+          presence.athleteId === entry.athleteId &&
+          presence.goals === entry.goals &&
+          presence.assists === entry.assists &&
+          presence.status === entry.status &&
+          (presence.teamId ?? null) === entry.teamId
+      )
+    )
+  );
+}
 
 type MatchCard = {
   match: PublicMatch;
@@ -638,14 +685,23 @@ type MatchModalProps = {
   onStatusChange: (matchId: string, status: MatchStatus) => void;
   onClose: () => void;
   onSaved: (status: MatchStatus) => void;
+  onDiscard: () => void;
 };
 
-function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSaved }: MatchModalProps) {
+function MatchModal({
+  match,
+  draftScope,
+  status,
+  onStatusChange,
+  onClose,
+  onSaved,
+  onDiscard,
+}: MatchModalProps) {
   const teamAId = match.teamA.id ?? "team-a";
   const teamBId = match.teamB.id ?? "team-b";
   const [initialDraft] = useState(() => readMatchDraft(match, draftScope));
-  const [events, setEvents] = useState<GoalEvent[]>(() =>
-    initialDraft?.events ?? buildGoalEvents(match, teamAId, teamBId)
+  const [events, setEvents] = useState<GoalEvent[]>(
+    () => initialDraft?.events ?? buildGoalEvents(match, teamAId, teamBId)
   );
   const [localStatus, setLocalStatus] = useState<MatchStatus>(initialDraft?.status ?? status);
   const [goalModalTeam, setGoalModalTeam] = useState<"A" | "B" | null>(null);
@@ -653,6 +709,8 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
   const [goalSavePending, setGoalSavePending] = useState(false);
   const [goalSaveInFlight, setGoalSaveInFlight] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(Boolean(initialDraft?.conflict));
+  const [serverResult, setServerResult] = useState<PublicMatch | null>(null);
   const [locked, setLocked] = useState((initialDraft?.status ?? status) === "finished");
   const [scoreMode, setScoreMode] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
@@ -663,17 +721,10 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
   const savingRef = useRef(false);
   const didMount = useRef(Boolean(initialDraft));
   const draftDidMount = useRef(false);
-  const statusDidMount = useRef(false);
   const recoveryRetriesRef = useRef(0);
-
-  useEffect(() => {
-    if (!statusDidMount.current) {
-      statusDidMount.current = true;
-      return;
-    }
-    setLocalStatus(status);
-    setLocked(status === "finished");
-  }, [status]);
+  const resultVersionRef = useRef(match.resultVersion ?? 0);
+  const baselineRef = useRef(initialDraft?.baseline ?? matchBaseline(match));
+  const manualSaveOnlyRef = useRef(Boolean(initialDraft?.conflict));
 
   const rosterA = useMemo(
     () => buildRoster(match, teamAId, teamAId, teamBId),
@@ -703,11 +754,12 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
 
   const presencePayload = useMemo(() => {
     const stats = buildStats(events);
+    const sourcePresences = serverResult?.presences ?? match.presences;
     const presenceByAthlete = new Map(
-      match.presences.map((presence) => [presence.athleteId, presence])
+      sourcePresences.map((presence) => [presence.athleteId, presence])
     );
 
-    const presences: PresencePayload[] = match.presences.map((presence) => {
+    const presences: PresencePayload[] = sourcePresences.map((presence) => {
       const counts = stats.get(presence.athleteId) ?? { goals: 0, assists: 0 };
       return {
         id: presence.id,
@@ -746,7 +798,7 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
     });
 
     return presences;
-  }, [events, match.presences]);
+  }, [events, match.presences, serverResult]);
 
   const saveKey = useMemo(() => {
     const keyEvents = events
@@ -772,13 +824,16 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
     if (lastAttemptedKey.current !== saveKey) recoveryRetriesRef.current = 0;
     if (!draftScope) return;
     try {
-      window.sessionStorage.setItem(matchDraftKey(draftScope, match.id), JSON.stringify({
-        baseline: matchBaseline(match),
-        savedAt: Date.now(),
-        events,
-        status: localStatus,
-        saveKey,
-      }));
+      window.sessionStorage.setItem(
+        matchDraftKey(draftScope, match.id),
+        JSON.stringify({
+          baseline: baselineRef.current,
+          savedAt: Date.now(),
+          events,
+          status: localStatus,
+          saveKey,
+        })
+      );
     } catch {
       // In-memory editing remains available when storage is unavailable.
     }
@@ -791,6 +846,7 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
       statusOverride?: MatchStatus;
     }) => {
       if (options?.silent && lastSavedKey.current === saveKey) return;
+      if (conflict || (options?.silent && manualSaveOnlyRef.current)) return;
       if (savingRef.current) return;
 
       const statusToPersist = options?.statusOverride ?? localStatus;
@@ -800,11 +856,39 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
       setError(null);
       try {
         const payload = {
+          expectedVersion: resultVersionRef.current,
           scoreA: statusToPersist === "not_started" ? null : scoreA,
           scoreB: statusToPersist === "not_started" ? null : scoreB,
           status: statusToPersist,
           presences: presencePayload,
         };
+
+        // A lost PUT response must be reconciled before another write. The server's
+        // version is authoritative; its compare-and-swap closes the GET/PUT race.
+        const currentResponse = await fetch(`/api/partidas/${match.id}`, { cache: "no-store" });
+        if (!currentResponse.ok) throw new Error("Não foi possível conferir o resultado atual.");
+        const current = (await currentResponse.json()) as PublicMatch;
+        if ((current.resultVersion ?? 0) !== resultVersionRef.current) {
+          const sameResult = matchesPersistedResult(current, payload);
+          if (sameResult) {
+            resultVersionRef.current = current.resultVersion ?? resultVersionRef.current;
+            baselineRef.current = matchBaseline(current);
+            lastSavedKey.current = saveKey;
+            try {
+              window.sessionStorage.removeItem(matchDraftKey(draftScope, match.id));
+            } catch {
+              // The server has confirmed this result even if browser storage is unavailable.
+            }
+            if (!options?.silent) onSaved(statusToPersist);
+            if (options?.closeOnSuccess) onClose();
+            return;
+          }
+          setServerResult(current);
+          setConflict(true);
+          manualSaveOnlyRef.current = true;
+          setError("O resultado foi alterado em outra sessão. Seu rascunho foi preservado.");
+          return;
+        }
 
         const response = await fetch(`/api/partidas/${match.id}/resultado`, {
           method: "PUT",
@@ -813,13 +897,25 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
         });
 
         if (!response.ok) {
+          if (response.status === 409) {
+            setConflict(true);
+            manualSaveOnlyRef.current = true;
+            setError("O resultado foi alterado durante o salvamento. Seu rascunho foi preservado.");
+            return;
+          }
           const body = await response.text();
           throw new Error(body || "Falha ao salvar resultado");
         }
 
+        const saved = (await response.json()) as PublicMatch;
+        resultVersionRef.current = saved.resultVersion ?? resultVersionRef.current;
+        baselineRef.current = matchBaseline(saved);
+        manualSaveOnlyRef.current = false;
         lastSavedKey.current = saveKey;
         try {
-          const draft = JSON.parse(window.sessionStorage.getItem(matchDraftKey(draftScope, match.id)) || "null");
+          const draft = JSON.parse(
+            window.sessionStorage.getItem(matchDraftKey(draftScope, match.id)) || "null"
+          );
           if (draft?.saveKey === saveKey) {
             window.sessionStorage.removeItem(matchDraftKey(draftScope, match.id));
           }
@@ -841,12 +937,24 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
         setIsSaving(false);
       }
     },
-    [draftScope, localStatus, match.id, onClose, onSaved, presencePayload, saveKey, scoreA, scoreB]
+    [
+      conflict,
+      draftScope,
+      localStatus,
+      match.id,
+      onClose,
+      onSaved,
+      presencePayload,
+      saveKey,
+      scoreA,
+      scoreB,
+    ]
   );
 
   useEffect(() => {
     if (!AUTO_SAVE_ENABLED) return;
     if (locked) return;
+    if (conflict || manualSaveOnlyRef.current) return;
     if (isSaving) return;
     if (lastAttemptedKey.current === saveKey) return;
     if (!didMount.current) {
@@ -858,18 +966,50 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
     }, 700);
 
     return () => clearTimeout(timeout);
-  }, [events, localStatus, locked, isSaving, persistMatch, saveKey]);
+  }, [conflict, events, localStatus, locked, isSaving, persistMatch, saveKey]);
 
   useEffect(() => {
     const retryAfterRecovery = () => {
-      if (locked || savingRef.current || lastSavedKey.current === saveKey) return;
+      if (locked || conflict || savingRef.current || lastSavedKey.current === saveKey) return;
       if (lastAttemptedKey.current !== saveKey || recoveryRetriesRef.current >= 2) return;
       recoveryRetriesRef.current += 1;
       void persistMatch({ silent: true });
     };
     window.addEventListener("fut7pro:admin-session-recovered", retryAfterRecovery);
     return () => window.removeEventListener("fut7pro:admin-session-recovered", retryAfterRecovery);
-  }, [locked, persistMatch, saveKey]);
+  }, [conflict, locked, persistMatch, saveKey]);
+
+  const resolveConflict = async (keepDraft: boolean) => {
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/partidas/${match.id}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Não foi possível consultar o resultado atual.");
+      const current = (await response.json()) as PublicMatch;
+      setServerResult(current);
+      resultVersionRef.current = current.resultVersion ?? 0;
+      baselineRef.current = matchBaseline(current);
+      manualSaveOnlyRef.current = true;
+      if (!keepDraft) {
+        try {
+          window.sessionStorage.removeItem(matchDraftKey(draftScope, match.id));
+        } catch {
+          // The browser may have disabled session storage.
+        }
+        onDiscard();
+        return;
+      }
+      setConflict(false);
+      setError(
+        keepDraft
+          ? "Compare seu rascunho com o placar do servidor e salve explicitamente para substituí-lo."
+          : null
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao consultar resultado atual.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (goalSavePending && isSaving) {
@@ -1172,6 +1312,55 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
           </div>
         )}
 
+        {conflict && (
+          <div
+            role="alert"
+            className="mt-4 rounded-xl border border-yellow-400/50 bg-yellow-400/10 p-3 text-sm text-yellow-100"
+          >
+            <p>O resultado no servidor mudou. Seu rascunho continua disponível nesta aba.</p>
+            {serverResult && (
+              <p>
+                Placar atual no servidor: {serverResult.scoreA ?? 0} x {serverResult.scoreB ?? 0}.
+              </p>
+            )}
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => void resolveConflict(true)}
+                className="rounded border border-yellow-400 px-3 py-1"
+              >
+                Revisar meu rascunho
+              </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => void resolveConflict(false)}
+                className="rounded border border-neutral-600 px-3 py-1"
+              >
+                Descartar rascunho e carregar servidor
+              </button>
+            </div>
+          </div>
+        )}
+        {!conflict && serverResult && manualSaveOnlyRef.current && (
+          <div className="mt-4 rounded-xl border border-yellow-400/40 p-3 text-sm text-yellow-100">
+            <p>
+              Resultado no servidor: {serverResult.scoreA ?? 0} x {serverResult.scoreB ?? 0}.
+              Compare com seu rascunho antes de salvar.
+            </p>
+            <ul className="mt-2 list-disc pl-5">
+              {serverResult.presences
+                .filter((presence) => presence.goals || presence.assists)
+                .map((presence) => (
+                  <li key={presence.id}>
+                    {presence.athlete?.nickname || presence.athlete?.name || "Atleta"}:{" "}
+                    {presence.goals} gol(s), {presence.assists} assistência(s)
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
         {error && (
           <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
             {error}
@@ -1182,16 +1371,20 @@ function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSave
           <button
             type="button"
             onClick={() => persistMatch({ closeOnSuccess: true })}
-            disabled={isSaving}
+            disabled={isSaving || conflict}
             className="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
           >
-            {AUTO_SAVE_ENABLED ? "Fechar" : "Salvar e fechar"}
+            {manualSaveOnlyRef.current
+              ? "Salvar após revisão"
+              : AUTO_SAVE_ENABLED
+                ? "Fechar"
+                : "Salvar e fechar"}
           </button>
           {localStatus !== "finished" && (
             <button
               type="button"
               onClick={handleFinalize}
-              disabled={isSaving}
+              disabled={isSaving || conflict}
               className="flex-1 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
             >
               Finalizar partida
@@ -1822,11 +2015,17 @@ export default function ResultadosDoDiaAdmin({
       {selectedMatch && (
         <MatchModal
           match={selectedMatch}
-          draftScope={me?.user?.id && me?.tenant?.tenantId ? `${me.user.id}:${me.tenant.tenantId}` : ""}
+          draftScope={
+            me?.user?.id && me?.tenant?.tenantId ? `${me.user.id}:${me.tenant.tenantId}` : ""
+          }
           status={resolveMatchStatus(selectedMatch, statusMap)}
           onStatusChange={updateStatus}
           onClose={() => setSelectedMatch(null)}
           onSaved={(status) => handleMatchSaved(selectedMatch, status)}
+          onDiscard={() => {
+            setSelectedMatch(null);
+            void mutate();
+          }}
         />
       )}
 

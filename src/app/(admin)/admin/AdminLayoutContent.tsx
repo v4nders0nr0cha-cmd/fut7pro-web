@@ -69,8 +69,8 @@ function SessionRecoveryNotice({
           Reconectando sua sessão em segundo plano
         </h2>
         <p className="mt-1 text-xs text-zinc-200">
-          O painel continua aberto enquanto tentamos reconectar. Antes de entrar novamente,
-          copie qualquer alteração ainda não salva.
+          O painel continua aberto enquanto tentamos reconectar. Antes de entrar novamente, copie
+          qualquer alteração ainda não salva.
         </p>
         {errorMessage ? <p className="mt-2 text-xs text-red-300">{errorMessage}</p> : null}
         <div className="mt-3 flex justify-end">
@@ -116,7 +116,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     mutate: mutateAccess,
   } = useAdminAccess({
     tenantSlug,
-    enabled: sessionStatus === "authenticated" && !shouldForceSignOutForTokenError && hasUsableAccessToken,
+    enabled:
+      sessionStatus === "authenticated" && !shouldForceSignOutForTokenError && hasUsableAccessToken,
   });
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);

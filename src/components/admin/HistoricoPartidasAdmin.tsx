@@ -545,6 +545,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          expectedVersion: match.resultVersion ?? 0,
           scoreA,
           scoreB,
           presences: buildPresencePayload(),

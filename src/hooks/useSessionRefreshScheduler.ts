@@ -47,13 +47,11 @@ function isSessionHealthy(session: SessionLike) {
   const accessToken = String(session?.user?.accessToken || "").trim();
   if (!accessToken) return false;
 
-  if (!tokenError) return true;
-  if (tokenError !== "RefreshAccessTokenRetry") return false;
-
   const tokenExp = parseTokenExp(session);
   if (!tokenExp) return false;
+  if (tokenError && tokenError !== "RefreshAccessTokenRetry") return false;
 
-  // When retrying refresh, keep session only while token is still effectively valid.
+  // A token without an error can still be expired after a suspended browser resumes.
   return tokenExp * 1000 > Date.now() + 15_000;
 }
 

@@ -111,6 +111,7 @@ export type PublicMatchPresence = {
 
 export type PublicMatch = {
   id: string;
+  resultVersion?: number;
   date: string;
   location: string | null;
   status?: "not_started" | "in_progress" | "finished";

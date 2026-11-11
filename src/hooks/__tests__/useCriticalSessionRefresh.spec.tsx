@@ -18,7 +18,8 @@ describe("critical admin action session gate", () => {
     const { result } = renderHook(() => useCriticalSessionRefresh(), {
       wrapper: withSession({
         data: { user: { accessToken: "expired-access", accessTokenExp: now - 1 } },
-        status: "authenticated", update,
+        status: "authenticated",
+        update,
       }),
     });
 
@@ -32,10 +33,13 @@ describe("critical admin action session gate", () => {
     const { result } = renderHook(() => useCriticalSessionRefresh(), {
       wrapper: withSession({
         data: { user: { accessToken: "expired-access", accessTokenExp: now - 1 } },
-        status: "authenticated", update,
+        status: "authenticated",
+        update,
       }),
     });
 
-    await expect(result.current.ensureFreshSession()).rejects.toThrow("Nao foi possivel validar sua sessao");
+    await expect(result.current.ensureFreshSession()).rejects.toThrow(
+      "Nao foi possivel validar sua sessao"
+    );
   });
 });

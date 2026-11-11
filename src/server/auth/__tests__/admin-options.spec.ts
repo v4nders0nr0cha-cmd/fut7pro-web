@@ -206,29 +206,57 @@ describe("admin-options jwt refresh flow", () => {
     let completeFirst!: (value: unknown) => void;
     let completeSecond!: (value: unknown) => void;
     (global.fetch as jest.Mock)
-      .mockReturnValueOnce(new Promise((resolve) => { completeFirst = resolve; }))
-      .mockReturnValueOnce(new Promise((resolve) => { completeSecond = resolve; }));
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          completeFirst = resolve;
+        })
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          completeSecond = resolve;
+        })
+      );
 
-    const first = jwt({ token: {
-      accessToken: buildJwt(now - 1), refreshToken: "session-refresh", accessTokenExp: now - 1,
-    } } as any);
-    const second = jwt({ token: {
-      accessToken: buildJwt(now - 1), refreshToken: "session-refresh", accessTokenExp: now - 1,
-    } } as any);
-    completeFirst({ ok: true, json: async () => ({
-      accessToken: buildJwt(now + 900), refreshToken: "session-refresh",
-    }) });
+    const first = jwt({
+      token: {
+        accessToken: buildJwt(now - 1),
+        refreshToken: "session-refresh",
+        accessTokenExp: now - 1,
+      },
+    } as any);
+    const second = jwt({
+      token: {
+        accessToken: buildJwt(now - 1),
+        refreshToken: "session-refresh",
+        accessTokenExp: now - 1,
+      },
+    } as any);
+    completeFirst({
+      ok: true,
+      json: async () => ({
+        accessToken: buildJwt(now + 900),
+        refreshToken: "session-refresh",
+      }),
+    });
     const [a, b] = await Promise.all([first, second]);
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(a.refreshToken).toBe("session-refresh");
     expect(b.refreshToken).toBe("session-refresh");
 
-    const later = jwt({ token: {
-      accessToken: buildJwt(now - 1), refreshToken: b.refreshToken, accessTokenExp: now - 1,
-    } } as any);
-    completeSecond({ ok: true, json: async () => ({
-      accessToken: buildJwt(now + 910), refreshToken: "session-refresh",
-    }) });
+    const later = jwt({
+      token: {
+        accessToken: buildJwt(now - 1),
+        refreshToken: b.refreshToken,
+        accessTokenExp: now - 1,
+      },
+    } as any);
+    completeSecond({
+      ok: true,
+      json: async () => ({
+        accessToken: buildJwt(now + 910),
+        refreshToken: "session-refresh",
+      }),
+    });
     expect((await later).refreshToken).toBe("session-refresh");
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
@@ -412,7 +440,10 @@ describe("admin-options jwt refresh flow", () => {
 
     expect(global.fetch).toHaveBeenCalledWith(
       "https://api.fut7pro.com.br/auth/logout-session",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ refreshToken: "refresh-token" }) }),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ refreshToken: "refresh-token" }),
+      })
     );
   });
 });

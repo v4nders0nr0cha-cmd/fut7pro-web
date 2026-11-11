@@ -188,24 +188,47 @@ describe("AdminLayoutContent", () => {
     function MatchDraft() {
       const [goals, setGoals] = useState("");
       const [assists, setAssists] = useState("");
-      return <>
-        <input aria-label="Gols" value={goals} onChange={(event) => setGoals(event.target.value)} />
-        <input aria-label="Assistências" value={assists} onChange={(event) => setAssists(event.target.value)} />
-      </>;
+      return (
+        <>
+          <input
+            aria-label="Gols"
+            value={goals}
+            onChange={(event) => setGoals(event.target.value)}
+          />
+          <input
+            aria-label="Assistências"
+            value={assists}
+            onChange={(event) => setAssists(event.target.value)}
+          />
+        </>
+      );
     }
-    const view = () => <AdminLayoutContent><MatchDraft /></AdminLayoutContent>;
+    const view = () => (
+      <AdminLayoutContent>
+        <MatchDraft />
+      </AdminLayoutContent>
+    );
     const { rerender } = render(view());
     fireEvent.change(screen.getByRole("textbox", { name: "Gols" }), { target: { value: "2" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Assistências" }), { target: { value: "1" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Assistências" }), {
+      target: { value: "1" },
+    });
 
-    mockUseAdminAccess.mockReturnValue({ access: null, isLoading: false, error: { status: 401 }, mutate: jest.fn() });
+    mockUseAdminAccess.mockReturnValue({
+      access: null,
+      isLoading: false,
+      error: { status: 401 },
+      mutate: jest.fn(),
+    });
     rerender(view());
     expect(screen.getByRole("textbox", { name: "Gols" })).toHaveValue("2");
     expect(screen.getByRole("textbox", { name: "Assistências" })).toHaveValue("1");
 
     mockUseAdminAccess.mockReturnValue({
       access: { tenant: { slug: "racha-1", id: "tenant-1" }, blocked: false },
-      isLoading: false, error: null, mutate: jest.fn(),
+      isLoading: false,
+      error: null,
+      mutate: jest.fn(),
     });
     rerender(view());
     expect(screen.getByRole("textbox", { name: "Gols" })).toHaveValue("2");

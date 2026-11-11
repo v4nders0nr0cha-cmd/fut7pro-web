@@ -9,7 +9,11 @@ jest.mock("swr", () => {
 });
 
 const wrapper = ({ children }: { children: ReactNode }) =>
-  createElement(SWRConfig, { value: { provider: () => new Map(), shouldRetryOnError: false } }, children);
+  createElement(
+    SWRConfig,
+    { value: { provider: () => new Map(), shouldRetryOnError: false } },
+    children
+  );
 
 describe("admin access after session recovery", () => {
   const originalFetch = global.fetch;
@@ -19,11 +23,18 @@ describe("admin access after session recovery", () => {
   });
 
   it("retries a concurrent 401 and restores an authorized tenant response", async () => {
-    const fetchMock = jest.fn()
-      .mockResolvedValueOnce({ ok: false, status: 401, text: async () => '{"message":"unauthorized"}' } as Response)
+    const fetchMock = jest
+      .fn()
       .mockResolvedValueOnce({
-        ok: true, status: 200,
-        text: async () => '{"allowed":true,"blocked":false,"tenant":{"id":"tenant-1","slug":"racha-1","name":"Racha"}}',
+        ok: false,
+        status: 401,
+        text: async () => '{"message":"unauthorized"}',
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          '{"allowed":true,"blocked":false,"tenant":{"id":"tenant-1","slug":"racha-1","name":"Racha"}}',
       } as Response);
     global.fetch = fetchMock;
 

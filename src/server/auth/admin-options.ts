@@ -460,7 +460,8 @@ export const authOptions: NextAuthOptionsLike = {
             // credential. Bound the request rate, then retry on focus or activity.
             const count = Number((token as any).refreshFailureCount || 0) + 1;
             (token as any).refreshFailureCount = count;
-            (token as any).refreshRetryAfterMs = Date.now() + Math.min(60_000, 2_000 * 2 ** Math.min(count - 1, 5));
+            (token as any).refreshRetryAfterMs =
+              Date.now() + Math.min(60_000, 2_000 * 2 ** Math.min(count - 1, 5));
             (token as any).error = "RefreshAccessTokenRetry";
           }
         }
