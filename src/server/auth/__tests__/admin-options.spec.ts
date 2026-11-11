@@ -139,15 +139,15 @@ describe("admin-options jwt refresh flow", () => {
     expect((result as any).refreshToken).toBe("refresh-expired");
     expect((result as any).accessTokenExp).toBe(now - 5);
     expect((result as any).refreshFailureCount).toBe(1);
-    expect((result as any).refreshFirstFailureAtMs).toBe(nowMs);
+    expect((result as any).refreshRetryAfterMs).toBeGreaterThan(nowMs);
     expect((result as any).error).toBe("RefreshAccessTokenRetry");
   });
 
-  it("invalidates session fields after repeated expired refresh failures", async () => {
+  it("keeps a recoverable credential after repeated transient failures and later recovers", async () => {
     const jwt = await loadJwtCallback();
     const nowMs = Date.now();
     const now = Math.floor(nowMs / 1000);
-    jest.spyOn(Date, "now").mockReturnValue(nowMs);
+    const clock = jest.spyOn(Date, "now").mockReturnValue(nowMs);
 
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -160,20 +160,105 @@ describe("admin-options jwt refresh flow", () => {
       accessTokenExp: now - 5,
     };
 
-    for (let index = 0; index < 3; index += 1) {
+    for (let index = 0; index < 4; index += 1) {
+      clock.mockReturnValue(nowMs + index * 65_000);
       token = await jwt({ token } as any);
       expect((token as any).error).toBe("RefreshAccessTokenRetry");
       expect((token as any).accessToken).toBeDefined();
       expect((token as any).refreshToken).toBe("refresh-expired");
     }
 
+    clock.mockReturnValue(nowMs + 5 * 65_000);
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ accessToken: buildJwt(now + 3600), refreshToken: "refresh-expired" }),
+    });
     token = await jwt({ token } as any);
 
-    expect(global.fetch).toHaveBeenCalledTimes(4);
-    expect((token as any).accessToken).toBeUndefined();
+    expect(global.fetch).toHaveBeenCalledTimes(5);
+    expect((token as any).accessToken).toBeDefined();
+    expect((token as any).refreshToken).toBe("refresh-expired");
+    expect((token as any).error).toBeNull();
+  });
+
+  it("stops retrying a definitively invalid or revoked refresh credential", async () => {
+    const jwt = await loadJwtCallback();
+    const now = Math.floor(Date.now() / 1000);
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 401 });
+
+    const token = await jwt({
+      token: {
+        accessToken: buildJwt(now - 5),
+        refreshToken: "revoked-refresh",
+        accessTokenExp: now - 5,
+      },
+    } as any);
+    await jwt({ token } as any);
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
     expect((token as any).refreshToken).toBeUndefined();
-    expect((token as any).accessTokenExp).toBeNull();
     expect((token as any).error).toBe("RefreshAccessTokenError");
+  });
+
+  it("handles the 11/11 suspension and out-of-order responses without a spent credential", async () => {
+    const jwt = await loadJwtCallback();
+    const now = Math.floor(Date.now() / 1000);
+    let completeFirst!: (value: unknown) => void;
+    let completeSecond!: (value: unknown) => void;
+    (global.fetch as jest.Mock)
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          completeFirst = resolve;
+        })
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          completeSecond = resolve;
+        })
+      );
+
+    const first = jwt({
+      token: {
+        accessToken: buildJwt(now - 1),
+        refreshToken: "session-refresh",
+        accessTokenExp: now - 1,
+      },
+    } as any);
+    const second = jwt({
+      token: {
+        accessToken: buildJwt(now - 1),
+        refreshToken: "session-refresh",
+        accessTokenExp: now - 1,
+      },
+    } as any);
+    completeFirst({
+      ok: true,
+      json: async () => ({
+        accessToken: buildJwt(now + 900),
+        refreshToken: "session-refresh",
+      }),
+    });
+    const [a, b] = await Promise.all([first, second]);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(a.refreshToken).toBe("session-refresh");
+    expect(b.refreshToken).toBe("session-refresh");
+
+    const later = jwt({
+      token: {
+        accessToken: buildJwt(now - 1),
+        refreshToken: b.refreshToken,
+        accessTokenExp: now - 1,
+      },
+    } as any);
+    completeSecond({
+      ok: true,
+      json: async () => ({
+        accessToken: buildJwt(now + 910),
+        refreshToken: "session-refresh",
+      }),
+    });
+    expect((await later).refreshToken).toBe("session-refresh");
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
   it("uses single-flight refresh for concurrent jwt callbacks", async () => {
@@ -259,7 +344,7 @@ describe("admin-options jwt refresh flow", () => {
     expect((persistedToken as any).refreshToken).toBe("refresh-token");
     expect((persistedToken as any).accessTokenExp).toBeGreaterThan(now);
     expect((session.user as any).accessToken).toBe(accessToken);
-    expect((session.user as any).refreshToken).toBe("refresh-token");
+    expect((session.user as any).refreshToken).toBeUndefined();
     expect((session.user as any).accessTokenExp).toBeGreaterThan(now);
     expect(hasUsableFut7ProSession(session as any, "authenticated")).toBe(true);
   });
@@ -343,5 +428,22 @@ describe("admin-options jwt refresh flow", () => {
 
     expect((result as any).authRealm).toBe("athlete");
     expect((result as any).adminAccessVerifiedTenantId).toBeNull();
+  });
+
+  it("revokes the server-side refresh session on voluntary sign-out", async () => {
+    jest.resetModules();
+    setupAuthEnv();
+    const { authOptions } = await import("../admin-options");
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: true });
+
+    await authOptions.events?.signOut?.({ token: { refreshToken: "refresh-token" } });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.fut7pro.com.br/auth/logout-session",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ refreshToken: "refresh-token" }),
+      })
+    );
   });
 });

@@ -58,3 +58,8 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     params.id
   );
 }
+
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  return forwardToBackend(req, { method: "GET", cache: "no-store" }, params.id);
+}

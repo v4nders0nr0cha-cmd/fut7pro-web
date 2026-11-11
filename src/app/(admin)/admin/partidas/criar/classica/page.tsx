@@ -772,7 +772,10 @@ function PartidaClassicaClient() {
       throw new Error(body || "Falha ao criar partida clássica");
     }
 
-    const createdMatch = (await response.json().catch(() => null)) as { id?: string } | null;
+    const createdMatch = (await response.json().catch(() => null)) as {
+      id?: string;
+      resultVersion?: number;
+    } | null;
     if (!createdMatch?.id) {
       throw new Error("Resposta inválida ao criar partida clássica");
     }
@@ -794,7 +797,9 @@ function PartidaClassicaClient() {
       })),
     ];
 
-    const resultPayload: Record<string, unknown> = {};
+    const resultPayload: Record<string, unknown> = {
+      expectedVersion: createdMatch.resultVersion ?? 0,
+    };
     if (presences.length) resultPayload.presences = presences;
     if (scoreA !== undefined && scoreA !== null) resultPayload.scoreA = scoreA;
     if (scoreB !== undefined && scoreB !== null) resultPayload.scoreB = scoreB;
@@ -807,6 +812,11 @@ function PartidaClassicaClient() {
       });
 
       if (!updateResponse.ok) {
+        if (updateResponse.status === 428) {
+          throw new Error(
+            "A partida foi criada, mas o resultado não foi gravado. Anote o placar e as participações antes de atualizar a aplicação; confira a partida criada para evitar duplicação."
+          );
+        }
         const body = await updateResponse.text();
         throw new Error(body || "Falha ao registrar presencas da partida");
       }

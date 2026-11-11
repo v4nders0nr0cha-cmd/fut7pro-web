@@ -27,9 +27,6 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps
-
       - name: Run SEO tests (prod endpoints)
         env:
           # caso seus testes usem BASE_URL
