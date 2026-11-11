@@ -875,7 +875,12 @@ function MatchModal({
             baselineRef.current = matchBaseline(current);
             lastSavedKey.current = saveKey;
             try {
-              window.sessionStorage.removeItem(matchDraftKey(draftScope, match.id));
+              const draft = JSON.parse(
+                window.sessionStorage.getItem(matchDraftKey(draftScope, match.id)) || "null"
+              );
+              if (draft?.saveKey === saveKey) {
+                window.sessionStorage.removeItem(matchDraftKey(draftScope, match.id));
+              }
             } catch {
               // The server has confirmed this result even if browser storage is unavailable.
             }
