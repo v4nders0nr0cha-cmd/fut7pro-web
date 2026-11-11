@@ -53,6 +53,44 @@ type GoalEvent = {
   source: "existing" | "placeholder" | "new";
 };
 
+const MATCH_DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
+export function matchDraftKey(scope: string, matchId: string) {
+  return `fut7pro:match-result-draft:${scope}:${matchId}`;
+}
+
+export function matchBaseline(match: PublicMatch) {
+  return JSON.stringify({
+    status: match.status,
+    scoreA: match.scoreA,
+    scoreB: match.scoreB,
+    presences: match.presences.map(({ id, goals, assists, updatedAt }) => ({
+      id, goals, assists, updatedAt,
+    })),
+  });
+}
+
+export function readMatchDraft(match: PublicMatch, scope: string): { events: GoalEvent[]; status: MatchStatus } | null {
+  if (!scope) return null;
+  try {
+    const raw = window.sessionStorage.getItem(matchDraftKey(scope, match.id));
+    if (!raw) return null;
+    const draft = JSON.parse(raw);
+    if (
+      draft?.baseline === matchBaseline(match) &&
+      Date.now() - draft.savedAt < MATCH_DRAFT_MAX_AGE_MS &&
+      Array.isArray(draft.events) &&
+      ["not_started", "in_progress", "finished"].includes(draft.status)
+    ) {
+      return { events: draft.events, status: draft.status };
+    }
+    window.sessionStorage.removeItem(matchDraftKey(scope, match.id));
+  } catch {
+    // Session storage may be unavailable in private browsing.
+  }
+  return null;
+}
+
 type RosterPlayer = {
   id: string;
   name: string;
@@ -595,31 +633,44 @@ function GoalModal({
 
 type MatchModalProps = {
   match: PublicMatch;
+  draftScope: string;
   status: MatchStatus;
   onStatusChange: (matchId: string, status: MatchStatus) => void;
   onClose: () => void;
   onSaved: (status: MatchStatus) => void;
 };
 
-function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchModalProps) {
+function MatchModal({ match, draftScope, status, onStatusChange, onClose, onSaved }: MatchModalProps) {
   const teamAId = match.teamA.id ?? "team-a";
   const teamBId = match.teamB.id ?? "team-b";
-  const [events, setEvents] = useState<GoalEvent[]>(() => buildGoalEvents(match, teamAId, teamBId));
-  const [localStatus, setLocalStatus] = useState<MatchStatus>(status);
+  const [initialDraft] = useState(() => readMatchDraft(match, draftScope));
+  const [events, setEvents] = useState<GoalEvent[]>(() =>
+    initialDraft?.events ?? buildGoalEvents(match, teamAId, teamBId)
+  );
+  const [localStatus, setLocalStatus] = useState<MatchStatus>(initialDraft?.status ?? status);
   const [goalModalTeam, setGoalModalTeam] = useState<"A" | "B" | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [goalSavePending, setGoalSavePending] = useState(false);
   const [goalSaveInFlight, setGoalSaveInFlight] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [locked, setLocked] = useState(status === "finished");
+  const [locked, setLocked] = useState((initialDraft?.status ?? status) === "finished");
   const [scoreMode, setScoreMode] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [unlockConfirmOpen, setUnlockConfirmOpen] = useState(false);
   const lastSavedKey = useRef<string | null>(null);
-  const didMount = useRef(false);
+  const lastAttemptedKey = useRef<string | null>(null);
+  const savingRef = useRef(false);
+  const didMount = useRef(Boolean(initialDraft));
+  const draftDidMount = useRef(false);
+  const statusDidMount = useRef(false);
+  const recoveryRetriesRef = useRef(0);
 
   useEffect(() => {
+    if (!statusDidMount.current) {
+      statusDidMount.current = true;
+      return;
+    }
     setLocalStatus(status);
     setLocked(status === "finished");
   }, [status]);
@@ -713,6 +764,26 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
     return `${localStatus}-${keyEvents}`;
   }, [events, localStatus]);
 
+  useEffect(() => {
+    if (!draftDidMount.current) {
+      draftDidMount.current = true;
+      return;
+    }
+    if (lastAttemptedKey.current !== saveKey) recoveryRetriesRef.current = 0;
+    if (!draftScope) return;
+    try {
+      window.sessionStorage.setItem(matchDraftKey(draftScope, match.id), JSON.stringify({
+        baseline: matchBaseline(match),
+        savedAt: Date.now(),
+        events,
+        status: localStatus,
+        saveKey,
+      }));
+    } catch {
+      // In-memory editing remains available when storage is unavailable.
+    }
+  }, [draftScope, events, localStatus, match, saveKey]);
+
   const persistMatch = useCallback(
     async (options?: {
       closeOnSuccess?: boolean;
@@ -720,8 +791,11 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
       statusOverride?: MatchStatus;
     }) => {
       if (options?.silent && lastSavedKey.current === saveKey) return;
+      if (savingRef.current) return;
 
       const statusToPersist = options?.statusOverride ?? localStatus;
+      lastAttemptedKey.current = saveKey;
+      savingRef.current = true;
       setIsSaving(true);
       setError(null);
       try {
@@ -744,6 +818,14 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
         }
 
         lastSavedKey.current = saveKey;
+        try {
+          const draft = JSON.parse(window.sessionStorage.getItem(matchDraftKey(draftScope, match.id)) || "null");
+          if (draft?.saveKey === saveKey) {
+            window.sessionStorage.removeItem(matchDraftKey(draftScope, match.id));
+          }
+        } catch {
+          // The result was saved by the server even if storage is unavailable.
+        }
         if (!options?.silent) {
           onSaved(statusToPersist);
         }
@@ -755,15 +837,18 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
           setError(err instanceof Error ? err.message : "Falha ao salvar resultado");
         }
       } finally {
+        savingRef.current = false;
         setIsSaving(false);
       }
     },
-    [localStatus, match.id, onClose, onSaved, presencePayload, saveKey, scoreA, scoreB]
+    [draftScope, localStatus, match.id, onClose, onSaved, presencePayload, saveKey, scoreA, scoreB]
   );
 
   useEffect(() => {
     if (!AUTO_SAVE_ENABLED) return;
     if (locked) return;
+    if (isSaving) return;
+    if (lastAttemptedKey.current === saveKey) return;
     if (!didMount.current) {
       didMount.current = true;
       return;
@@ -773,7 +858,18 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
     }, 700);
 
     return () => clearTimeout(timeout);
-  }, [events, localStatus, locked, persistMatch]);
+  }, [events, localStatus, locked, isSaving, persistMatch, saveKey]);
+
+  useEffect(() => {
+    const retryAfterRecovery = () => {
+      if (locked || savingRef.current || lastSavedKey.current === saveKey) return;
+      if (lastAttemptedKey.current !== saveKey || recoveryRetriesRef.current >= 2) return;
+      recoveryRetriesRef.current += 1;
+      void persistMatch({ silent: true });
+    };
+    window.addEventListener("fut7pro:admin-session-recovered", retryAfterRecovery);
+    return () => window.removeEventListener("fut7pro:admin-session-recovered", retryAfterRecovery);
+  }, [locked, persistMatch, saveKey]);
 
   useEffect(() => {
     if (goalSavePending && isSaving) {
@@ -1726,6 +1822,7 @@ export default function ResultadosDoDiaAdmin({
       {selectedMatch && (
         <MatchModal
           match={selectedMatch}
+          draftScope={me?.user?.id && me?.tenant?.tenantId ? `${me.user.id}:${me.tenant.tenantId}` : ""}
           status={resolveMatchStatus(selectedMatch, statusMap)}
           onStatusChange={updateStatus}
           onClose={() => setSelectedMatch(null)}

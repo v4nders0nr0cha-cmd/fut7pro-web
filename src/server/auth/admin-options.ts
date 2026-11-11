@@ -13,11 +13,14 @@ type NextAuthOptionsLike = {
   pages?: { signIn?: string; error?: string };
   session?: { strategy?: "jwt"; maxAge?: number };
   jwt?: { maxAge?: number };
+  events?: { signOut?: (...args: any[]) => any };
   cookies?: any;
   secret?: string;
 };
 
-type RefreshResult = { ok: true; accessToken: string; refreshToken: string } | { ok: false };
+type RefreshResult =
+  | { ok: true; accessToken: string; refreshToken: string }
+  | { ok: false; invalid: boolean };
 
 const API_BASE_URL =
   process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -39,8 +42,6 @@ const REFRESH_PATH = normalizeAuthPath(process.env.AUTH_REFRESH_PATH, "/auth/ref
 const ME_PATH = normalizeAuthPath(process.env.AUTH_ME_PATH, "/auth/me");
 const GOOGLE_PATH = "/auth/google";
 const ADMIN_REFRESH_MARGIN_SECONDS = 120;
-const ADMIN_EXPIRED_REFRESH_FAILURE_GRACE_MS = 120_000;
-const ADMIN_EXPIRED_REFRESH_MAX_RETRIES = 3;
 const adminRefreshFlights = new Map<string, Promise<RefreshResult>>();
 const useSecureCookies = process.env.NODE_ENV === "production";
 const cookiePrefix = useSecureCookies ? "__Secure-" : "";
@@ -67,6 +68,7 @@ function decodeExp(token?: string | null): number | null {
 function resetRefreshFailureState(token: JWT) {
   delete (token as any).refreshFailureCount;
   delete (token as any).refreshFirstFailureAtMs;
+  delete (token as any).refreshRetryAfterMs;
 }
 
 function invalidateAuthFields(token: JWT, errorCode: string) {
@@ -81,6 +83,7 @@ async function requestAdminRefresh(refreshToken: string): Promise<RefreshResult>
   try {
     const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
       method: "POST",
+      signal: AbortSignal.timeout(12_000),
       headers: {
         "Content-Type": "application/json",
       },
@@ -90,14 +93,14 @@ async function requestAdminRefresh(refreshToken: string): Promise<RefreshResult>
     });
 
     if (!response.ok) {
-      return { ok: false };
+      return { ok: false, invalid: [400, 401, 403].includes(response.status) };
     }
 
     const data = await response.json().catch(() => null);
     const nextAccessToken = String((data as any)?.accessToken || "").trim();
     const nextRefreshToken = String((data as any)?.refreshToken || "").trim();
     if (!nextAccessToken || !nextRefreshToken) {
-      return { ok: false };
+      return { ok: false, invalid: false };
     }
 
     return {
@@ -106,7 +109,7 @@ async function requestAdminRefresh(refreshToken: string): Promise<RefreshResult>
       refreshToken: nextRefreshToken,
     };
   } catch {
-    return { ok: false };
+    return { ok: false, invalid: false };
   }
 }
 
@@ -389,7 +392,6 @@ export const authOptions: NextAuthOptionsLike = {
         (session.user as any).tenantId = token.tenantId as string;
         (session.user as any).tenantSlug = (token as any).tenantSlug ?? null;
         (session.user as any).accessToken = token.accessToken as string;
-        (session.user as any).refreshToken = token.refreshToken as string;
         (session.user as any).accessTokenExp = (token as any).accessTokenExp ?? null;
         (session.user as any).authProvider = (token as any).authProvider ?? null;
         (session.user as any).emailVerified = (token as any).emailVerified ?? false;
@@ -441,33 +443,25 @@ export const authOptions: NextAuthOptionsLike = {
         const now = Math.floor(Date.now() / 1000);
 
         if (tokenExp && tokenExp < now + ADMIN_REFRESH_MARGIN_SECONDS) {
-          const refreshResult = await refreshAdminTokenSingleFlight(String(token.refreshToken));
-          if (refreshResult.ok) {
+          const retryPending = Number((token as any).refreshRetryAfterMs || 0) > Date.now();
+          const refreshResult = retryPending
+            ? null
+            : await refreshAdminTokenSingleFlight(String(token.refreshToken));
+          if (refreshResult?.ok) {
             token.accessToken = refreshResult.accessToken;
             token.refreshToken = refreshResult.refreshToken;
             (token as any).accessTokenExp = decodeExp(refreshResult.accessToken);
             (token as any).error = null;
             resetRefreshFailureState(token);
-          } else {
-            if (tokenExp <= now) {
-              const nowMs = Date.now();
-              const previousFailureCount = Number((token as any).refreshFailureCount || 0);
-              const firstFailureAtMs = Number((token as any).refreshFirstFailureAtMs || nowMs);
-              const nextFailureCount = previousFailureCount + 1;
-              const withinGraceWindow =
-                nowMs - firstFailureAtMs <= ADMIN_EXPIRED_REFRESH_FAILURE_GRACE_MS;
-
-              if (withinGraceWindow && nextFailureCount <= ADMIN_EXPIRED_REFRESH_MAX_RETRIES) {
-                (token as any).refreshFailureCount = nextFailureCount;
-                (token as any).refreshFirstFailureAtMs = firstFailureAtMs;
-                (token as any).error = "RefreshAccessTokenRetry";
-              } else {
-                invalidateAuthFields(token, "RefreshAccessTokenError");
-              }
-            } else {
-              // Keep the current token while still valid and retry refresh on the next cycle.
-              (token as any).error = "RefreshAccessTokenRetry";
-            }
+          } else if (refreshResult?.ok === false && refreshResult.invalid) {
+            invalidateAuthFields(token, "RefreshAccessTokenError");
+          } else if (refreshResult) {
+            // A network or server failure must not destroy a still-valid refresh
+            // credential. Bound the request rate, then retry on focus or activity.
+            const count = Number((token as any).refreshFailureCount || 0) + 1;
+            (token as any).refreshFailureCount = count;
+            (token as any).refreshRetryAfterMs = Date.now() + Math.min(60_000, 2_000 * 2 ** Math.min(count - 1, 5));
+            (token as any).error = "RefreshAccessTokenRetry";
           }
         }
       } else if (token.accessToken) {
@@ -493,6 +487,23 @@ export const authOptions: NextAuthOptionsLike = {
       }
 
       return token;
+    },
+  },
+
+  events: {
+    async signOut({ token }: { token?: JWT | null }) {
+      const refreshToken = String(token?.refreshToken || "").trim();
+      if (!refreshToken) return;
+      try {
+        await fetch(`${API_BASE_URL}/auth/logout-session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+          signal: AbortSignal.timeout(12_000),
+        });
+      } catch {
+        // The browser still clears its session; no credential is logged.
+      }
     },
   },
 

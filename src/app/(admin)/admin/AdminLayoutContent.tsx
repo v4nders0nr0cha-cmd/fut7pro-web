@@ -69,7 +69,8 @@ function SessionRecoveryNotice({
           Reconectando sua sessão em segundo plano
         </h2>
         <p className="mt-1 text-xs text-zinc-200">
-          O painel continua aberto. Se necessário, entre novamente sem perder sua edição atual.
+          O painel continua aberto enquanto tentamos reconectar. Antes de entrar novamente,
+          copie qualquer alteração ainda não salva.
         </p>
         {errorMessage ? <p className="mt-2 text-xs text-red-300">{errorMessage}</p> : null}
         <div className="mt-3 flex justify-end">
@@ -99,6 +100,12 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const [tenantBootstrapped, setTenantBootstrapped] = useState(false);
   const [criticalFlowDirty, setCriticalFlowDirty] = useState(false);
   const { data: session, status: sessionStatus, update: updateSession } = useSession();
+  const tokenError = String((session?.user as any)?.tokenError || "").trim();
+  const shouldForceSignOutForTokenError =
+    tokenError.length > 0 && tokenError !== "RefreshAccessTokenRetry";
+  const accessTokenExp = Number((session?.user as any)?.accessTokenExp || 0);
+  const hasUsableAccessToken =
+    Boolean((session?.user as any)?.accessToken) && accessTokenExp * 1000 > Date.now();
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const { tenantSlug, rachaId, setTenantSlug, setRachaId } = useRacha();
@@ -107,7 +114,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     isLoading: accessLoading,
     error: accessError,
     mutate: mutateAccess,
-  } = useAdminAccess({ tenantSlug });
+  } = useAdminAccess({
+    tenantSlug,
+    enabled: sessionStatus === "authenticated" && !shouldForceSignOutForTokenError && hasUsableAccessToken,
+  });
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);
   const unauthorizedRetryCountRef = useRef(0);
@@ -116,9 +126,6 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const unauthenticatedRecoveryTimerRef = useRef<number | null>(null);
   const compensationModalTimerRef = useRef<number | null>(null);
   const shownCompensationNotificationIdsRef = useRef<Set<string>>(new Set());
-  const tokenError = String((session?.user as any)?.tokenError || "").trim();
-  const shouldForceSignOutForTokenError =
-    tokenError.length > 0 && tokenError !== "RefreshAccessTokenRetry";
   const accessErrorStatus = (accessError as { status?: number } | undefined)?.status;
   const isRecoverableAccessError =
     accessErrorStatus === 401 ||
@@ -182,6 +189,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
       unauthenticatedRecoveryAttemptCountRef.current = 0;
       setSessionExpiredModalOpen(false);
       setSessionModalError(null);
+      window.dispatchEvent(new Event("fut7pro:admin-session-recovered"));
     },
     onRefreshFailed: () => {
       openSessionExpiredModal("A sessão está oscilando. Tentando reconectar automaticamente.");
@@ -245,6 +253,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
           unauthenticatedRecoveryInFlightRef.current = false;
           setSessionExpiredModalOpen(false);
           setSessionModalError(null);
+          window.dispatchEvent(new Event("fut7pro:admin-session-recovered"));
           await mutateAccess();
           return;
         }

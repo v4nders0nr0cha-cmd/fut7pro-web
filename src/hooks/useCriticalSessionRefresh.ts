@@ -11,8 +11,9 @@ type UseCriticalSessionRefreshOptions = {
 function hasUsableSession(sessionLike: any) {
   const accessToken = String(sessionLike?.user?.accessToken || "").trim();
   const tokenError = String(sessionLike?.user?.tokenError || "").trim();
+  const expiresAt = Number(sessionLike?.user?.accessTokenExp || 0);
   const hasFatalTokenError = tokenError.length > 0 && tokenError !== "RefreshAccessTokenRetry";
-  return Boolean(accessToken) && !hasFatalTokenError;
+  return Boolean(accessToken) && !hasFatalTokenError && expiresAt * 1000 > Date.now();
 }
 
 export function useCriticalSessionRefresh(options: UseCriticalSessionRefreshOptions = {}) {
@@ -20,26 +21,24 @@ export function useCriticalSessionRefresh(options: UseCriticalSessionRefreshOpti
   const hasSessionContext = Boolean(sessionContext);
   const data = sessionContext?.data ?? null;
   const status = sessionContext?.status ?? "unauthenticated";
-  const update = sessionContext?.update ?? (async () => null);
+  const update = sessionContext?.update;
   const minIntervalMs = options.minIntervalMs ?? 15_000;
   const inFlightRef = useRef<Promise<void> | null>(null);
   const lastAttemptAtRef = useRef(0);
 
   const ensureFreshSession = useCallback(async () => {
-    if (!hasSessionContext) return;
-    if (status === "loading") return;
+    if (!hasSessionContext || !update || status === "loading") {
+      throw new Error("Sessao ainda nao validada.");
+    }
 
     if (inFlightRef.current) {
       return inFlightRef.current;
     }
 
     const hasCurrentUsableSession = hasUsableSession(data);
-    if (!hasCurrentUsableSession) {
-      throw new Error("Sessao expirada. Entre novamente.");
-    }
 
     const now = Date.now();
-    if (now - lastAttemptAtRef.current < minIntervalMs) {
+    if (hasCurrentUsableSession && now - lastAttemptAtRef.current < minIntervalMs) {
       return;
     }
 
