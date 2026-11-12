@@ -25,8 +25,8 @@ const HIGHLIGHTS = [
     description: "Tudo que você edita no painel aparece no site público do grupo.",
   },
   {
-    title: "Multi-admin com segurança",
-    description: "Permissões por perfil e logs de auditoria para cada ação.",
+    title: "Vários administradores com segurança",
+    description: "Permissões por função e registro das ações realizadas.",
   },
   {
     title: "Financeiro profissional",
@@ -88,6 +88,8 @@ export default function AdminLoginClient() {
   const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
   const redirectAfterLogin = () => {
+    // Release the keyboard before changing routes on iOS Safari.
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     router.replace(callbackUrl);
   };
 
@@ -294,7 +296,7 @@ export default function AdminLoginClient() {
       resetTurnstile();
     }
     setCodigoEnviado(true);
-    setInfoMessage(body?.message || "Se estiver tudo certo, enviamos seu codigo.");
+    setInfoMessage(body?.message || "Se estiver tudo certo, enviamos seu código.");
   };
 
   const verifyPasswordlessCode = async () => {
@@ -489,10 +491,9 @@ export default function AdminLoginClient() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  autoFocus
                   placeholder="email@exemplo.com"
                   data-testid="admin-login-email"
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </label>
               {!usarSenhaLegado && (
@@ -507,7 +508,7 @@ export default function AdminLoginClient() {
                         required
                         inputMode="numeric"
                         placeholder="Digite os 6 dígitos"
-                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                       />
                     </label>
                   ) : (
@@ -521,7 +522,7 @@ export default function AdminLoginClient() {
 
               {usarSenhaLegado && (
                 <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                  Senha (legado)
+                  Senha
                   <div className="relative mt-2">
                     <input
                       type={senhaVisivel ? "text" : "password"}
@@ -531,7 +532,7 @@ export default function AdminLoginClient() {
                       autoComplete="current-password"
                       placeholder="Digite sua senha"
                       data-testid="admin-login-password"
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-base text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                     />
                     <button
                       type="button"
@@ -615,7 +616,7 @@ export default function AdminLoginClient() {
           </div>
 
           <p className="mt-4 hidden text-xs text-gray-400 sm:block">
-            Acesso protegido por autenticação segura e isolada por tenant.
+            Acesso protegido para cada grupo.
           </p>
         </section>
 
