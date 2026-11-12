@@ -86,11 +86,11 @@ describe("Header", () => {
     render(<Header />);
 
     expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Pele/i }));
-    expect(screen.getByText("Minha conta Fut7Pro")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Abrir área pessoal" }));
+    expect(screen.getByText("Perfil Global Fut7Pro")).toBeInTheDocument();
     expect(screen.getByText("Sair da conta")).toBeInTheDocument();
     expect(screen.queryByText("Meu perfil")).not.toBeInTheDocument();
-    expect(screen.queryByText("Meu desempenho")).not.toBeInTheDocument();
+    expect(screen.queryByText("Meu desempenho neste grupo")).not.toBeInTheDocument();
   });
 
   it("não mostra a conta como autenticada quando o token tem erro terminal", () => {
@@ -142,10 +142,10 @@ describe("Header", () => {
     render(<Header />);
 
     expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Pele/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Abrir área pessoal" })).toBeInTheDocument();
     expect(screen.getByAltText("Pele")).toHaveAttribute("src", "https://cdn.fut7/avatar-pele.png");
-    fireEvent.click(screen.getByRole("button", { name: /Pele/i }));
-    expect(screen.getByText("Meu desempenho")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Abrir área pessoal" }));
+    expect(screen.getByText("Meu desempenho neste grupo")).toBeInTheDocument();
     expect(screen.queryByText("Meu perfil")).not.toBeInTheDocument();
   });
 });
