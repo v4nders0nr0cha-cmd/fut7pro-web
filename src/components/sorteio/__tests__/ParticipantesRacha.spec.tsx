@@ -20,6 +20,7 @@ const mockJogadores = Array.from({ length: 28 }, (_, index) => {
             ? "Meia"
             : "Atacante",
     mensalista: true,
+    status: "Ativo",
     isBot: false,
     partidas: 10,
   };
@@ -135,6 +136,27 @@ function ParticipantesHarness({
 describe("ParticipantesRacha", () => {
   beforeEach(() => {
     (global.fetch as jest.Mock).mockClear();
+    mockJogadores.forEach((jogador) => {
+      jogador.status = "Ativo";
+    });
+  });
+
+  it("não pré-seleciona mensalistas inativos ou suspensos", async () => {
+    mockJogadores[0].status = "Inativo";
+    mockJogadores[4].status = "Suspenso";
+    render(
+      <ParticipantesHarness
+        config={{
+          duracaoRachaMin: 90,
+          duracaoPartidaMin: 6,
+          numTimes: 4,
+          jogadoresPorTime: 7,
+          dataPartida: "2025-12-30",
+          horaPartida: "19:30",
+        }}
+      />
+    );
+    await waitFor(() => expect(screen.getByTestId("total-selecionados")).toHaveTextContent("26"));
   });
 
   it("limita mensalistas automaticos a capacidade configurada", async () => {

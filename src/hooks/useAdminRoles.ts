@@ -28,13 +28,13 @@ export function useAdminRoles() {
     }
   );
 
-  const assignRole = async (role: string, athleteId: string) => {
+  const assignRole = async (role: string, athleteId: string, monthlyExempt: boolean) => {
     apiState.setLoading(true);
     try {
       const response = await fetch(`/api/admin/administradores/${role}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ athleteId }),
+        body: JSON.stringify({ athleteId, monthlyExempt }),
       });
 
       if (!response.ok) {
@@ -49,6 +49,26 @@ export function useAdminRoles() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao salvar administrador";
       apiState.setError(message);
+      throw err;
+    }
+  };
+
+  const setMonthlyExemption = async (role: string, monthlyExempt: boolean) => {
+    apiState.setLoading(true);
+    try {
+      const response = await fetch(`/api/admin/administradores/${role}/mensalidade`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ monthlyExempt }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.message || body?.error || "Erro ao alterar a mensalidade");
+      }
+      await mutate();
+      apiState.setSuccess(true);
+    } catch (err) {
+      apiState.setError(err instanceof Error ? err.message : "Erro ao alterar a mensalidade");
       throw err;
     }
   };
@@ -105,6 +125,7 @@ export function useAdminRoles() {
     isError: Boolean(error) || apiState.isError,
     error: (error instanceof Error ? error.message : null) || apiState.error,
     assignRole,
+    setMonthlyExemption,
     removeRole,
     cancelInvite,
     mutate,

@@ -7,7 +7,7 @@ export type MensalistaResumo = {
   id: string;
   nome: string;
   valor: number;
-  statusPagamento: "pago" | "pendente";
+  statusPagamento: "pago" | "pendente" | "isento";
   pagamentoData: string | null;
   diasResumo: string;
   jogosNoMes: number;
@@ -149,6 +149,10 @@ export default function TabelaMensalistas({
                   <span className="inline-flex items-center rounded-full border border-emerald-500/60 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
                     Pago
                   </span>
+                ) : m.statusPagamento === "isento" ? (
+                  <span className="inline-flex items-center rounded-full border border-blue-500/60 bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-300">
+                    Isento
+                  </span>
                 ) : (
                   <span className="inline-flex items-center rounded-full border border-amber-500/60 bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300">
                     Pendente
@@ -191,6 +195,10 @@ export default function TabelaMensalistas({
                       </div>
                     )}
                   </div>
+                ) : m.statusPagamento === "isento" ? (
+                  <span className="text-xs text-blue-300">
+                    Isento de cobrança nesta competência
+                  </span>
                 ) : (
                   <span className="text-xs text-gray-400">Aguardando pagamento</span>
                 )}
@@ -223,7 +231,7 @@ export default function TabelaMensalistas({
                         </button>
                       )}
                     </>
-                  ) : (
+                  ) : m.statusPagamento === "isento" ? null : (
                     <button
                       type="button"
                       className="rounded-md bg-yellow-400 px-3 py-1.5 text-xs font-bold text-black hover:bg-yellow-300 disabled:opacity-50"

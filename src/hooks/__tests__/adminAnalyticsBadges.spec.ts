@@ -7,6 +7,7 @@ const mockSWR = jest.fn();
 jest.mock("swr", () => ({
   __esModule: true,
   default: (...args: unknown[]) => mockSWR(...args),
+  mutate: jest.fn(),
 }));
 
 jest.mock("@/context/RachaContext", () => ({
@@ -58,17 +59,20 @@ describe("useAdminAnalytics", () => {
 describe("useAdminBadges", () => {
   beforeEach(() => mockSWR.mockReset());
 
-  it("retorna badges com solicitacoes pendentes", () => {
-    mockSWR.mockReturnValue({
-      data: { count: 3 },
+  it("soma entradas e pedidos de mensalista do grupo ativo", () => {
+    mockSWR.mockImplementation((key: [string, string]) => ({
+      data: key[0].includes("mensalistas") ? { total: 2 } : { count: 3 },
       error: undefined,
-      mutate: jest.fn(),
-      isValidating: false,
-    });
+    }));
 
     const { result } = renderHook(() => useAdminBadges());
     expect(mockSWR).toHaveBeenCalledWith(
-      "/api/admin/solicitacoes?status=PENDENTE&count=1",
+      ["/api/admin/solicitacoes?status=PENDENTE&count=1", "slug-test"],
+      expect.any(Function),
+      expect.any(Object)
+    );
+    expect(mockSWR).toHaveBeenCalledWith(
+      ["/api/admin/mensalistas/requests?count=1", "slug-test"],
       expect.any(Function),
       expect.any(Object)
     );
@@ -76,8 +80,17 @@ describe("useAdminBadges", () => {
       dashboard: 0,
       notificacoes: 0,
       mensagens: 0,
-      solicitacoes: 3,
+      solicitacoes: 5,
       perfil: 0,
     });
+  });
+
+  it("não confirma zero quando uma das consultas falha", () => {
+    mockSWR.mockImplementation((key: [string, string]) => ({
+      data: key[0].includes("mensalistas") ? undefined : { count: 0 },
+      error: key[0].includes("mensalistas") ? new Error("API indisponível") : undefined,
+    }));
+    const { result } = renderHook(() => useAdminBadges());
+    expect(result.current.badges.solicitacoes).toBeNull();
   });
 });

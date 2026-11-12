@@ -31,7 +31,12 @@ export default function MinhaContaPage() {
     statsPeriod: "current",
   });
   const groupName = premiumProfile?.tenant.name?.trim() || slug;
-  const isMonthly = Boolean(personal.me?.athlete?.mensalista);
+  const administrativeRole = personal.me?.membership?.role;
+  const isMonthly =
+    Boolean(personal.me?.athlete?.mensalista) ||
+    ["PRESIDENTE", "VICE_PRESIDENTE", "DIRETOR_FUTEBOL", "DIRETOR_FINANCEIRO"].includes(
+      administrativeRole ?? ""
+    );
   const pendingMonthly = requested || personal.me?.athlete?.mensalistaRequestStatus === "PENDING";
 
   async function requestMonthly() {
@@ -143,6 +148,7 @@ export default function MinhaContaPage() {
             <PublicMembershipCard
               variant={isMonthly ? "active" : pendingMonthly ? "pending" : "request"}
               groupName={groupName}
+              monthlyExempt={personal.me?.athlete?.monthlyExempt === true}
               onConfirm={requestMonthly}
             />
           </section>

@@ -7,10 +7,12 @@ export default function PublicMembershipCard({
   variant,
   groupName,
   onConfirm,
+  monthlyExempt = false,
 }: {
   variant: "active" | "pending" | "request";
   groupName: string;
   onConfirm?: () => Promise<void>;
+  monthlyExempt?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -45,8 +47,10 @@ export default function PublicMembershipCard({
   if (variant === "active") {
     return (
       <div className="rounded-xl border border-brand/25 bg-brand/5 p-4 text-sm text-zinc-200">
-        <strong className="block text-brand">Mensalista do grupo</strong>Participação mensalista
-        confirmada
+        <strong className="block text-brand">Mensalista do grupo</strong>
+        {monthlyExempt
+          ? "Isento de cobrança de mensalidade enquanto a isenção estiver válida."
+          : "Participação mensalista confirmada."}
       </div>
     );
   }

@@ -2,8 +2,10 @@
 
 import useSWR from "swr";
 import type { AthleteRequest } from "@/types/athlete-request";
+import { revalidateAdminRequestBadges } from "@/lib/admin-request-badges";
+import { useRacha } from "@/context/RachaContext";
 
-const fetcher = async (url: string): Promise<AthleteRequest[]> => {
+const fetcher = async ([url]: [string, string]): Promise<AthleteRequest[]> => {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     const text = await res.text();
@@ -57,6 +59,7 @@ function normalizeAvatarUrl(value?: string | null): string | null {
 }
 
 export function useAthleteRequests(options?: { status?: string; enabled?: boolean }) {
+  const { tenantSlug } = useRacha();
   const enabled = options?.enabled ?? true;
   const params = new URLSearchParams();
   if (options?.status) {
@@ -65,7 +68,7 @@ export function useAthleteRequests(options?: { status?: string; enabled?: boolea
   const url = params.toString() ? `/api/admin/solicitacoes?${params.toString()}` : null;
 
   const { data, error, isLoading, mutate } = useSWR<AthleteRequest[]>(
-    enabled ? url : null,
+    enabled && tenantSlug && url ? [url, tenantSlug] : null,
     fetcher,
     { revalidateOnFocus: false }
   );
@@ -84,6 +87,7 @@ export function useAthleteRequests(options?: { status?: string; enabled?: boolea
       method: "PUT",
     });
     await mutate();
+    await revalidateAdminRequestBadges();
   };
 
   const reject = async (id: string, message?: string) => {
@@ -92,6 +96,7 @@ export function useAthleteRequests(options?: { status?: string; enabled?: boolea
       body: JSON.stringify({ message }),
     });
     await mutate();
+    await revalidateAdminRequestBadges();
   };
 
   return {

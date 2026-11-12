@@ -353,29 +353,36 @@ export default function ParticipantesRacha({
   ]);
 
   const participantesDisponiveis = useMemo<Participante[]>(() => {
-    const mapped = (jogadores || []).map((jogador) => {
-      const estrela = estrelasGlobais[jogador.id] ?? buildDefaultEstrelas(jogador.id);
+    const mapped = (jogadores || [])
+      .filter(
+        (jogador) =>
+          String(jogador.status || "")
+            .trim()
+            .toLowerCase() === "ativo"
+      )
+      .map((jogador) => {
+        const estrela = estrelasGlobais[jogador.id] ?? buildDefaultEstrelas(jogador.id);
 
-      return {
-        id: jogador.id,
-        nome: jogador.nome || jogador.apelido || "Jogador",
-        slug: slugify(jogador.nome || jogador.apelido || jogador.id),
-        foto: jogador.avatar || jogador.foto || "/images/jogadores/jogador_padrao_01.jpg",
-        posicao: normalizarPosicao(jogador.posicao),
-        posicaoSecundaria: jogador.posicaoSecundaria
-          ? normalizarPosicao(jogador.posicaoSecundaria)
-          : undefined,
-        rankingPontos: rankingMap[jogador.id] ?? 0,
-        campeoesDoDia: campeoesMap[jogador.id] ?? 0,
-        vitorias: 0,
-        assistencias: 0,
-        gols: 0,
-        estrelas: estrela,
-        mensalista: !!jogador.mensalista,
-        isBot: jogador.isBot,
-        partidas: (jogador as any).partidas ?? 0,
-      };
-    });
+        return {
+          id: jogador.id,
+          nome: jogador.nome || jogador.apelido || "Jogador",
+          slug: slugify(jogador.nome || jogador.apelido || jogador.id),
+          foto: jogador.avatar || jogador.foto || "/images/jogadores/jogador_padrao_01.jpg",
+          posicao: normalizarPosicao(jogador.posicao),
+          posicaoSecundaria: jogador.posicaoSecundaria
+            ? normalizarPosicao(jogador.posicaoSecundaria)
+            : undefined,
+          rankingPontos: rankingMap[jogador.id] ?? 0,
+          campeoesDoDia: campeoesMap[jogador.id] ?? 0,
+          vitorias: 0,
+          assistencias: 0,
+          gols: 0,
+          estrelas: estrela,
+          mensalista: !!jogador.mensalista,
+          isBot: jogador.isBot,
+          partidas: (jogador as any).partidas ?? 0,
+        };
+      });
     const bots = mapped.filter((item) => item.isBot);
     const reais = mapped.filter((item) => !item.isBot);
     return [...reais, ...bots];

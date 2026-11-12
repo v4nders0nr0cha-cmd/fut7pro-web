@@ -44,11 +44,11 @@ const ROLE_CONFIG: Record<
 > = {
   PRESIDENTE: {
     label: "Presidente",
-    subtitle: "Dono do racha",
+    subtitle: "Responsável pelo grupo",
     icon: <Crown className="text-yellow-400" size={18} />,
     editable: false,
     bullets: [
-      "Gestão total do racha e do painel",
+      "Gestão total do grupo e do painel",
       "Controle de administradores e permissões",
       "Acesso completo às configurações críticas",
     ],
@@ -75,13 +75,13 @@ const ROLE_CONFIG: Record<
       "Partidas, resultados e Times do Dia",
       "Jogadores e desempenho esportivo",
       "Conquistas ligadas a desempenho",
-      "Rankings e estatísticas do racha",
+      "Rankings e estatísticas do grupo",
       "Não pode Financeiro, Patrocinadores e Configurações críticas",
     ],
   },
   DIRETOR_FINANCEIRO: {
     label: "Diretor Financeiro",
-    subtitle: "Finanças do racha",
+    subtitle: "Finanças do grupo",
     icon: <DollarSign className="text-green-400" size={18} />,
     editable: true,
     bullets: [
@@ -101,6 +101,7 @@ export default function AdministradoresClient() {
     isError,
     error,
     assignRole,
+    setMonthlyExemption,
     removeRole,
     cancelInvite,
     mutate,
@@ -115,6 +116,11 @@ export default function AdministradoresClient() {
   const [pendingAssign, setPendingAssign] = useState<{
     role: AdminRoleKey;
     athlete: AdminRoleAthlete;
+  } | null>(null);
+  const [inviteMonthlyExempt, setInviteMonthlyExempt] = useState<boolean | null>(null);
+  const [pendingMonthlyChange, setPendingMonthlyChange] = useState<{
+    role: AdminRoleKey;
+    exempt: boolean;
   } | null>(null);
   const [pendingRemoveRole, setPendingRemoveRole] = useState<AdminRoleKey | null>(null);
   const [pendingCancelInvite, setPendingCancelInvite] = useState<{
@@ -166,21 +172,34 @@ export default function AdministradoresClient() {
   const requestAssignConfirmation = () => {
     if (!modalRole || !selectedAthlete) return;
     setPendingAssign({ role: modalRole, athlete: selectedAthlete });
+    setInviteMonthlyExempt(null);
   };
 
   const confirmAssignRole = async () => {
-    if (!pendingAssign) return;
+    if (!pendingAssign || inviteMonthlyExempt === null) return;
     const roleLabel = ROLE_CONFIG[pendingAssign.role].label;
     try {
-      await assignRole(pendingAssign.role, pendingAssign.athlete.id);
+      await assignRole(pendingAssign.role, pendingAssign.athlete.id, inviteMonthlyExempt);
       setFeedback(
         `Convite enviado com sucesso para ${pendingAssign.athlete.nome} assumir como ${roleLabel}. O cargo só será alterado após o aceite.`
       );
       setPendingAssign(null);
+      setInviteMonthlyExempt(null);
       closeModal();
     } catch (err) {
       setModalError(err instanceof Error ? err.message : "Erro ao salvar administrador.");
       setPendingAssign(null);
+    }
+  };
+
+  const confirmMonthlyChange = async () => {
+    if (!pendingMonthlyChange) return;
+    try {
+      await setMonthlyExemption(pendingMonthlyChange.role, pendingMonthlyChange.exempt);
+      setFeedback("Condição da mensalidade atualizada.");
+      setPendingMonthlyChange(null);
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : "Erro ao alterar a mensalidade.");
     }
   };
 
@@ -221,7 +240,7 @@ export default function AdministradoresClient() {
     const isPending = Boolean(slot.pendingInvite);
     const statusLabel =
       role === "PRESIDENTE"
-        ? "Dono do racha"
+        ? "Responsável pelo grupo"
         : isPending
           ? slot.status === "ACTIVE"
             ? "Ativo · convite pendente"
@@ -242,7 +261,7 @@ export default function AdministradoresClient() {
       <div className="rounded-xl border border-dashed border-[#363a44] bg-[#171a20] px-4 py-5 text-center">
         <div className="text-sm font-semibold text-zinc-200">Cargo ainda sem responsável</div>
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          Indique um atleta confiável para assumir esta função quando a rotina do racha exigir.
+          Indique um atleta confiável para assumir esta função quando a rotina do grupo exigir.
         </p>
         {config.editable && (
           <button
@@ -306,6 +325,30 @@ export default function AdministradoresClient() {
             <Info size={14} />
             Ver permissões
           </Link>
+        </div>
+      ) : null;
+
+    const monthlyBlock =
+      slot.status === "ACTIVE" ? (
+        <div className="rounded-lg border border-zinc-700 bg-zinc-900/60 p-3 text-sm text-zinc-300">
+          <div className="font-semibold text-zinc-100">Condição da mensalidade</div>
+          <div className="mt-1">
+            {slot.monthlyExempt === null || slot.monthlyExempt === undefined
+              ? "Condição indisponível"
+              : slot.monthlyExempt
+                ? "Mensalista isento de cobrança"
+                : "Mensalista com cobrança normal"}
+          </div>
+          {config.editable && slot.monthlyExempt !== null && slot.monthlyExempt !== undefined && (
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={() => setPendingMonthlyChange({ role, exempt: !slot.monthlyExempt })}
+              className="mt-2 text-xs font-semibold text-yellow-300 hover:underline disabled:opacity-50"
+            >
+              Alterar condição
+            </button>
+          )}
         </div>
       ) : null;
 
@@ -401,6 +444,7 @@ export default function AdministradoresClient() {
                 </span>
               </div>
               {identityBlock}
+              {monthlyBlock}
             </div>
             {permissionBlock}
           </div>
@@ -426,6 +470,7 @@ export default function AdministradoresClient() {
         </div>
 
         {identityBlock}
+        {monthlyBlock}
         {actionBlock}
         {inviteBlock}
 
@@ -474,9 +519,9 @@ export default function AdministradoresClient() {
   return (
     <div className="w-full max-w-7xl mx-auto pb-10">
       <div className="flex flex-col gap-2 mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">Administradores do Racha</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">Administradores do Grupo</h1>
         <p className="text-zinc-300">
-          Defina quem ajuda na gestão do racha e mantenha o controle da bola com segurança.
+          Defina quem ajuda na gestão do grupo e mantenha o controle da bola com segurança.
         </p>
       </div>
 
@@ -700,6 +745,7 @@ export default function AdministradoresClient() {
         confirmLabel="Enviar convite"
         cancelLabel="Voltar"
         loading={isSaving}
+        disabled={inviteMonthlyExempt === null}
         impactItems={[
           "O convite aparecerá nas notificações individuais do atleta.",
           "Nenhuma permissão será concedida antes do aceite.",
@@ -707,6 +753,61 @@ export default function AdministradoresClient() {
         ]}
         onClose={() => setPendingAssign(null)}
         onConfirm={confirmAssignRole}
+      >
+        <fieldset className="space-y-2">
+          <legend className="mb-2 text-sm font-semibold text-white">Condição da mensalidade</legend>
+          {(
+            [
+              {
+                value: true,
+                title: "Mensalista isento de cobrança",
+                description:
+                  "Este administrador não terá cobrança de mensalidade enquanto a isenção estiver válida.",
+              },
+              {
+                value: false,
+                title: "Mensalista com cobrança normal",
+                description:
+                  "Este administrador continuará sujeito às condições financeiras estabelecidas pelo grupo.",
+              },
+            ] as const
+          ).map((option) => (
+            <label
+              key={String(option.value)}
+              className="flex cursor-pointer gap-3 rounded-xl border border-zinc-700 p-3 text-sm text-zinc-200"
+            >
+              <input
+                type="radio"
+                name="invite-monthly-exempt"
+                checked={inviteMonthlyExempt === option.value}
+                onChange={() => setInviteMonthlyExempt(option.value)}
+                className="mt-1 accent-yellow-400"
+              />
+              <span>
+                <strong className="block text-white">{option.title}</strong>
+                {option.description}
+              </span>
+            </label>
+          ))}
+          <p className="pt-2 text-xs leading-5 text-zinc-400">
+            O atleta se tornará mensalista e assumirá o cargo administrativo somente após aceitar o
+            convite. A escolha de isenção não altera suas estatísticas ou conquistas.
+          </p>
+        </fieldset>
+      </Fut7ConfirmDialog>
+
+      <Fut7ConfirmDialog
+        open={Boolean(pendingMonthlyChange)}
+        title="Alterar condição da mensalidade?"
+        description={
+          pendingMonthlyChange
+            ? `O administrador passará a ser mensalista ${pendingMonthlyChange.exempt ? "isento de cobrança" : "com cobrança normal"}. A alteração vale a partir da competência atual e não altera pagamentos anteriores.`
+            : null
+        }
+        confirmLabel="Confirmar alteração"
+        loading={isSaving}
+        onClose={() => setPendingMonthlyChange(null)}
+        onConfirm={confirmMonthlyChange}
       />
 
       <Fut7DestructiveDialog
@@ -721,7 +822,7 @@ export default function AdministradoresClient() {
             <>
               Esta ação remove o acesso administrativo vinculado ao cargo{" "}
               <strong className="text-red-100">{ROLE_CONFIG[pendingRemoveRole].label}</strong>. O
-              atleta continua cadastrado no racha, mas deixa de atuar nessa função.
+              atleta continua cadastrado no grupo, mas deixa de atuar nessa função.
             </>
           ) : null
         }
