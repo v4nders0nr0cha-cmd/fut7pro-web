@@ -42,7 +42,7 @@ const menu: MenuItem[] = [
   {
     label: "Solicitações",
     icon: FaUserPlus,
-    href: "/admin/jogadores/listar-cadastrar#solicitacoes",
+    href: "/admin/solicitacoes",
     badgeKey: "solicitacoes",
   },
 ];
@@ -169,7 +169,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
               key={item.href}
               href={item.href}
               aria-label={item.label}
-              className="relative hidden items-center gap-2 rounded px-2 py-1 transition hover:bg-zinc-800 sm:flex"
+              className={`relative hidden items-center gap-2 rounded px-2 py-1 transition hover:bg-zinc-800 sm:flex ${isActive ? "bg-zinc-800 text-brand" : ""}`}
+              aria-current={isActive ? "page" : undefined}
               tabIndex={0}
               data-testid={`admin-header-link-${slugifyTestId(item.href)}`}
             >

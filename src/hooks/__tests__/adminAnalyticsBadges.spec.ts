@@ -3,6 +3,7 @@ import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
 
 const mockSWR = jest.fn();
+let mockTenantSlug = "slug-test";
 
 jest.mock("swr", () => ({
   __esModule: true,
@@ -11,7 +12,7 @@ jest.mock("swr", () => ({
 }));
 
 jest.mock("@/context/RachaContext", () => ({
-  useRacha: () => ({ tenantSlug: "slug-test" }),
+  useRacha: () => ({ tenantSlug: mockTenantSlug }),
 }));
 
 jest.mock("@/hooks/useAdminNotifications", () => ({
@@ -57,7 +58,10 @@ describe("useAdminAnalytics", () => {
 });
 
 describe("useAdminBadges", () => {
-  beforeEach(() => mockSWR.mockReset());
+  beforeEach(() => {
+    mockSWR.mockReset();
+    mockTenantSlug = "slug-test";
+  });
 
   it("soma entradas e pedidos de mensalista do grupo ativo", () => {
     mockSWR.mockImplementation((key: [string, string]) => ({
@@ -83,6 +87,8 @@ describe("useAdminBadges", () => {
       solicitacoes: 5,
       perfil: 0,
     });
+    expect(result.current.entryPending).toBe(3);
+    expect(result.current.monthlyPending).toBe(2);
   });
 
   it("não confirma zero quando uma das consultas falha", () => {
@@ -92,5 +98,30 @@ describe("useAdminBadges", () => {
     }));
     const { result } = renderHook(() => useAdminBadges());
     expect(result.current.badges.solicitacoes).toBeNull();
+    expect(result.current.entryPending).toBe(0);
+    expect(result.current.monthlyPending).toBeNull();
+    expect(result.current.monthlyLoading).toBe(false);
+  });
+
+  it("consulta novamente as duas contagens ao trocar o grupo ativo", () => {
+    mockSWR.mockImplementation((key: [string, string]) => ({
+      data: key[0].includes("mensalistas") ? { total: 1 } : { count: 2 },
+      error: undefined,
+    }));
+    const view = renderHook(() => useAdminBadges());
+    expect(view.result.current.badges.solicitacoes).toBe(3);
+    mockTenantSlug = "outro-grupo";
+    mockSWR.mockClear();
+    view.rerender();
+    expect(mockSWR).toHaveBeenCalledWith(
+      ["/api/admin/solicitacoes?status=PENDENTE&count=1", "outro-grupo"],
+      expect.any(Function),
+      expect.any(Object)
+    );
+    expect(mockSWR).toHaveBeenCalledWith(
+      ["/api/admin/mensalistas/requests?count=1", "outro-grupo"],
+      expect.any(Function),
+      expect.any(Object)
+    );
   });
 });

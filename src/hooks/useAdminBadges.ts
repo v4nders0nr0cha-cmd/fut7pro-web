@@ -70,8 +70,10 @@ export function useAdminBadges() {
   };
   return {
     badges,
+    entryPending: !entryError && typeof entryData?.count === "number" ? entryData.count : null,
+    entryLoading: !entryError && !entryData && Boolean(tenantSlug),
     monthlyPending:
       !monthlyError && typeof monthlyData?.total === "number" ? monthlyData.total : null,
-    monthlyLoading: !monthlyError && !monthlyData,
+    monthlyLoading: !monthlyError && !monthlyData && Boolean(tenantSlug),
   };
 }
