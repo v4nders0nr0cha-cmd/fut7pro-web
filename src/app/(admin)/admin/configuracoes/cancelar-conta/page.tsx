@@ -66,7 +66,7 @@ export default function CancelarContaPage() {
       return;
     }
     if (!slug) {
-      setErroEnvio("Slug do racha não encontrado.");
+      setErroEnvio("Não foi possível identificar o endereço do grupo selecionado.");
       return;
     }
 
@@ -96,8 +96,8 @@ export default function CancelarContaPage() {
       setTicketCriadoAgora(typeof data.created === "boolean" ? data.created : null);
       setMensagemSucesso(
         data.created === false
-          ? "Já existe uma solicitação de cancelamento aberta para este racha. O protocolo foi recuperado para acompanhamento."
-          : "Solicitação de cancelamento do racha registrada com sucesso. Nossa equipe continuará o atendimento pelo suporte."
+          ? "Já existe uma solicitação de cancelamento aberta para este grupo. Você pode acompanhá-la pelo número informado abaixo."
+          : "Solicitação de cancelamento do grupo registrada. Nossa equipe continuará o atendimento pelo suporte."
       );
       setMotivo("");
       setConfirmouEscopoRacha(false);
@@ -113,19 +113,19 @@ export default function CancelarContaPage() {
   return (
     <>
       <Head>
-        <title>Cancelar conta do racha | Fut7Pro Admin</title>
+        <title>Cancelar conta do grupo | Fut7Pro</title>
         <meta
           name="description"
-          content="Solicite o cancelamento da conta do racha no Fut7Pro com confirmação segura e protocolo de atendimento."
+          content="Solicite o cancelamento da conta do grupo no Fut7Pro com confirmação e acompanhamento pelo suporte."
         />
         <meta
           name="keywords"
-          content="Fut7Pro, cancelar conta do racha, cancelamento de assinatura, suporte admin"
+          content="Fut7Pro, cancelar conta do grupo, cancelamento de assinatura, suporte"
         />
       </Head>
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-2xl mx-auto w-full">
         <h1 className="text-2xl md:text-3xl font-bold text-red-400 mb-2 flex items-center gap-2">
-          <FaUserSlash /> Cancelar conta do racha
+          <FaUserSlash /> Cancelar conta do grupo
         </h1>
         <p className="text-sm text-zinc-300 mb-6">
           Esta página cancela apenas o grupo selecionado ({slug || "endereço indisponível"}). Sua
@@ -135,9 +135,9 @@ export default function CancelarContaPage() {
         {!isPresidente ? (
           <div className="bg-[#231a1a] border-l-4 border-red-500 rounded-lg p-6 shadow text-red-300 text-center flex flex-col items-center animate-fadeIn">
             <FaLock className="text-3xl mb-2" />
-            <b>Recurso restrito ao Presidente do racha.</b>
+            <b>Apenas o Presidente do grupo pode fazer esta solicitação.</b>
             <div className="text-gray-400 mt-2">
-              Apenas o Presidente pode solicitar o cancelamento da conta do racha.
+              Apenas o Presidente pode solicitar o cancelamento da conta do grupo.
               <br />
               Para pausa, migração de plano ou dúvidas,{" "}
               <Link href="/admin/comunicacao/suporte" className="underline text-yellow-400">
@@ -153,7 +153,7 @@ export default function CancelarContaPage() {
                 <FaExclamationTriangle /> Atenção: solicitação crítica de cancelamento
               </b>
               <br />
-              Este fluxo trata somente do cancelamento da conta do racha ativo. A conta global do
+              Esta solicitação cancela somente a conta do grupo selecionado. A conta global do
               usuário solicitante permanece ativa no Fut7Pro.
               <br />
               <span className="text-gray-300 block mt-2">
@@ -167,30 +167,30 @@ export default function CancelarContaPage() {
 
             <div className="bg-[#232323] rounded-lg p-5 shadow border border-yellow-700 mb-10">
               <div className="font-bold text-yellow-300 mb-2">
-                O que acontece ao cancelar a conta do racha?
+                O que acontece ao cancelar a conta do grupo?
               </div>
               <ul className="list-disc ml-6 text-gray-200 text-sm space-y-1 mb-4">
-                <li>O cancelamento afeta somente este racha e sua assinatura vinculada.</li>
+                <li>O cancelamento afeta somente este grupo e sua assinatura.</li>
                 <li>
-                  O acesso administrativo desse racha pode ser bloqueado após a conclusão do
+                  O acesso administrativo desse grupo pode ser bloqueado após a conclusão do
                   processo.
                 </li>
                 <li>
-                  Dados esportivos e financeiros do racha podem ser arquivados ou excluídos conforme
-                  política de retenção e compliance.
+                  Dados esportivos e financeiros do grupo podem ser arquivados ou excluídos conforme
+                  as regras de conservação de dados.
                 </li>
                 <li>Não há exclusão da conta global do usuário por este fluxo.</li>
-                <li>Rachas adicionais vinculados ao mesmo usuário permanecem inalterados.</li>
+                <li>Se você participa de outros grupos, eles permanecem disponíveis.</li>
               </ul>
               <div className="mb-3">
                 <label htmlFor="motivo" className="block text-yellow-300 font-bold mb-1">
-                  Motivo do cancelamento do racha (opcional)
+                  Motivo do cancelamento do grupo (opcional)
                 </label>
                 <textarea
                   id="motivo"
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
-                  placeholder="Ex.: encerramos as atividades, vamos migrar para outro modelo, custo atual não atende ao momento do racha."
+                  placeholder="Ex.: encerramos as atividades, vamos migrar para outro modelo, o custo atual não atende ao momento do grupo."
                   className="w-full p-3 rounded bg-[#181818] border border-yellow-400 text-gray-100 min-h-[70px] max-h-36 resize-y"
                   maxLength={600}
                 />
@@ -204,7 +204,7 @@ export default function CancelarContaPage() {
                   className="form-checkbox h-5 w-5 text-red-500 bg-[#181818] border-red-400"
                 />
                 <label htmlFor="confirmar-escopo-racha" className="text-red-300 font-semibold">
-                  Confirmo que estou cancelando apenas a conta deste racha, e não minha conta global
+                  Confirmo que estou cancelando apenas a conta deste grupo, e não minha conta global
                   de usuário.
                 </label>
               </div>
@@ -217,7 +217,8 @@ export default function CancelarContaPage() {
                   className="form-checkbox h-5 w-5 text-red-500 bg-[#181818] border-red-400"
                 />
                 <label htmlFor="confirmar-impacto-dados" className="text-red-300 font-semibold">
-                  Confirmo que entendi o impacto sobre dados e acesso do racha após o cancelamento.
+                  Confirmo que entendi o que pode acontecer com os dados e o acesso ao grupo após o
+                  cancelamento.
                 </label>
               </div>
 
@@ -244,7 +245,7 @@ export default function CancelarContaPage() {
                 onClick={handleSolicitarCancelamento}
                 type="button"
               >
-                <FaUserSlash /> {enviando ? "Enviando..." : "Solicitar cancelamento do racha"}
+                <FaUserSlash /> {enviando ? "Enviando..." : "Solicitar cancelamento do grupo"}
               </button>
               {erroEnvio && <div className="mt-3 text-red-400 text-sm">{erroEnvio}</div>}
               {mensagemSucesso && (
@@ -286,7 +287,7 @@ export default function CancelarContaPage() {
           <ul className="text-gray-300 text-sm space-y-2">
             <li>
               <b>Isso apaga minha conta global do Fut7Pro?</b> Não. Esta solicitação cancela somente
-              o racha ativo.
+              o grupo selecionado.
             </li>
             <li>
               <b>Posso pausar em vez de cancelar?</b> Sim. Fale com o suporte para avaliar pausa,

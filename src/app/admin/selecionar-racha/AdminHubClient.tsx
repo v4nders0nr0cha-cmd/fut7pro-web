@@ -483,7 +483,8 @@ export default function AdminHubClient() {
             <p className="text-xs uppercase tracking-[0.3em] text-yellow-300">Painel Fut7Pro</p>
             <h1 className="text-2xl font-bold sm:text-3xl">Meus Grupos</h1>
             <p className="mt-2 text-sm text-gray-300">
-              Selecione o grupo que deseja administrar. O acesso fica 100% isolado por grupo.
+              Escolha o grupo que deseja administrar. Você verá apenas as informações e permissões
+              desse grupo.
             </p>
           </div>
           <button

@@ -591,19 +591,22 @@ function CadastroRachaPageContent() {
 
   const slugInfo = useMemo(() => {
     if (!rachaSlug) {
-      return { text: "Use letras minusculas, numeros e hifen (3-30).", tone: "muted" };
+      return { text: "Use de 3 a 30 letras minúsculas, números ou hífens.", tone: "muted" };
     }
     if (slugStatus === "checking") {
       return { text: "Verificando disponibilidade...", tone: "muted" };
     }
     if (slugStatus === "available") {
-      return { text: "Slug disponivel.", tone: "success" };
+      return { text: "Endereço disponível.", tone: "success" };
     }
     if (slugStatus === "unavailable") {
-      return { text: "Slug indisponivel.", tone: "error" };
+      return { text: "Este endereço já está em uso.", tone: "error" };
     }
     if (slugStatus === "invalid") {
-      return { text: "Slug inválido ou reservado.", tone: "error" };
+      return {
+        text: "Escolha outro endereço para o grupo. Use letras minúsculas, números ou hífens.",
+        tone: "error",
+      };
     }
     if (slugStatus === "rate_limited") {
       return {
@@ -1258,7 +1261,8 @@ function CadastroRachaPageContent() {
     const wantsPassword =
       !useExistingGlobalAccount && (!isGoogle || defineSenha || adminSenha || adminConfirmSenha);
     if (wantsPassword) {
-      if (!adminSenha || adminSenha.length < 6) nextErrors.adminSenha = "Minimo de 6 caracteres.";
+      if (!adminSenha || adminSenha.length < 6)
+        nextErrors.adminSenha = "Use pelo menos 6 caracteres.";
       if (adminSenha !== adminConfirmSenha)
         nextErrors.adminConfirmSenha = "As senhas não conferem.";
     }
@@ -1268,14 +1272,15 @@ function CadastroRachaPageContent() {
   function buildStep2Errors(): FieldErrors {
     const nextErrors: FieldErrors = {};
     if (!rachaNome.trim() || rachaNome.trim().length < 3)
-      nextErrors.rachaNome = "Nome minimo de 3 caracteres.";
+      nextErrors.rachaNome = "O nome precisa ter pelo menos 3 caracteres.";
     const slug = rachaSlug.trim().toLowerCase();
     if (!slug) {
       nextErrors.rachaSlug = "Informe o endereço do grupo.";
     } else if (!SLUG_REGEX.test(slug) || RESERVED_SLUGS.has(slug)) {
-      nextErrors.rachaSlug = "Slug invalido ou reservado.";
+      nextErrors.rachaSlug =
+        "Escolha outro endereço para o grupo. Use letras minúsculas, números ou hífens.";
     } else if (slugStatus === "unavailable") {
-      nextErrors.rachaSlug = "Slug indisponivel.";
+      nextErrors.rachaSlug = "Este endereço já está em uso.";
     } else if (slugStatus === "checking") {
       nextErrors.rachaSlug = "Aguarde a verificação.";
     } else if (slugStatus === "rate_limited") {
@@ -1394,7 +1399,11 @@ function CadastroRachaPageContent() {
           resetTurnstile();
           return;
         }
-        setFormError(msg);
+        setFormError(
+          /^slug (?:invalido|inválido|indisponivel|indisponível|reservado)/i.test(msg)
+            ? "Escolha outro endereço para o grupo. Use letras minúsculas, números ou hífens."
+            : msg
+        );
         return;
       }
 
@@ -2190,7 +2199,7 @@ function CadastroRachaPageContent() {
                     </label>
 
                     <label className="text-xs text-gray-400">
-                      Slug (ex: quarta-fc) *
+                      Endereço do grupo (ex.: quarta-fc) *
                       <input
                         type="text"
                         value={rachaSlug}

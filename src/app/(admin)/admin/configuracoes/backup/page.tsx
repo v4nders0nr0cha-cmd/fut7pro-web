@@ -513,7 +513,7 @@ export default function BackupPage() {
                     <th className="py-2 pr-3">Data e hora</th>
                     <th className="py-2 pr-3">Status</th>
                     <th className="py-2 pr-3">Detalhes</th>
-                    <th className="py-2">Artefato</th>
+                    <th className="py-2">Arquivo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -558,16 +558,15 @@ export default function BackupPage() {
             Recuperação Assistida
           </div>
           <p className="text-sm text-gray-200 mb-3">
-            A restauração de dados é feita com validação operacional para evitar inconsistências
-            entre grupos.
+            A equipe confere os dados antes de restaurá-los para evitar problemas entre grupos.
           </p>
           <ul className="text-sm text-gray-300 space-y-2">
             <li>
-              1. Abra um chamado no suporte com o endereço do grupo, data da ocorrência e contexto
-              do problema.
+              1. Abra um chamado no suporte com o endereço do grupo, a data e uma descrição do
+              problema.
             </li>
-            <li>2. A equipe valida integridade e disponibilidade dos artefatos do diagnóstico.</li>
-            <li>3. A recuperação é executada de forma controlada e auditada.</li>
+            <li>2. A equipe verifica quais dados estão disponíveis para recuperação.</li>
+            <li>3. A recuperação é realizada com segurança e fica registrada.</li>
           </ul>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
@@ -594,8 +593,8 @@ export default function BackupPage() {
           </div>
           <ul className="text-gray-300 text-sm space-y-2">
             <li>
-              <b>Quando devo executar diagnóstico manual?</b> Antes de mudanças sensíveis no painel
-              ou ao investigar inconsistências.
+              <b>Quando devo executar diagnóstico manual?</b> Antes de alterações importantes no
+              painel ou para verificar informações que pareçam incorretas.
             </li>
             <li>
               <b>O histórico é por grupo?</b> Sim. Você vê apenas os diagnósticos do grupo
@@ -603,7 +602,7 @@ export default function BackupPage() {
             </li>
             <li>
               <b>Posso restaurar diretamente por arquivo nesta tela?</b> Não. A recuperação segue
-              fluxo assistido para garantir segurança e rastreabilidade.
+              com ajuda da equipe para proteger os dados e registrar a solicitação.
             </li>
             <li>
               <b>Onde acompanho ações administrativas?</b> Em{" "}

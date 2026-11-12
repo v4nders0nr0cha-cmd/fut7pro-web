@@ -505,12 +505,12 @@ export default function RecoveryCenterClient() {
       ) : null}
 
       <div className="mt-8 text-center text-sm text-zinc-500">
-        Precisa de diagnóstico operacional ou suporte assistido?{" "}
+        Precisa verificar os dados ou pedir ajuda para recuperá-los?{" "}
         <Link
           href="/admin/configuracoes/backup"
           className="font-semibold text-yellow-300 underline"
         >
-          Acesse Backup &amp; Recuperação
+          Acesse Backup e Recuperação
         </Link>
         .
       </div>
@@ -519,7 +519,7 @@ export default function RecoveryCenterClient() {
         open={Boolean(selectedItem)}
         title="Confirmar restauração"
         eyebrow="Central de Recuperação"
-        description="O Fut7Pro validará novamente o prazo, o grupo selecionado e possíveis conflitos antes de concluir."
+        description="Antes de concluir, vamos conferir o prazo, o grupo selecionado e se há alterações que impeçam a restauração."
         confirmLabel="Confirmar restauração"
         cancelLabel="Cancelar"
         loading={restoring}

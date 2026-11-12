@@ -97,7 +97,7 @@ const menu = [
       { label: "Integrações & Automação", href: "/admin/configuracoes/integracoes" },
       { label: "Backup & Recuperação", href: "/admin/configuracoes/backup" },
       { label: "Central de Atualizações", href: "/admin/configuracoes/changelog" },
-      { label: "Cancelar conta do racha", href: "/admin/configuracoes/cancelar-conta" },
+      { label: "Cancelar conta do grupo", href: "/admin/configuracoes/cancelar-conta" },
     ],
   },
 ];

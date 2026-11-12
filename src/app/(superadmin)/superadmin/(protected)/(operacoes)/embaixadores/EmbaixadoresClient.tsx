@@ -850,13 +850,13 @@ export default function EmbaixadoresClient() {
             <button
               type="button"
               disabled
-              title="Indisponível durante a validação operacional do programa Creators Fut7Pro."
+              title="Indisponível enquanto a equipe verifica o programa Creators Fut7Pro."
               className="mt-2 w-full cursor-not-allowed rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-left text-sm font-semibold text-amber-100 opacity-80"
             >
               Materializar ledger recorrente
             </button>
             <p className="mt-2 text-xs text-amber-100/80">
-              Indisponível durante a validação operacional do programa Creators Fut7Pro.
+              Indisponível enquanto a equipe verifica o programa Creators Fut7Pro.
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">

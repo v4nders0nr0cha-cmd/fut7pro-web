@@ -21,7 +21,7 @@ export default function DominioProprioPage() {
         <title>Domínio Próprio | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Status do recurso de domínio próprio para o seu racha, com validação de plano e canal oficial para ativação."
+          content="Saiba como usar um domínio próprio no site público do seu grupo."
         />
         <meta
           name="keywords"
@@ -38,7 +38,7 @@ export default function DominioProprioPage() {
             <p>Carregando dados do plano...</p>
           ) : isEnterprise ? (
             <p>
-              Plano ativo: <b>{planLabel}</b>. Seu racha pode solicitar ativação de domínio próprio
+              Plano ativo: <b>{planLabel}</b>. Seu grupo pode solicitar ativação de domínio próprio
               pelo suporte.
             </p>
           ) : (
@@ -51,11 +51,12 @@ export default function DominioProprioPage() {
 
         <div className="bg-[#232323] rounded-lg p-5 shadow-lg border border-yellow-700">
           <div className="flex items-center gap-2 text-yellow-300 font-bold mb-2">
-            Escopo do recurso
+            O que está incluído
           </div>
           <ul className="text-sm text-gray-200 space-y-2">
             <li className="flex items-center gap-2">
-              <FaCheckCircle className="text-green-400" /> Cadastro e validação do domínio do racha.
+              <FaCheckCircle className="text-green-400" /> Cadastro e verificação do domínio do
+              grupo.
             </li>
             <li className="flex items-center gap-2">
               <FaCheckCircle className="text-green-400" /> Configuração de DNS com acompanhamento da
@@ -71,8 +72,8 @@ export default function DominioProprioPage() {
         <div className="bg-[#232323] rounded-lg p-5 shadow-lg border border-yellow-700">
           <div className="font-bold text-yellow-300 mb-2">Próximo passo</div>
           <p className="text-sm text-gray-300 mb-4">
-            Para iniciar a configuração, abra um chamado no suporte com o domínio desejado e o slug
-            do racha.
+            Para iniciar a configuração, abra um chamado no suporte com o domínio desejado e o
+            endereço do grupo.
           </p>
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <Link
