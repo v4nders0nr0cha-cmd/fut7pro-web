@@ -43,7 +43,7 @@ function readCanonical(source) {
       !ts.isArrayLiteralExpression(evidence)
     )
       throw new Error("Entrada publicada sem versão, data, evidências ou itens literais.");
-    return { version: version.text, shape: shape(element) };
+    return { version: version.text, shape: shape(element), exact: shape(element, false) };
   });
   const versions = entries.map((entry) => entry.version);
   if (new Set(versions).size !== versions.length) throw new Error("Versão canônica duplicada.");
@@ -55,23 +55,24 @@ function readCanonical(source) {
   };
 }
 
-function shape(node) {
+function shape(node, allowEditorialText = true) {
   if (ts.isObjectLiteralExpression(node)) {
     return node.properties.map((member) => {
       if (!ts.isPropertyAssignment(member) || !ts.isIdentifier(member.name)) {
         throw new Error("Entrada canônica deve conter apenas propriedades literais.");
       }
       const name = member.name.text;
-      if (["title", "summary", "description"].includes(name)) {
+      if (allowEditorialText && ["title", "summary", "description"].includes(name)) {
         if (!ts.isStringLiteralLike(member.initializer)) {
           throw new Error(`Texto editorial ${name} deve ser literal.`);
         }
         return [name, "<texto>"];
       }
-      return [name, shape(member.initializer)];
+      return [name, shape(member.initializer, allowEditorialText)];
     });
   }
-  if (ts.isArrayLiteralExpression(node)) return node.elements.map(shape);
+  if (ts.isArrayLiteralExpression(node))
+    return node.elements.map((element) => shape(element, allowEditorialText));
   if (ts.isStringLiteralLike(node)) return node.text;
   return node.getText().replace(/\s+/g, "");
 }
@@ -84,10 +85,22 @@ function classifyCanonicalChange(beforeSource, afterSource) {
   const removed = [...oldVersions].filter((version) => !newVersions.has(version));
   if (removed.length) throw new Error(`Versões publicadas removidas: ${removed.join(", ")}.`);
   const added = [...newVersions].filter((version) => !oldVersions.has(version));
-  if (added.length) return { kind: "release", versions: added };
+  if (added.length) {
+    const retained = after.entries.filter((entry) => oldVersions.has(entry.version));
+    if (
+      JSON.stringify(before.entries.map(({ version, exact }) => [version, exact])) !==
+      JSON.stringify(retained.map(({ version, exact }) => [version, exact]))
+    ) {
+      throw new Error("Nova versão não pode modificar ou reordenar versões anteriores.");
+    }
+    return { kind: "release", versions: added };
+  }
   if (
     before.outside.replace(/\r\n/g, "\n") !== after.outside.replace(/\r\n/g, "\n") ||
-    JSON.stringify(before.entries) !== JSON.stringify(after.entries)
+    JSON.stringify(
+      before.entries.map(({ version, shape: entryShape }) => [version, entryShape])
+    ) !==
+      JSON.stringify(after.entries.map(({ version, shape: entryShape }) => [version, entryShape]))
   ) {
     throw new Error(
       "Sem nova versão, apenas título, resumo e descrições de entradas publicadas podem mudar."
