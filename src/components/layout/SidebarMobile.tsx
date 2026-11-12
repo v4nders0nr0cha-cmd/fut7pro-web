@@ -1,8 +1,9 @@
 "use client";
 
-import type { FC } from "react";
+import { useEffect, useRef, type FC } from "react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   FaHome,
   FaChartBar,
@@ -12,109 +13,83 @@ import {
   FaInfoCircle,
   FaTimes,
 } from "react-icons/fa";
-import Image from "next/image";
 import { useTema } from "@/hooks/useTema";
-import { useMe } from "@/hooks/useMe";
-import { useGlobalProfile } from "@/hooks/useGlobalProfile";
-import { usePathname } from "next/navigation";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
-import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
-import { resolveActiveTenantSlug } from "@/utils/active-tenant";
-import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
-import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
-import { isFut7ProAccountComplete } from "@/utils/public-auth-flow";
-import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 
-type SidebarMobileProps = {
-  open: boolean;
-  onClose: () => void;
-};
+type SidebarMobileProps = { open: boolean; onClose: () => void };
+
+const links = [
+  { href: "/", label: "Início", icon: FaHome },
+  { href: "/partidas", label: "Partidas", icon: FaFutbol },
+  { href: "/estatisticas", label: "Estatísticas", icon: FaChartBar },
+  { href: "/os-campeoes", label: "Os Campeões", icon: FaTrophy },
+  { href: "/grandes-torneios", label: "Grandes Torneios", icon: FaTrophy },
+  { href: "/atletas", label: "Perfis dos Atletas", icon: FaUsers },
+  { href: "/sobre-nos", label: "Sobre Nós", icon: FaInfoCircle },
+];
 
 const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
-  const { data: session, status } = useSession();
   const { logo, nome } = useTema();
-  const pathname = usePathname() ?? "";
-  const slugFromPath = resolvePublicTenantSlug(pathname);
-  const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
-  const tenantSlug = activeSlug || "";
-  const hasGlobalSession = hasUsableFut7ProSession(session, status);
-  const shouldCheckMe = hasGlobalSession && Boolean(tenantSlug);
-  const showUserMenu = hasGlobalSession;
-  const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
-  const { me, isError: isMeError } = useMe({
-    enabled: shouldCheckMe,
-    tenantSlug,
-    context: "athlete",
-  });
-  const membershipStatus = String(
-    me?.membership?.status ||
-      (me as { membershipStatus?: string | null } | null)?.membershipStatus ||
-      ""
-  ).toUpperCase();
-  const globalMembership = globalProfile?.memberships?.find(
-    (item) => item.tenantSlug === tenantSlug
-  );
-  const globalMembershipStatus = String(globalMembership?.status || "").toUpperCase();
-  const resolvedMembershipStatus = membershipStatus || globalMembershipStatus;
-  const isPendingMembership =
-    resolvedMembershipStatus === "PENDENTE" || resolvedMembershipStatus === "PENDING";
-  const hasApprovedTenantProfile = Boolean(
-    hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
-  );
-  const accountComplete = isFut7ProAccountComplete(globalProfile?.user || me?.athlete);
-  const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
-  const profileUser = globalProfile?.user;
-  const fallbackEmail = session?.user?.email || profileUser?.email || "";
-  const emailLabel = fallbackEmail ? fallbackEmail.split("@")[0] : "";
-  const profileImage = getAvatarSrc(
-    me?.athlete?.avatarUrl || me?.user?.avatarUrl || profileUser?.avatarUrl || session?.user?.image,
-    DEFAULT_ATHLETE_AVATAR
-  );
-  const userName =
-    profileUser?.nickname?.trim() ||
-    profileUser?.name?.trim() ||
-    (me?.athlete?.firstName || "").trim() ||
-    (session?.user?.name || "").trim() ||
-    emailLabel ||
-    "Usuario";
-  const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
-  const resolvedSlug = activeSlug || fallbackSlug || "";
-  const profileHref =
-    hasApprovedTenantProfile && resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
-  const globalProfileHref = "/perfil";
-  const switchRachaHref = "/perfil#meus-rachas";
-  const completeProfileHref =
-    tenantSlug && !accountComplete ? `/perfil?intent=request-join&racha=${tenantSlug}` : "/perfil";
-  const pendingApprovalHref = publicHref("/aguardando-aprovacao");
-  const homeHref = publicHref("/");
+  const pathname = usePathname() ?? "";
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key !== "Tab") return;
+      const focusable = asideRef.current?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), a[href]"
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previousFocus?.focus();
+    };
+  }, [open, onClose]);
 
   if (!open) return null;
 
-  const links = [
-    { href: "/", label: "Início", icon: FaHome },
-    { href: "/partidas", label: "Partidas", icon: FaFutbol },
-    { href: "/estatisticas", label: "Estatísticas", icon: FaChartBar },
-    { href: "/os-campeoes", label: "Os Campeões", icon: FaTrophy },
-    { href: "/grandes-torneios", label: "Grandes Torneios", icon: FaTrophy },
-    { href: "/atletas", label: "Perfis dos Atletas", icon: FaUsers },
-    { href: "/sobre-nos", label: "Sobre Nós", icon: FaInfoCircle },
-  ];
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex md:hidden">
-      <div className="w-72 bg-zinc-900 h-full flex flex-col px-5 py-8 relative animate-slide-in-left shadow-xl">
-        {/* Botão Fechar */}
+    <div className="fixed inset-0 z-[70] flex bg-black/70 lg:hidden">
+      <button
+        type="button"
+        aria-label="Fechar menu ao tocar fora"
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
+      <aside
+        ref={asideRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navegação do grupo"
+        className="relative flex h-full max-h-dvh w-[min(20rem,calc(100vw-3rem))] flex-col overflow-y-auto overscroll-contain bg-zinc-900 px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(5.5rem,calc(5rem+env(safe-area-inset-bottom)))] shadow-xl"
+      >
         <button
+          ref={closeRef}
+          type="button"
           aria-label="Fechar menu"
           onClick={onClose}
-          className="absolute top-4 right-4 text-zinc-300 hover:text-white text-2xl"
+          className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-lg text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
         >
           <FaTimes />
         </button>
-
-        {/* Logo e nome do racha */}
-        <div className="flex flex-col items-center gap-2 mb-10 mt-4">
+        <div className="mb-8 mt-4 flex flex-col items-center gap-2">
           <Image
             src={logo}
             alt={`Logo ${nome}`}
@@ -122,126 +97,29 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
             height={64}
             className="object-contain"
           />
-          <span className="text-brand font-extrabold text-xl text-center">{nome}</span>
+          <span className="text-center text-xl font-extrabold text-brand">{nome}</span>
         </div>
-
-        {/* Navegação */}
-        <nav className="flex flex-col gap-4 text-[17px]">
+        <nav aria-label="Páginas do grupo" className="flex flex-col gap-2 text-[17px]">
           {links.map(({ href, label, icon: Icon }) => {
             const resolvedHref = publicHref(href);
             const isActive =
               pathname === resolvedHref ||
-              pathname.startsWith(resolvedHref + "/") ||
-              pathname === href ||
-              pathname.startsWith(href + "/");
-
+              (href !== "/" && pathname.startsWith(`${resolvedHref}/`));
             return (
               <Link
                 key={href}
                 href={resolvedHref}
                 onClick={onClose}
-                className={`flex items-center gap-4 px-2 py-2 rounded transition-all duration-200 ${
-                  isActive
-                    ? "text-brand font-extrabold scale-[1.02]"
-                    : "text-zinc-200 hover:text-brand-soft"
-                }`}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex min-h-11 items-center gap-4 rounded px-2 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${isActive ? "font-extrabold text-brand" : "text-zinc-200 hover:text-brand-soft"}`}
               >
-                <Icon size={22} />
+                <Icon size={22} aria-hidden="true" />
                 <span>{label}</span>
               </Link>
             );
           })}
         </nav>
-
-        {/* Perfil + SAIR */}
-        {showUserMenu && (
-          <div className="mt-10 border-t border-zinc-700 pt-4">
-            {profileHref ? (
-              <Link
-                href={profileHref}
-                onClick={onClose}
-                className="flex items-center gap-3 text-brand font-semibold hover:underline"
-              >
-                <AvatarFut7Pro
-                  src={profileImage}
-                  alt={userName}
-                  width={32}
-                  height={32}
-                  fallbackSrc={DEFAULT_ATHLETE_AVATAR}
-                  className="rounded-full"
-                />
-                {userName}
-              </Link>
-            ) : (
-              <div className="flex items-center gap-3 text-brand font-semibold">
-                <AvatarFut7Pro
-                  src={profileImage}
-                  alt={userName}
-                  width={32}
-                  height={32}
-                  fallbackSrc={DEFAULT_ATHLETE_AVATAR}
-                  className="rounded-full"
-                />
-                {userName}
-              </div>
-            )}
-
-            <div className="mt-3 flex flex-col gap-2 text-sm text-zinc-200">
-              <Link href={globalProfileHref} onClick={onClose} className="hover:text-brand-soft">
-                Minha conta Fut7Pro
-              </Link>
-              {profileHref && (
-                <Link href={profileHref} onClick={onClose} className="hover:text-brand-soft">
-                  Meu desempenho
-                </Link>
-              )}
-              {isPendingMembership && (
-                <Link
-                  href={pendingApprovalHref}
-                  onClick={onClose}
-                  className="hover:text-brand-soft"
-                >
-                  Solicitação em análise
-                </Link>
-              )}
-              {!isPendingMembership && !accountComplete && (
-                <Link
-                  href={completeProfileHref}
-                  onClick={onClose}
-                  className="hover:text-brand-soft"
-                >
-                  Completar Perfil Fut7Pro
-                </Link>
-              )}
-              {canSwitchRacha && (
-                <Link href={switchRachaHref} onClick={onClose} className="hover:text-brand-soft">
-                  Trocar de grupo
-                </Link>
-              )}
-            </div>
-
-            <button
-              onClick={() => {
-                signOut({ callbackUrl: homeHref });
-                onClose();
-              }}
-              className="mt-3 text-red-500 hover:text-red-400 font-bold text-sm"
-            >
-              Sair da conta
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Clicando fora, fecha o menu */}
-      <div
-        className="flex-1"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === "Escape" && onClose()}
-        role="button"
-        tabIndex={0}
-        aria-label="Fechar menu"
-      />
+      </aside>
     </div>
   );
 };

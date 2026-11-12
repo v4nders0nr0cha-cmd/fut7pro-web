@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -24,9 +24,13 @@ export default function LayoutClient({
   initialTenantSlug?: string | null;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const openSidebar = useCallback(() => setSidebarOpen(true), []);
   const pathname = usePathname() ?? "";
   const { tenantSlug, setTenantSlug } = useRacha();
   const slugFromPath = resolvePublicTenantSlug(pathname);
+
+  useEffect(() => setSidebarOpen(false), [pathname]);
 
   useEffect(() => {
     if (slugFromPath) {
@@ -49,24 +53,24 @@ export default function LayoutClient({
       <ToasterProvider />
       <PublicAuthFeedbackCoordinator />
       {/* HEADER FIXO NO TOPO */}
-      <Header onOpenSidebar={() => setSidebarOpen(true)} />
+      <Header onOpenSidebar={openSidebar} />
       <ComunicadosLoginGate />
-      <SidebarMobile open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SidebarMobile open={sidebarOpen} onClose={closeSidebar} />
 
       {/* ESPAÇAMENTO PARA O HEADER */}
-      <div className="h-14 md:h-[72px] w-full" />
+      <div className="h-16 lg:h-[72px] w-full" />
 
       {/* TOPO DE NAVEGAÇÃO VISÍVEL APENAS NO DESKTOP */}
-      <div className="hidden md:block w-full bg-transparent relative z-30">
+      <div className="hidden lg:block w-full bg-transparent relative z-30">
         <TopNavMenu />
       </div>
 
       {/* ESPAÇAMENTO PARA O TOPNAVMENU */}
-      <div className="hidden md:block h-3 w-full" />
+      <div className="hidden lg:block h-3 w-full" />
       <PendingMembershipBanner />
 
       {/* CONTEÚDO PRINCIPAL SEM WRAPPER GLOBAL */}
-      <main className="min-h-screen flex flex-col w-full pt-10 md:pt-5 pb-20 md:pb-8">
+      <main className="min-h-screen flex flex-col w-full pt-10 lg:pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8">
         {children}
       </main>
 

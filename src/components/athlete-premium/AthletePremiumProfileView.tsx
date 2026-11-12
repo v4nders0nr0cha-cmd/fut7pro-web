@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { resolveIconValue } from "@/components/atletas/ConquistasDoAtleta";
 import { useEffect, useRef, useState } from "react";
 import {
   FaArrowRight,
@@ -85,6 +87,7 @@ type AthletePremiumProfileViewProps = {
     historyUrl?: string;
   };
   ownerActions?: React.ReactNode;
+  publicProfilePath?: string | null;
   statsPeriod?: "current" | "all";
   isPeriodSwitching?: boolean;
   onStatsPeriodChange?: (period: "current" | "all") => void;
@@ -381,11 +384,13 @@ function MedalStat({ label, value }: { label: string; value: string | number }) 
 
 function PremiumAthleteMedallion({
   athlete,
+  mode,
   index,
   tenant,
   legendaryProgress,
 }: {
   athlete: AthletePremiumProfileViewProps["athlete"];
+  mode: AthletePremiumProfileViewProps["mode"];
   index: PremiumIndex;
   tenant?: AthletePremiumProfileViewProps["tenant"];
   legendaryProgress?: LegendaryProgress;
@@ -437,6 +442,14 @@ function PremiumAthleteMedallion({
             <div className="mt-2 rounded border border-[#f8c64a]/35 bg-[#f8c64a]/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-[#fff0a8] sm:text-[10px]">
               {athlete.membershipLabel || "Avulso"}
             </div>
+            {mode === "owner" && athlete.membershipLabel === "Mensalista" && (
+              <span
+                className="mt-1 block text-[9px] font-semibold text-[#ffe08a] sm:text-[11px]"
+                title="Participação mensalista confirmada"
+              >
+                Mensalista do grupo
+              </span>
+            )}
             <div className="mt-2 rounded border border-white/18 bg-black/55 px-2 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-zinc-100 sm:text-[10px]">
               {athlete.activityStatusLabel || "Inativo"}
             </div>
@@ -630,13 +643,21 @@ function AchievementsSection({ groups }: { groups?: PremiumAchievementGroups }) 
     conquistasIndividuaisFut7Pro: [],
   };
   const sections = [
-    { title: "Títulos (Grandes Torneios)", items: normalized.titulosGrandesTorneios, icon: "🏆" },
-    { title: "Títulos Anuais", items: normalized.titulosAnuais, icon: "👑" },
-    { title: "Títulos Quadrimestrais", items: normalized.titulosQuadrimestrais, icon: "🥈" },
+    {
+      title: "Títulos (Grandes Torneios)",
+      items: normalized.titulosGrandesTorneios,
+      category: "grandes" as const,
+    },
+    { title: "Títulos Anuais", items: normalized.titulosAnuais, category: "anual" as const },
+    {
+      title: "Títulos Quadrimestrais",
+      items: normalized.titulosQuadrimestrais,
+      category: "quadrimestral" as const,
+    },
     {
       title: "Conquistas Individuais Fut7Pro",
       items: normalized.conquistasIndividuaisFut7Pro,
-      icon: "⭐",
+      category: "grandes" as const,
     },
   ];
   const hasAny = sections.some((section) => section.items.length > 0);
@@ -657,15 +678,23 @@ function AchievementsSection({ groups }: { groups?: PremiumAchievementGroups }) 
             </h3>
             {section.items.length ? (
               <div className="mt-2 flex flex-wrap gap-2">
-                {section.items.map((item, indexItem) => (
-                  <span
-                    key={`${section.title}-${item.descricao}-${item.ano}-${indexItem}`}
-                    className="rounded-full border border-[#f8c64a]/20 bg-[#f8c64a]/10 px-3 py-1.5 text-xs font-bold text-[#ffe08a]"
-                  >
-                    <span className="mr-1">{section.icon}</span>
-                    {item.descricao} <span className="text-zinc-400">{item.ano}</span>
-                  </span>
-                ))}
+                {section.items.map((item, indexItem) => {
+                  const icon = resolveIconValue(item.icone, item.descricao, section.category);
+                  const imageIcon = /^(\/|https?:\/\/)/.test(icon);
+                  return (
+                    <span
+                      key={`${section.title}-${item.descricao}-${item.ano}-${indexItem}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#f8c64a]/20 bg-[#f8c64a]/10 px-3 py-1.5 text-xs font-bold text-[#ffe08a]"
+                    >
+                      {imageIcon ? (
+                        <Image src={icon} alt="" width={18} height={18} className="inline-block" />
+                      ) : (
+                        <span aria-hidden="true">{icon}</span>
+                      )}
+                      {item.descricao} <span className="text-zinc-400">{item.ano}</span>
+                    </span>
+                  );
+                })}
               </div>
             ) : (
               <p className="mt-2 text-sm text-zinc-500">
@@ -854,22 +883,26 @@ function ShareReadyModal({
                   Copiar imagem
                 </button>
               )}
-              <button
-                type="button"
-                onClick={onCopyLink}
-                className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-lg border border-[#f8c64a]/60 bg-black/45 px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#f8c64a] transition hover:bg-[#f8c64a] hover:text-black"
-              >
-                <FaCopy />
-                Copiar link
-              </button>
-              <button
-                type="button"
-                onClick={onWhatsapp}
-                className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-lg border border-[#25d366]/55 bg-[#25d366]/10 px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#8cffb7] transition hover:bg-[#25d366] hover:text-black sm:col-span-2"
-              >
-                <FaWhatsapp />
-                Compartilhar no WhatsApp
-              </button>
+              {profileUrl && (
+                <button
+                  type="button"
+                  onClick={onCopyLink}
+                  className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-lg border border-[#f8c64a]/60 bg-black/45 px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#f8c64a] transition hover:bg-[#f8c64a] hover:text-black"
+                >
+                  <FaCopy />
+                  Copiar link
+                </button>
+              )}
+              {profileUrl && (
+                <button
+                  type="button"
+                  onClick={onWhatsapp}
+                  className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-lg border border-[#25d366]/55 bg-[#25d366]/10 px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#8cffb7] transition hover:bg-[#25d366] hover:text-black sm:col-span-2"
+                >
+                  <FaWhatsapp />
+                  Compartilhar no WhatsApp
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onInstagram}
@@ -884,7 +917,9 @@ function ShareReadyModal({
               <p className="text-sm font-semibold text-zinc-300">
                 A imagem foi gerada em 9:16, pronta para Stories, Status e grupos.
               </p>
-              <p className="mt-2 break-all text-xs text-zinc-500">{profileUrl}</p>
+              <p className="mt-2 break-all text-xs text-zinc-500">
+                {profileUrl || "Link público indisponível para este atleta."}
+              </p>
               {feedback && (
                 <p className="mt-3 rounded-lg border border-[#f8c64a]/20 bg-[#f8c64a]/10 px-3 py-2 text-sm font-semibold text-[#ffe08a]">
                   {feedback}
@@ -929,6 +964,7 @@ export default function AthletePremiumProfileView({
   legendaryProgress,
   links,
   ownerActions,
+  publicProfilePath,
   statsPeriod,
   isPeriodSwitching = false,
   onStatsPeriodChange,
@@ -955,8 +991,13 @@ export default function AthletePremiumProfileView({
   }, [generatedShareCard?.url]);
 
   const getProfileUrl = () => {
-    if (typeof window === "undefined") return "";
-    return `${window.location.origin}${window.location.pathname}`;
+    if (
+      typeof window === "undefined" ||
+      !publicProfilePath?.startsWith("/") ||
+      publicProfilePath.startsWith("//")
+    )
+      return "";
+    return new URL(publicProfilePath, window.location.origin).toString();
   };
 
   const buildFileName = () => {
@@ -1056,6 +1097,7 @@ export default function AthletePremiumProfileView({
   };
 
   const copyProfileLink = async () => {
+    if (!getProfileUrl()) return;
     try {
       await navigator.clipboard.writeText(getProfileUrl());
       setShareFeedback("Link do perfil copiado.");
@@ -1091,6 +1133,7 @@ export default function AthletePremiumProfileView({
   };
 
   const openWhatsappShare = () => {
+    if (!getProfileUrl()) return;
     const text = isLegendary
       ? `Olha meu Card Lendário ${progress.seasonLabel.replace("Temporada ", "")} no Fut7Pro`
       : "Olha meu Card Oficial Fut7Pro";
@@ -1135,6 +1178,7 @@ export default function AthletePremiumProfileView({
 
         <div className="mx-auto max-w-[880px]">
           <PremiumAthleteMedallion
+            mode={mode}
             athlete={athlete}
             index={index}
             tenant={tenant}

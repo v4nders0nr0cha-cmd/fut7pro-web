@@ -155,7 +155,7 @@ export default function ConquistasDoAtleta({
   );
 }
 
-function resolveIconValue(
+export function resolveIconValue(
   value: string | null | undefined,
   descricao: string,
   categoria: ConquistaCategoria
