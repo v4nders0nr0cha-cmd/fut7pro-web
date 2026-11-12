@@ -25,7 +25,7 @@ const confirmation = (sha = headSha) =>
 const editorialBody = (sha = headSha) =>
   `${editorialDeclaration}\nMotivo do editorial-no-changelog: ${editorialReason}\n${confirmation(sha)}`;
 const source = (versions) =>
-  `export const CANONICAL_CHANGELOG_ENTRIES = [\n${versions.map((version) => `  { version: "${version}" },`).join("\n")}\n];`;
+  `export const CANONICAL_CHANGELOG_ENTRIES = [\n${versions.map((version) => `  { version: "${version}", title: "Título", summary: "Resumo", releaseDate: "2026-11-11T20:20:32.000Z", evidence: ["web#1"], items: [{ type: ChangelogItemType.MELHORIA, description: "Descrição" }] },`).join("\n")}\n];`;
 const publishedSource = async (sha) => source(sha === "base" ? ["old"] : ["new", "old"]);
 const evaluateEditorial = (options = {}) =>
   evaluateChangelogRequirement({
@@ -113,6 +113,40 @@ async function run() {
     }
   );
   assert.equal(result.ok, false, "rejeita PR que só altera registro pendente");
+
+  result = await validateBackendChangelogPr(
+    { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 201 },
+    {
+      fetchPr: async () => ({
+        number: 201,
+        state: "open",
+        base: { sha: "base" },
+        head: { sha: "head" },
+      }),
+      fetchFilesPage: async () => [{ filename: "src/modules/changelog/changelog.entries.ts" }],
+      fetchSource: async (sha) =>
+        sha === "base"
+          ? source(["old"])
+          : source(["old"]).replace('title: "Título"', 'title: "Título revisado"'),
+    }
+  );
+  assert.equal(result.ok, false, "correção editorial antiga não documenta entrega web nova");
+
+  result = await validateBackendChangelogPr(
+    { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 201 },
+    {
+      fetchPr: async () => ({
+        number: 201,
+        state: "open",
+        base: { sha: "base" },
+        head: { sha: "head" },
+      }),
+      fetchFilesPage: async () => [{ filename: "src/modules/changelog/changelog.entries.ts" }],
+      fetchSource: async (sha) =>
+        sha === "base" ? source(["old"]) : source(["old"]) + '\n// version: "new"',
+    }
+  );
+  assert.equal(result.ok, false, "comentário com versão não conta como publicação");
 
   result = await validateBackendChangelogPr(
     { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 202 },
@@ -286,7 +320,7 @@ async function run() {
   );
   assert.equal(result.ok, false, "rejeita repositório incorreto");
 
-  console.log(`Changelog Required web: ${editorialCases.length + 18} verificações aprovadas`);
+  console.log(`Changelog Required web: ${editorialCases.length + 20} verificações aprovadas`);
 }
 
 run().catch((error) => {

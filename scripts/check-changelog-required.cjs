@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { classifyCanonicalChange } = require("./canonical-changelog-source.cjs");
 
 const BACKEND_CHANGELOG_REPO =
   process.env.BACKEND_CHANGELOG_REPO || "v4nders0nr0cha-cmd/fut7pro-backend";
@@ -147,14 +148,6 @@ async function fetchJson(url, token) {
   return response.json();
 }
 
-function publishedVersions(source) {
-  const list = String(source).match(
-    /export const CANONICAL_CHANGELOG_ENTRIES[^=]*=\s*\[([\s\S]*?)\n\];/
-  );
-  if (!list) return new Set();
-  return new Set([...list[1].matchAll(/\bversion:\s*"([^"]+)"/g)].map((match) => match[1]));
-}
-
 async function validateBackendChangelogPr(reference, options = {}) {
   if (!reference || !Number.isInteger(reference.number) || reference.number <= 0) {
     return { ok: false, reason: "Changelog PR invalido ou ausente." };
@@ -225,12 +218,11 @@ async function validateBackendChangelogPr(reference, options = {}) {
       return { ok: false, reason: "Changelog PR sem base e HEAD verificáveis." };
     }
     const [before, after] = await Promise.all([fetchSource(pr.base.sha), fetchSource(pr.head.sha)]);
-    const oldVersions = publishedVersions(before);
-    const newVersions = publishedVersions(after);
-    if (![...newVersions].some((version) => !oldVersions.has(version))) {
+    const change = classifyCanonicalChange(before, after);
+    if (change.kind !== "release") {
       return {
         ok: false,
-        reason: "O Changelog PR contém apenas registro pendente; nenhuma versão foi publicada.",
+        reason: "Correção editorial do histórico não documenta uma nova entrega do produto.",
       };
     }
 
@@ -368,6 +360,5 @@ module.exports = {
   parseChangedFiles,
   parseChangelogPrReference,
   parseLabels,
-  publishedVersions,
   validateBackendChangelogPr,
 };
