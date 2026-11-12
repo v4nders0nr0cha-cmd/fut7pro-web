@@ -24,7 +24,7 @@ export default function VerificarEmailClient() {
     const verify = async () => {
       if (!token) {
         setStatus("error");
-        setMessage("Token invalido ou ausente.");
+        setMessage("Link de confirmação inválido ou incompleto.");
         return;
       }
 
@@ -38,7 +38,7 @@ export default function VerificarEmailClient() {
         if (!active) return;
         if (!res.ok || !data?.ok) {
           setStatus("error");
-          setMessage(data?.message || "Token expirado ou invalido.");
+          setMessage(data?.message || "O link de confirmação expirou ou é inválido.");
           return;
         }
 
@@ -61,7 +61,7 @@ export default function VerificarEmailClient() {
       } catch {
         if (!active) return;
         setStatus("error");
-        setMessage("Nao foi possivel validar o token.");
+        setMessage("Não foi possível confirmar o e-mail.");
       }
     };
 

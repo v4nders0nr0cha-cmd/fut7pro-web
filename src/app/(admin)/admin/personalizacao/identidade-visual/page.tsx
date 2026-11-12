@@ -94,7 +94,7 @@ export default function LogoDoRachaPage() {
 
     if (slugPreview.length < 3) {
       setSlugStatus("invalid");
-      setSlugHint("Slug deve ter ao menos 3 caracteres.");
+      setSlugHint("O endereço do grupo precisa ter pelo menos 3 caracteres.");
       return;
     }
 
@@ -258,7 +258,7 @@ export default function LogoDoRachaPage() {
   if (!isPresidente) {
     return (
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4">
-        <RestrictAccess msg="Apenas o Presidente pode editar a identidade visual do racha." />
+        <RestrictAccess msg="Apenas o Presidente pode editar a identidade visual do grupo." />
       </div>
     );
   }
@@ -424,7 +424,7 @@ export default function LogoDoRachaPage() {
           impactItems={[
             "Links antigos divulgados podem deixar de funcionar dependendo da configuração atual.",
             "O novo endereço será usado no site público e nas páginas compartilhadas.",
-            "Confirme apenas se o novo slug já foi revisado.",
+            "Confirme apenas depois de revisar o novo endereço.",
           ]}
           onClose={() => setSlugConfirmOpen(false)}
           onConfirm={() => {

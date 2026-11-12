@@ -35,7 +35,7 @@ describe("ambassadors operational guards", () => {
 
     expect(source).toContain("Materializar ledger recorrente");
     expect(source).toContain(
-      "Indisponível durante a validação operacional do programa Creators Fut7Pro."
+      "Indisponível enquanto a equipe verifica o programa Creators Fut7Pro."
     );
     expect(source).toContain("disabled");
   });

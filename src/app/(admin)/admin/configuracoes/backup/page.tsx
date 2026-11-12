@@ -288,10 +288,10 @@ function getHistoryErrorText(error: FetchError | undefined): string {
     return "Sua sessão expirou. Faça login novamente para acessar o histórico.";
   }
   if (error.status === 403) {
-    return "Você não tem permissão para consultar diagnósticos deste racha.";
+    return "Você não tem permissão para consultar os diagnósticos deste grupo.";
   }
   if (error.status === 404) {
-    return "Diagnóstico não encontrado para o racha ativo.";
+    return "Diagnóstico não encontrado para o grupo selecionado.";
   }
   return getReadableError(error, "Falha ao carregar o histórico.");
 }
@@ -360,7 +360,7 @@ export default function BackupPage() {
     } catch (err) {
       setFeedback({
         tone: "error",
-        text: getReadableError(err, "Erro ao executar diagnóstico de backup."),
+        text: getReadableError(err, "Não foi possível executar o diagnóstico."),
       });
     } finally {
       setIsRunning(false);
@@ -370,11 +370,11 @@ export default function BackupPage() {
   return (
     <>
       <Head>
-        <title>Backup & Recuperação | Fut7Pro Admin</title>
+        <title>Backup e Recuperação | Fut7Pro</title>
         <meta name="robots" content="noindex,nofollow" />
         <meta
           name="description"
-          content="Monitore diagnósticos, execute backup operacional e acione recuperação assistida com segurança no painel Fut7Pro."
+          content="Consulte o histórico de diagnósticos e encontre as opções para recuperar dados com segurança."
         />
         <meta
           name="keywords"
@@ -383,18 +383,8 @@ export default function BackupPage() {
       </Head>
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-3xl mx-auto w-full">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 flex items-center gap-2">
-          <FaDatabase /> Backup & Recuperação
+          <FaDatabase /> Backup e Recuperação
         </h1>
-
-        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow text-sm">
-          <b className="text-yellow-300">Operação de proteção de dados em produção.</b>
-          <br />
-          Esta área executa diagnósticos operacionais do racha e consolida o histórico de execuções
-          para auditoria.
-          <span className="text-gray-300 block mt-2">
-            Tenant ativo: <b>{tenantSlug || "não identificado"}</b>
-          </span>
-        </div>
 
         <div className="mb-6 rounded-lg border border-yellow-700 bg-[#232323] p-4 shadow">
           <div className="flex items-start gap-3">
@@ -403,8 +393,8 @@ export default function BackupPage() {
               <h2 className="font-bold text-yellow-300">Precisa restaurar um registro recente?</h2>
               <p className="mt-1 text-sm leading-6 text-gray-300">
                 A Central de Recuperação permite ao Presidente restaurar registros elegíveis dos
-                últimos 15 dias. Esta página continua dedicada a diagnósticos operacionais e suporte
-                assistido.
+                últimos 15 dias. O botão de diagnóstico abaixo verifica os dados, mas não cria um
+                backup. O suporte pode ajudar em outros casos.
               </p>
               <Link
                 href="/admin/administracao/central-recuperacao"
@@ -414,6 +404,16 @@ export default function BackupPage() {
               </Link>
             </div>
           </div>
+        </div>
+
+        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow text-sm">
+          <b className="text-yellow-300">O que você pode fazer aqui</b>
+          <br />
+          Aqui você pode verificar o estado dos dados do grupo e consultar diagnósticos anteriores
+          para auditoria.
+          <span className="text-gray-300 block mt-2">
+            Endereço do grupo selecionado: <b>{tenantSlug || "não identificado"}</b>
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
@@ -427,13 +427,13 @@ export default function BackupPage() {
           </div>
           <div className="bg-[#232323] rounded-lg p-4 border border-yellow-700 shadow">
             <div className="text-xs uppercase tracking-wide text-gray-400 mb-1">
-              Execuções concluídas
+              Diagnósticos concluídos
             </div>
             <div className="text-base text-green-300 font-semibold">{summary.success}</div>
           </div>
           <div className="bg-[#232323] rounded-lg p-4 border border-yellow-700 shadow">
             <div className="text-xs uppercase tracking-wide text-gray-400 mb-1">
-              Execuções com falha
+              Diagnósticos com falha
             </div>
             <div className="text-base text-red-300 font-semibold">{summary.failed}</div>
           </div>
@@ -446,7 +446,7 @@ export default function BackupPage() {
         </div>
 
         <div className="bg-[#232323] rounded-lg p-5 shadow border border-yellow-700 mb-8">
-          <div className="font-bold text-yellow-300 mb-3">Ações Operacionais</div>
+          <div className="font-bold text-yellow-300 mb-3">Verificar dados do grupo</div>
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
@@ -475,7 +475,7 @@ export default function BackupPage() {
             </Link>
           </div>
           {!!apiMessage && !feedback && (
-            <p className="text-xs text-gray-400 mt-3">Mensagem da API: {apiMessage}</p>
+            <p className="text-xs text-gray-400 mt-3">Informação: {apiMessage}</p>
           )}
         </div>
 
@@ -494,7 +494,7 @@ export default function BackupPage() {
         <div className="bg-[#232323] rounded-lg p-5 shadow border border-yellow-700 mb-8">
           <div className="font-bold text-yellow-300 mb-3 flex items-center gap-2">
             <FaClock />
-            Histórico de Execuções
+            Histórico de diagnósticos
           </div>
           {isLoading && <div className="text-sm text-gray-300">Carregando histórico...</div>}
           {!isLoading && historyErrorText && (
@@ -513,7 +513,7 @@ export default function BackupPage() {
                     <th className="py-2 pr-3">Data e hora</th>
                     <th className="py-2 pr-3">Status</th>
                     <th className="py-2 pr-3">Detalhes</th>
-                    <th className="py-2">Artefato</th>
+                    <th className="py-2">Arquivo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -558,16 +558,15 @@ export default function BackupPage() {
             Recuperação Assistida
           </div>
           <p className="text-sm text-gray-200 mb-3">
-            A restauração de dados é feita com validação operacional para evitar inconsistências
-            entre tenants.
+            A equipe confere os dados antes de restaurá-los para evitar problemas entre grupos.
           </p>
           <ul className="text-sm text-gray-300 space-y-2">
             <li>
-              1. Abra um chamado no suporte com o slug do racha, data da ocorrência e contexto do
+              1. Abra um chamado no suporte com o endereço do grupo, a data e uma descrição do
               problema.
             </li>
-            <li>2. A equipe valida integridade e disponibilidade dos artefatos do diagnóstico.</li>
-            <li>3. A recuperação é executada de forma controlada e auditada.</li>
+            <li>2. A equipe verifica quais dados estão disponíveis para recuperação.</li>
+            <li>3. A recuperação é realizada com segurança e fica registrada.</li>
           </ul>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
@@ -594,21 +593,21 @@ export default function BackupPage() {
           </div>
           <ul className="text-gray-300 text-sm space-y-2">
             <li>
-              <b>Quando devo executar diagnóstico manual?</b> Antes de mudanças sensíveis no painel
-              ou ao investigar inconsistências.
+              <b>Quando devo executar diagnóstico manual?</b> Antes de alterações importantes no
+              painel ou para verificar informações que pareçam incorretas.
             </li>
             <li>
-              <b>O histórico é por racha?</b> Sim. O histórico é multi-tenant e respeita o racha
-              ativo do administrador.
+              <b>O histórico é por grupo?</b> Sim. Você vê apenas os diagnósticos do grupo
+              selecionado.
             </li>
             <li>
               <b>Posso restaurar diretamente por arquivo nesta tela?</b> Não. A recuperação segue
-              fluxo assistido para garantir segurança e rastreabilidade.
+              com ajuda da equipe para proteger os dados e registrar a solicitação.
             </li>
             <li>
               <b>Onde acompanho ações administrativas?</b> Em{" "}
               <Link href="/admin/administracao/logs" className="underline text-yellow-400">
-                Administração &gt; Logs/Admin
+                Administração &gt; Registro de atividades
               </Link>
               .
             </li>

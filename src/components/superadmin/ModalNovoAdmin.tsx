@@ -179,24 +179,25 @@ export default function ModalNovoAdmin({
 
     if (flow === "novo") {
       if (!rachaNome.trim() || rachaNome.trim().length < 3) {
-        newErrors.rachaNome = "Nome do racha precisa ter ao menos 3 caracteres.";
+        newErrors.rachaNome = "O nome do grupo precisa ter pelo menos 3 caracteres.";
       }
       if (!rachaSlug.trim() || !SLUG_REGEX.test(rachaSlug.trim())) {
-        newErrors.rachaSlug = "Slug inválido: use minúsculas, números e hífens (3-50).";
+        newErrors.rachaSlug =
+          "O endereço do grupo deve ter de 3 a 50 caracteres: letras minúsculas, números ou hífens.";
       }
       if (!cidade.trim()) {
-        newErrors.cidade = "Informe a cidade do racha.";
+        newErrors.cidade = "Informe a cidade do grupo.";
       }
       if (!estado.trim()) {
-        newErrors.estado = "Selecione o estado do racha.";
+        newErrors.estado = "Selecione o estado do grupo.";
       }
     }
 
     if (flow === "existente") {
       if (!selectedTenantId) {
-        newErrors.existingTenantId = "Selecione o racha existente.";
+        newErrors.existingTenantId = "Selecione o grupo existente.";
       } else if (hasExistingPresident && !permitirCopresidencia) {
-        newErrors.existingTenantId = "Já existe presidente ativo para este racha.";
+        newErrors.existingTenantId = "Já existe um Presidente ativo para este grupo.";
       }
     }
 
@@ -258,7 +259,7 @@ export default function ModalNovoAdmin({
             <div>
               <h2 className="text-xl font-bold text-white">Criar presidente manual</h2>
               <p className="text-xs text-gray-400">
-                Fluxo operacional para onboarding assistido, migrações e trocas de presidência.
+                Cadastro assistido, migrações e trocas de presidência.
               </p>
             </div>
           </div>
@@ -278,8 +279,8 @@ export default function ModalNovoAdmin({
                   : "border-gray-700 bg-gray-800 text-gray-300"
               }`}
             >
-              <div className="text-sm font-semibold">Novo racha + presidente</div>
-              <div className="text-xs text-gray-400">Cria tenant e já cadastra o presidente.</div>
+              <div className="text-sm font-semibold">Novo grupo e Presidente</div>
+              <div className="text-xs text-gray-400">Cria o grupo e já cadastra o Presidente.</div>
             </button>
             <button
               type="button"
@@ -290,14 +291,16 @@ export default function ModalNovoAdmin({
                   : "border-gray-700 bg-gray-800 text-gray-300"
               }`}
             >
-              <div className="text-sm font-semibold">Presidente para racha existente</div>
-              <div className="text-xs text-gray-400">Vincula presidente a um tenant já criado.</div>
+              <div className="text-sm font-semibold">Presidente para grupo existente</div>
+              <div className="text-xs text-gray-400">
+                Vincula o Presidente a um grupo já criado.
+              </div>
             </button>
           </div>
 
           {flow === "existente" && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Racha existente *</label>
+              <label className="block text-sm font-medium text-gray-300">Grupo existente *</label>
               <select
                 value={selectedTenantId}
                 onChange={(event) => setSelectedTenantId(event.target.value)}
@@ -305,7 +308,7 @@ export default function ModalNovoAdmin({
                   errors.existingTenantId ? "border-red-500" : "border-gray-600"
                 }`}
               >
-                <option value="">Selecione um racha</option>
+                <option value="">Selecione um grupo</option>
                 {rachas.map((racha) => (
                   <option key={racha.id} value={racha.id}>
                     {racha.nome} ({racha.slug})
@@ -317,7 +320,7 @@ export default function ModalNovoAdmin({
               )}
               {selectedRacha && hasExistingPresident && !permitirCopresidencia && (
                 <div className="text-xs text-yellow-300">
-                  Este racha já possui presidente ativo. Marque "Permitir copresidência" para
+                  Este grupo já possui um Presidente ativo. Marque "Permitir copresidência" para
                   seguir.
                 </div>
               )}
@@ -337,7 +340,7 @@ export default function ModalNovoAdmin({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Nome do racha *
+                  Nome do grupo *
                 </label>
                 <input
                   type="text"
@@ -352,7 +355,9 @@ export default function ModalNovoAdmin({
                 {errors.rachaNome && <p className="text-sm text-red-400">{errors.rachaNome}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Slug *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Endereço do grupo *
+                </label>
                 <input
                   type="text"
                   value={rachaSlug}
@@ -364,7 +369,7 @@ export default function ModalNovoAdmin({
                 />
                 {errors.rachaSlug && <p className="text-sm text-red-400">{errors.rachaSlug}</p>}
                 <p className="text-xs text-gray-400 mt-1">
-                  URL pública: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
+                  Link público: https://app.fut7pro.com.br/{rachaSlug || "endereco-do-grupo"}
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -377,7 +382,7 @@ export default function ModalNovoAdmin({
                     className={`w-full px-3 py-2 bg-gray-800 border rounded-lg text-white ${
                       errors.cidade ? "border-red-500" : "border-gray-600"
                     }`}
-                    placeholder="Cidade do racha"
+                    placeholder="Cidade do grupo"
                   />
                   {errors.cidade && <p className="text-sm text-red-400">{errors.cidade}</p>}
                 </div>

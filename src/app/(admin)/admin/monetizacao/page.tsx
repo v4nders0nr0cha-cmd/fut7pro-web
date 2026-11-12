@@ -630,7 +630,7 @@ export default function MonetizacaoPage() {
                   </a>
                   <p className="text-xs text-zinc-400 mt-2">
                     Dica: coloque o link oficial do seu racha no Instagram:
-                    <code className="ml-1">app.fut7pro.com.br/[slugdoracha]</code>
+                    <code className="ml-1">app.fut7pro.com.br/endereco-do-grupo</code>
                   </p>
                 </div>
               </div>

@@ -483,7 +483,8 @@ export default function AdminHubClient() {
             <p className="text-xs uppercase tracking-[0.3em] text-yellow-300">Painel Fut7Pro</p>
             <h1 className="text-2xl font-bold sm:text-3xl">Meus Grupos</h1>
             <p className="mt-2 text-sm text-gray-300">
-              Selecione o grupo que deseja administrar. O acesso fica 100% isolado por grupo.
+              Escolha o grupo que deseja administrar. Você verá apenas as informações e permissões
+              desse grupo.
             </p>
           </div>
           <button
@@ -502,7 +503,7 @@ export default function AdminHubClient() {
               data-testid="admin-hub-search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar por nome, slug ou cargo..."
+              placeholder="Buscar por nome, endereço ou função..."
               disabled={showLoading}
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400/60"
             />

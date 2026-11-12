@@ -713,7 +713,7 @@ export default function AdminLoginClient() {
               .
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-400">
-              Se possível, informe o nome do grupo, o slug e o e-mail do administrador.
+              Se possível, informe o nome e o endereço do grupo e o e-mail do administrador.
             </p>
             <button
               className="mt-5 w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300"

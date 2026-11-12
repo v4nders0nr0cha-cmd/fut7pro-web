@@ -39,7 +39,7 @@ export default function IntegracoesPage() {
         <title>Integrações e Automação | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Status das integrações do seu racha, com validação de plano e abertura de chamado para ativação."
+          content="Integrações disponíveis para o seu grupo e orientações para solicitar a ativação."
         />
         <meta
           name="keywords"
@@ -57,7 +57,7 @@ export default function IntegracoesPage() {
           ) : isEnterprise ? (
             <p>
               Plano ativo: <b>{planLabel}</b>. O time Fut7Pro pode habilitar integrações avançadas
-              para este racha.
+              para este grupo.
             </p>
           ) : (
             <p>
@@ -71,7 +71,7 @@ export default function IntegracoesPage() {
           <IntegrationCard
             icon={<FaGoogle className="text-yellow-400" />}
             name="Google Analytics"
-            description="Eventos e conversões do site público do racha."
+            description="Eventos e conversões do site público do grupo."
           />
           <IntegrationCard
             icon={<FaWhatsapp className="text-green-400" />}
@@ -88,8 +88,8 @@ export default function IntegracoesPage() {
         <div className="rounded-lg border border-yellow-700 bg-[#232323] p-5">
           <div className="font-bold text-yellow-300 mb-2">Ativar integrações</div>
           <p className="text-sm text-zinc-200 mb-4">
-            Abra um chamado com o objetivo da integração e o slug do racha. A equipe Fut7Pro valida
-            o escopo e retorna o plano de ativação.
+            Abra um chamado e informe o que deseja integrar e o endereço do grupo. A equipe Fut7Pro
+            vai orientar os próximos passos.
           </p>
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <Link
