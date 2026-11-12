@@ -280,7 +280,7 @@ export default function ModalNovoAdmin({
               }`}
             >
               <div className="text-sm font-semibold">Novo grupo e Presidente</div>
-              <div className="text-xs text-gray-400">Cria tenant e já cadastra o presidente.</div>
+              <div className="text-xs text-gray-400">Cria o grupo e já cadastra o Presidente.</div>
             </button>
             <button
               type="button"
@@ -292,7 +292,9 @@ export default function ModalNovoAdmin({
               }`}
             >
               <div className="text-sm font-semibold">Presidente para grupo existente</div>
-              <div className="text-xs text-gray-400">Vincula presidente a um tenant já criado.</div>
+              <div className="text-xs text-gray-400">
+                Vincula o Presidente a um grupo já criado.
+              </div>
             </button>
           </div>
 
