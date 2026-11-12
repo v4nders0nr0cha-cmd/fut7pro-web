@@ -103,7 +103,9 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
         </Link>
 
         {/* QuickMenu - desktop only */}
-        <div className="hidden lg:flex items-center gap-4">
+        <div
+          className={`items-center gap-4 lg:flex ${showUserMenu && !tenantSlug ? "flex" : "hidden"}`}
+        >
           {quickMenu.map((item) => {
             let badgeValue = 0;
             if (item.label === "Comunicação" && badge > 0) badgeValue = badge;
@@ -122,7 +124,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
               <Link
                 key={item.href}
                 href={publicHref(item.href)}
-                className="group relative flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-2 transition"
+                className="group relative hidden min-h-[44px] items-center gap-2 rounded-lg px-2 py-2 transition lg:flex"
                 aria-label={item.label}
                 onClick={handleClick}
               >
@@ -171,7 +173,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                   fallbackSrc={DEFAULT_ATHLETE_AVATAR}
                   className="rounded-full border-2 border-brand"
                 />
-                <span className="text-brand font-bold text-[15px] uppercase truncate max-w-[90px]">
+                <span className="hidden max-w-[90px] truncate text-[15px] font-bold uppercase text-brand lg:block">
                   {displayName}
                 </span>
               </button>

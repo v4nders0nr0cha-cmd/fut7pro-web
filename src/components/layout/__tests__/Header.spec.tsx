@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import Header from "@/components/layout/Header";
+import BottomMenu from "@/components/layout/BottomMenu";
 
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(() => ({ data: null, status: "unauthenticated" })),
@@ -36,12 +37,16 @@ describe("Header", () => {
   const useSession = require("next-auth/react").useSession as jest.Mock;
   const useMe = require("@/hooks/useMe").useMe as jest.Mock;
   const useGlobalProfile = require("@/hooks/useGlobalProfile").useGlobalProfile as jest.Mock;
+  const signOut = require("next-auth/react").signOut as jest.Mock;
 
   beforeEach(() => {
     usePathname.mockReturnValue("/ruimdebola");
     useSession.mockReturnValue({ data: null, status: "unauthenticated" });
     useMe.mockReturnValue({ me: null, isLoading: false, isError: false });
     useGlobalProfile.mockReturnValue({ profile: null });
+    signOut.mockClear();
+    window.localStorage.removeItem("fut7pro_last_tenant_slug");
+    document.cookie = "f7_active_slug=; path=/; max-age=0";
   });
 
   it("exibe quick actions", () => {
@@ -147,5 +152,44 @@ describe("Header", () => {
     fireEvent.click(screen.getByRole("button", { name: "Abrir área pessoal" }));
     expect(screen.getByText("Meu desempenho neste grupo")).toBeInTheDocument();
     expect(screen.queryByText("Meu perfil")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Abrir área pessoal" }).parentElement?.parentElement
+    ).toHaveClass("hidden");
   });
+
+  it.each([375, 768, 1023])(
+    "mantém conta e logout acessíveis em /perfil sem grupo ativo na largura %i px",
+    (width) => {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+      usePathname.mockReturnValue("/perfil");
+      useSession.mockReturnValue({
+        data: { user: { id: "u1", name: "Pele", email: "pele@teste.com", accessToken: "token" } },
+        status: "authenticated",
+      });
+      const onOpenSidebar = jest.fn();
+
+      render(
+        <>
+          <Header onOpenSidebar={onOpenSidebar} />
+          <BottomMenu />
+        </>
+      );
+
+      const accountButton = screen.getByRole("button", { name: "Abrir área pessoal" });
+      expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+      expect(accountButton.parentElement?.parentElement).toHaveClass("flex");
+      expect(accountButton.parentElement?.parentElement).not.toHaveClass("hidden");
+      const publicMenuButton = screen.getByRole("button", { name: "Abrir menu" });
+      expect(publicMenuButton).toHaveClass("lg:hidden");
+      fireEvent.click(publicMenuButton);
+      expect(onOpenSidebar).toHaveBeenCalledTimes(1);
+      fireEvent.click(accountButton);
+      expect(screen.getByRole("menuitem", { name: "Perfil Global Fut7Pro" })).toHaveAttribute(
+        "href",
+        "/perfil"
+      );
+      fireEvent.click(screen.getByRole("menuitem", { name: "Sair da conta" }));
+      expect(signOut).toHaveBeenCalledTimes(1);
+    }
+  );
 });
