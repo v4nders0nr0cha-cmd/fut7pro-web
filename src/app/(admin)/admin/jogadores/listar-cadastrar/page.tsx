@@ -21,6 +21,7 @@ import { useAthleteRequests } from "@/hooks/useAthleteRequests";
 import { useAutoApproveAthletes } from "@/hooks/useAutoApproveAthletes";
 import { useRacha } from "@/context/RachaContext";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
+import { useMe } from "@/hooks/useMe";
 import type { Jogador } from "@/types/jogador";
 import type { AthleteRequest } from "@/types/athlete-request";
 import JogadorForm from "@/components/admin/JogadorForm";
@@ -747,6 +748,14 @@ export default function Page() {
   );
   const solicitacoesCount = solicitacoesPendentes.length;
   const { monthlyPending, monthlyLoading } = useAdminBadges();
+  const { me } = useMe({ context: "admin", tenantSlug });
+  const canManageMonthlyRequests = [
+    "PRESIDENTE",
+    "VICE_PRESIDENTE",
+    "DIRETOR_FINANCEIRO",
+    "ADMIN",
+    "SUPERADMIN",
+  ].includes(String(me?.membership?.role || "").toUpperCase());
   const autoApproveBusy = autoApproveLoading || autoApproveUpdating;
   const autoApproveErrorResolved =
     autoApproveLocalError || (autoApproveError ? autoApproveErrorMessage : null);
@@ -1364,12 +1373,18 @@ export default function Page() {
                       : `${monthlyPending} pendente${monthlyPending === 1 ? "" : "s"}`}
                 </p>
               </div>
-              <Link
-                href="/admin/jogadores/mensalistas#solicitacoes-mensalista"
-                className="inline-flex shrink-0 items-center justify-center rounded-lg border border-emerald-400/50 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-400/10"
-              >
-                Gerenciar solicitações de mensalista
-              </Link>
+              {canManageMonthlyRequests ? (
+                <Link
+                  href="/admin/jogadores/mensalistas#solicitacoes-mensalista"
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-emerald-400/50 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-400/10"
+                >
+                  Gerenciar solicitações de mensalista
+                </Link>
+              ) : (
+                <p className="text-sm text-zinc-300">
+                  A aprovação é feita por quem possui permissão financeira no grupo.
+                </p>
+              )}
             </div>
           </div>
 

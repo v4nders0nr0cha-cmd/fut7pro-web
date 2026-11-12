@@ -11,6 +11,7 @@ let jogadores: Jogador[] = [];
 let autoApproveAthletes = false;
 let autoApproveAthletesUntil: string | null = null;
 let monthlyPending = 0;
+let currentRole = "PRESIDENTE";
 
 jest.mock(
   "next/head",
@@ -64,6 +65,9 @@ jest.mock("@/hooks/useAthleteRequests", () => ({
 jest.mock("@/hooks/useAdminBadges", () => ({
   useAdminBadges: () => ({ monthlyPending, monthlyLoading: false }),
 }));
+jest.mock("@/hooks/useMe", () => ({
+  useMe: () => ({ me: { membership: { role: currentRole } } }),
+}));
 jest.mock("@/hooks/useAutoApproveAthletes", () => ({
   useAutoApproveAthletes: () => ({
     autoApproveAthletes,
@@ -116,6 +120,7 @@ describe("Gerenciar jogadores - lifecycle", () => {
     autoApproveAthletes = false;
     autoApproveAthletesUntil = null;
     monthlyPending = 0;
+    currentRole = "PRESIDENTE";
     deleteJogador.mockResolvedValue({ id: "athlete-1" });
     archiveJogador.mockResolvedValue({ id: "athlete-1" });
     restoreJogador.mockResolvedValue({ id: "athlete-1" });
@@ -131,6 +136,20 @@ describe("Gerenciar jogadores - lifecycle", () => {
     expect(
       screen.getByRole("link", { name: "Gerenciar solicitações de mensalista" })
     ).toHaveAttribute("href", "/admin/jogadores/mensalistas#solicitacoes-mensalista");
+  });
+
+  it("mostra o alerta ao Diretor de Futebol sem oferecer gestão financeira", () => {
+    jogadores = [];
+    monthlyPending = 2;
+    currentRole = "DIRETOR_FUTEBOL";
+    render(<Page />);
+    expect(screen.getByText("2 pendentes")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Gerenciar solicitações de mensalista" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("A aprovação é feita por quem possui permissão financeira no grupo.")
+    ).toBeInTheDocument();
   });
 
   it("oferece Excluir somente quando canDelete=true e não há histórico", () => {
