@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { classifyCanonicalChange } = require("./canonical-changelog-source.cjs");
 
 const BACKEND_CHANGELOG_REPO =
   process.env.BACKEND_CHANGELOG_REPO || "v4nders0nr0cha-cmd/fut7pro-backend";
@@ -166,6 +167,15 @@ async function validateBackendChangelogPr(reference, options = {}) {
         `https://api.github.com/repos/${ref.repo}/pulls/${ref.number}/files?per_page=100&page=${page}`,
         token
       ));
+  const fetchSource =
+    options.fetchSource ||
+    (async (sha) => {
+      const data = await fetchJson(
+        `https://api.github.com/repos/${repo}/contents/${expectedPath}?ref=${sha}`,
+        token
+      );
+      return Buffer.from(data.content, "base64").toString("utf8");
+    });
 
   if (repo.toLowerCase() !== expectedRepo.toLowerCase()) {
     return {
@@ -201,6 +211,18 @@ async function validateBackendChangelogPr(reference, options = {}) {
       return {
         ok: false,
         reason: `Changelog PR #${reference.number} nao altera ${expectedPath}.`,
+      };
+    }
+
+    if (!pr.base?.sha || !pr.head?.sha) {
+      return { ok: false, reason: "Changelog PR sem base e HEAD verificáveis." };
+    }
+    const [before, after] = await Promise.all([fetchSource(pr.base.sha), fetchSource(pr.head.sha)]);
+    const change = classifyCanonicalChange(before, after);
+    if (change.kind !== "release") {
+      return {
+        ok: false,
+        reason: "Correção editorial do histórico não documenta uma nova entrega do produto.",
       };
     }
 
