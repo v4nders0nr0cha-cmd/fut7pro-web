@@ -157,18 +157,32 @@ describe("ParticipantesRacha", () => {
       { id: "agenda-1", weekday: 2, time: "19:30", active: true },
       { id: "agenda-2", weekday: 5, time: "19:30", active: true },
     ];
-    mockJogadores.forEach((jogador, index) => { jogador.mensalista = index < 2; });
+    mockJogadores.forEach((jogador, index) => {
+      jogador.mensalista = index < 2;
+    });
     mockCompetencias = [
       { athleteId: "jogador-1", isPaid: false, agendaIds: ["agenda-1", "agenda-2"] },
       { athleteId: "jogador-2", isPaid: false, agendaIds: ["agenda-2"] },
     ];
-    const base = { duracaoRachaMin: 90, duracaoPartidaMin: 6, numTimes: 2, jogadoresPorTime: 7, horaPartida: "19:30" };
-    const tuesday = render(<ParticipantesHarness config={{ ...base, dataPartida: "2025-12-30" }} />);
-    await waitFor(() => expect(screen.getByTestId("ids-selecionados")).toHaveTextContent("jogador-1"));
+    const base = {
+      duracaoRachaMin: 90,
+      duracaoPartidaMin: 6,
+      numTimes: 2,
+      jogadoresPorTime: 7,
+      horaPartida: "19:30",
+    };
+    const tuesday = render(
+      <ParticipantesHarness config={{ ...base, dataPartida: "2025-12-30" }} />
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("ids-selecionados")).toHaveTextContent("jogador-1")
+    );
     expect(screen.getByTestId("ids-selecionados")).not.toHaveTextContent("jogador-2");
     tuesday.unmount();
     render(<ParticipantesHarness config={{ ...base, dataPartida: "2026-01-02" }} />);
-    await waitFor(() => expect(screen.getByTestId("ids-selecionados")).toHaveTextContent("jogador-2"));
+    await waitFor(() =>
+      expect(screen.getByTestId("ids-selecionados")).toHaveTextContent("jogador-2")
+    );
     expect(screen.getByTestId("ids-selecionados")).toHaveTextContent("jogador-1");
   });
 
