@@ -124,6 +124,11 @@ export default function PerfilAtletaSlugPage() {
         </div>
         <AthletePremiumProfileView
           mode="public"
+          publicProfilePath={
+            premiumProfile.athlete.slug
+              ? publicHref(`/atletas/${encodeURIComponent(premiumProfile.athlete.slug)}`)
+              : null
+          }
           athlete={premiumView.athlete}
           tenant={premiumView.tenant}
           stats={premiumView.stats}

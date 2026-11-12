@@ -9,6 +9,7 @@ const PUBLIC_ROUTE_SEGMENTS = new Set([
   "grandes-torneios",
   "entrar",
   "login",
+  "minha-conta",
   "os-campeoes",
   "partidas",
   "perfil",

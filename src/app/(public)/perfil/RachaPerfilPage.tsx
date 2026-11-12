@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import HistoricoJogos from "@/components/atletas/HistoricoJogos";
 import AthletePremiumProfileView from "@/components/athlete-premium/AthletePremiumProfileView";
 import LegendaryUnlockedModal from "@/components/athlete-premium/LegendaryUnlockedModal";
@@ -15,121 +14,6 @@ import {
 import { mapPremiumPayloadToView } from "@/utils/athlete-premium-contract";
 
 const MIN_PERIOD_SWITCH_LOADING_MS = 650;
-
-function MembershipStatusCard({
-  variant,
-  rachaName,
-  onConfirm,
-}: {
-  variant: "active" | "request" | "pending";
-  rachaName: string;
-  onConfirm?: () => Promise<void>;
-}) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  async function handleConfirm() {
-    if (!onConfirm || isSubmitting) return;
-    setSubmitError(null);
-    setIsSubmitting(true);
-    try {
-      await onConfirm();
-      setModalOpen(false);
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Não foi possível enviar o pedido.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  const isRequest = variant === "request";
-  const groupReference = rachaName === "grupo" ? "neste grupo" : `no grupo ${rachaName}`;
-  const title =
-    variant === "active"
-      ? "Mensalista neste grupo"
-      : variant === "pending"
-        ? "Solicitação em análise"
-        : "Solicitar vaga de mensalista";
-  const description =
-    variant === "active"
-      ? `Você já tem status de mensalista ${groupReference}.`
-      : variant === "pending"
-        ? `Seu pedido de mensalista ${groupReference} foi enviado e está aguardando avaliação do administrador.`
-        : `Solicite uma vaga de mensalista ${groupReference}. O administrador irá avaliar e aprovar caso exista vaga disponível.`;
-
-  return (
-    <>
-      <button
-        type="button"
-        className={`group relative w-full overflow-hidden rounded-xl border border-[#f8c64a]/35 bg-[linear-gradient(135deg,rgba(16,12,4,0.94),rgba(3,4,4,0.96))] px-4 py-3 text-left shadow-[0_14px_28px_rgba(0,0,0,0.35)] transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f8c64a]/60 ${
-          isRequest ? "hover:border-[#f8c64a]/70" : "cursor-default"
-        }`}
-        onClick={() => {
-          if (isRequest) setModalOpen(true);
-        }}
-        title={title}
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,rgba(248,198,74,0.16),transparent_42%),radial-gradient(circle_at_88%_82%,rgba(248,198,74,0.10),transparent_38%)]" />
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <span className="inline-flex w-fit rounded-full border border-[#f8c64a]/45 bg-[#f8c64a]/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#ffe08a]">
-              Mensalista
-            </span>
-            <h3 className="mt-2 text-lg font-extrabold leading-tight text-white">{title}</h3>
-            <p className="mt-1 max-w-[58ch] text-sm leading-relaxed text-zinc-200">{description}</p>
-          </div>
-          {isRequest && (
-            <span className="inline-flex w-fit shrink-0 items-center rounded-lg bg-gradient-to-r from-[#b97808] via-[#f8c64a] to-[#fff0a8] px-4 py-2 text-sm font-black text-black transition group-hover:brightness-110">
-              Solicitar vaga
-            </span>
-          )}
-        </div>
-      </button>
-      {isRequest && modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-[#f8c64a]/55 bg-zinc-950 p-6 shadow-xl sm:p-8">
-            <div className="mb-2 text-center text-lg font-semibold text-[#f8c64a]">
-              Solicitar vaga de mensalista
-            </div>
-            <div className="mb-6 text-center text-sm text-zinc-100">
-              Ao confirmar, seu pedido de mensalista {groupReference} será enviado ao administrador.
-              <br />
-              <span className="text-[#ffe08a]">
-                A aprovação depende da disponibilidade de vaga e das regras do grupo.
-              </span>
-              <br />
-              Deseja realmente enviar este pedido?
-            </div>
-            {submitError && (
-              <p className="mb-3 rounded-md border border-red-500/50 bg-red-500/10 px-3 py-2 text-center text-sm text-red-200">
-                {submitError}
-              </p>
-            )}
-            <div className="mt-2 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                className="rounded bg-[#f8c64a] px-5 py-2 font-semibold text-zinc-950 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f8c64a]/70 disabled:cursor-not-allowed disabled:opacity-70"
-                onClick={handleConfirm}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Enviando..." : "Confirmar"}
-              </button>
-              <button
-                type="button"
-                className="rounded bg-zinc-700 px-5 py-2 font-semibold text-white transition hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-70"
-                onClick={() => setModalOpen(false)}
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
 
 // --- Página ---
 export default function PerfilUsuarioPage() {
@@ -176,9 +60,6 @@ export default function PerfilUsuarioPage() {
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
   const [pendingStatsPeriod, setPendingStatsPeriod] = useState<"current" | "all" | null>(null);
   const [periodSwitchStartedAt, setPeriodSwitchStartedAt] = useState<number | null>(null);
-  const [pedidoEnviado, setPedidoEnviado] = useState<boolean>(
-    usuario?.mensalistaRequestStatus === "PENDING"
-  );
   const [showLegendaryModal, setShowLegendaryModal] = useState(false);
   const [isMarkingLegendarySeen, setIsMarkingLegendarySeen] = useState(false);
   const {
@@ -194,40 +75,6 @@ export default function PerfilUsuarioPage() {
     statsPeriod,
   });
 
-  async function solicitarVagaMensalista() {
-    if (!publicSlug) {
-      throw new Error("Não foi possível identificar o grupo para enviar sua solicitação.");
-    }
-
-    const response = await fetch(
-      `/api/public/${encodeURIComponent(publicSlug)}/mensalistas/request`,
-      {
-        method: "POST",
-        cache: "no-store",
-      }
-    );
-
-    const text = await response.text();
-    let body: unknown = null;
-    try {
-      body = text ? JSON.parse(text) : null;
-    } catch {
-      body = text || null;
-    }
-
-    if (!response.ok) {
-      const payload = typeof body === "object" && body ? (body as Record<string, unknown>) : null;
-      const message =
-        (typeof payload?.message === "string" ? payload.message : null) ||
-        (typeof payload?.error === "string" ? payload.error : null) ||
-        (typeof body === "string" ? body : null) ||
-        "Não foi possível enviar sua solicitação agora.";
-      throw new Error(message);
-    }
-
-    setPedidoEnviado(true);
-  }
-
   useEffect(() => {
     if (!isAuthenticated || isLoading) return;
     if (isPendingApproval) {
@@ -241,12 +88,6 @@ export default function PerfilUsuarioPage() {
       router.replace(loginHref);
     }
   }, [isAuthenticated, isLoading, router, loginHref]);
-
-  useEffect(() => {
-    if (usuario?.mensalistaRequestStatus === "PENDING") {
-      setPedidoEnviado(true);
-    }
-  }, [usuario?.mensalistaRequestStatus]);
 
   useEffect(() => {
     if (premiumProfile?.legendaryCelebration?.shouldShow) {
@@ -451,13 +292,6 @@ export default function PerfilUsuarioPage() {
 
   const athleteSlugForLinks = premiumProfile.athlete.slug || usuario.slug;
   const premiumView = mapPremiumPayloadToView(premiumProfile, premiumProfile.stats.titles);
-  const {
-    titulosGrandesTorneios = [],
-    titulosAnuais = [],
-    titulosQuadrimestrais = [],
-  } = premiumView.achievementGroups ?? {};
-  const rachaName =
-    premiumProfile.tenant.name || premiumProfile.tenant.slug || publicSlug || "grupo";
   const nivelAssiduidade = premiumProfile.stats.attendancePercent
     ? `${premiumProfile.stats.attendancePercent}%`
     : "Sem dados";
@@ -514,18 +348,10 @@ export default function PerfilUsuarioPage() {
           achievementsUrl: publicHref(`/atletas/${athleteSlugForLinks}/conquistas`),
           historyUrl: publicHref(`/atletas/${athleteSlugForLinks}/historico`),
         }}
-        ownerActions={
-          usuario.mensalista ? (
-            <MembershipStatusCard variant="active" rachaName={rachaName} />
-          ) : !pedidoEnviado ? (
-            <MembershipStatusCard
-              variant="request"
-              rachaName={rachaName}
-              onConfirm={solicitarVagaMensalista}
-            />
-          ) : (
-            <MembershipStatusCard variant="pending" rachaName={rachaName} />
-          )
+        publicProfilePath={
+          premiumProfile.athlete.slug && publicSlug
+            ? publicHref(`/atletas/${encodeURIComponent(premiumProfile.athlete.slug)}`)
+            : null
         }
       />
       {showLegendaryModal && premiumProfile?.legendaryCelebration?.shouldShow && (
@@ -548,16 +374,6 @@ export default function PerfilUsuarioPage() {
           onClose={handleLegendaryCelebrationSeen}
         />
       )}
-
-      {/* Conquistas */}
-      <section className="mt-12 px-4">
-        <ConquistasDoAtleta
-          slug={athleteSlugForLinks}
-          titulosGrandesTorneios={titulosGrandesTorneios}
-          titulosAnuais={titulosAnuais}
-          titulosQuadrimestrais={titulosQuadrimestrais}
-        />
-      </section>
 
       {/* Histórico */}
       {usuario.historico && usuario.historico.length > 0 && (

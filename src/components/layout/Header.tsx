@@ -5,18 +5,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/fa";
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { useTema } from "@/hooks/useTema";
 import { useComunicacao } from "@/hooks/useComunicacao";
-import { useMe } from "@/hooks/useMe";
-import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
-import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
+import { usePublicPersonalArea } from "@/hooks/usePublicPersonalArea";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
+import { FaExchangeAlt, FaChartLine, FaPen, FaClock, FaSignOutAlt } from "react-icons/fa";
+import { useRef } from "react";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
-import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
-import { isFut7ProAccountComplete } from "@/utils/public-auth-flow";
-import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -30,68 +29,48 @@ const quickMenu = [
 
 const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const { logo, nome } = useTema();
-  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const hasGlobalSession = hasUsableFut7ProSession(session, status);
-  const shouldCheckMe = hasGlobalSession && Boolean(tenantSlug);
-  const showUserMenu = hasGlobalSession;
-  const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
-  const { me, isError: isMeError } = useMe({
-    enabled: shouldCheckMe,
-    tenantSlug,
-    context: "athlete",
-  });
-  const membershipStatus = String(
-    me?.membership?.status ||
-      (me as { membershipStatus?: string | null } | null)?.membershipStatus ||
-      ""
-  ).toUpperCase();
-  const globalMembership = globalProfile?.memberships?.find(
-    (item) => item.tenantSlug === tenantSlug
-  );
-  const globalMembershipStatus = String(globalMembership?.status || "").toUpperCase();
-  const resolvedMembershipStatus = membershipStatus || globalMembershipStatus;
-  const isPendingMembership =
-    resolvedMembershipStatus === "PENDENTE" || resolvedMembershipStatus === "PENDING";
-  const hasApprovedTenantProfile = Boolean(
-    hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
-  );
-  const accountComplete = isFut7ProAccountComplete(globalProfile?.user || me?.athlete);
-  const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
+  const personal = usePublicPersonalArea(tenantSlug);
+  const showUserMenu = personal.authenticated;
+  const hasApprovedTenantProfile = personal.approved;
+  const displayName = personal.name;
+  const profileImage = personal.avatar;
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const profileUser = globalProfile?.user;
-  const fallbackEmail = session?.user?.email || profileUser?.email || "";
-  const emailLabel = fallbackEmail ? fallbackEmail.split("@")[0] : "";
-  const displayName =
-    profileUser?.nickname?.trim() ||
-    profileUser?.name?.trim() ||
-    (me?.athlete?.firstName || "").trim() ||
-    (session?.user?.name || "").trim() ||
-    emailLabel ||
-    "Usuario";
-  const profileImage = getAvatarSrc(
-    me?.athlete?.avatarUrl || me?.user?.avatarUrl || profileUser?.avatarUrl || session?.user?.image,
-    DEFAULT_ATHLETE_AVATAR
-  );
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({
     enabled: hasApprovedTenantProfile,
   });
   const homeHref = publicHref("/");
   const loginHref = publicHref("/entrar");
-  const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
-  const resolvedSlug = activeSlug || fallbackSlug || "";
-  const profileHref =
-    hasApprovedTenantProfile && resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
-  const globalProfileHref = "/perfil";
-  const switchRachaHref = "/perfil#meus-rachas";
-  const completeProfileHref =
-    tenantSlug && !accountComplete ? `/perfil?intent=request-join&racha=${tenantSlug}` : "/perfil";
-  const pendingApprovalHref = publicHref("/aguardando-aprovacao");
+  useEffect(() => {
+    setDropdownOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const close = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent) {
+        if (event.key === "Escape") {
+          setDropdownOpen(false);
+          accountButtonRef.current?.focus();
+        }
+      } else if (!dropdownRef.current?.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [dropdownOpen]);
 
   useEffect(() => {
     if (!slugFromPath) return;
@@ -124,7 +103,9 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
         </Link>
 
         {/* QuickMenu - desktop only */}
-        <div className="hidden md:flex items-center gap-4">
+        <div
+          className={`items-center gap-4 lg:flex ${showUserMenu && !tenantSlug ? "flex" : "hidden"}`}
+        >
           {quickMenu.map((item) => {
             let badgeValue = 0;
             if (item.label === "Comunicação" && badge > 0) badgeValue = badge;
@@ -143,7 +124,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
               <Link
                 key={item.href}
                 href={publicHref(item.href)}
-                className="group relative flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-2 transition"
+                className="group relative hidden min-h-[44px] items-center gap-2 rounded-lg px-2 py-2 transition lg:flex"
                 aria-label={item.label}
                 onClick={handleClick}
               >
@@ -174,10 +155,14 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
               </span>
             </Link>
           ) : (
-            <div className="relative flex items-center gap-3 ml-3">
+            <div ref={dropdownRef} className="relative ml-3 flex items-center gap-3">
               <button
+                ref={accountButtonRef}
                 type="button"
                 onClick={() => setDropdownOpen((prev) => !prev)}
+                aria-expanded={dropdownOpen}
+                aria-haspopup="menu"
+                aria-label="Abrir área pessoal"
                 className="flex items-center gap-2 hover:opacity-80 transition"
               >
                 <AvatarFut7Pro
@@ -188,62 +173,84 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                   fallbackSrc={DEFAULT_ATHLETE_AVATAR}
                   className="rounded-full border-2 border-brand"
                 />
-                <span className="text-brand font-bold text-[15px] uppercase truncate max-w-[90px]">
+                <span className="hidden max-w-[90px] truncate text-[15px] font-bold uppercase text-brand lg:block">
                   {displayName}
                 </span>
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 top-11 w-52 rounded-xl border border-white/10 bg-[#12141c] shadow-xl py-2 z-50">
-                  <Link
-                    href={globalProfileHref}
-                    onClick={() => setDropdownOpen(false)}
-                    className="block px-4 py-2 text-sm text-white hover:bg-white/5"
-                  >
-                    Minha conta Fut7Pro
-                  </Link>
-                  {profileHref && (
+                <div
+                  role="menu"
+                  aria-label="Área pessoal"
+                  className="absolute right-0 top-12 z-50 max-h-[min(75vh,36rem)] w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-white/15 bg-[#17191e] p-3 shadow-2xl"
+                >
+                  <div className="flex min-w-0 items-center gap-3 border-b border-white/10 px-2 pb-3">
+                    <AvatarFut7Pro
+                      src={profileImage}
+                      alt={displayName}
+                      width={44}
+                      height={44}
+                      fallbackSrc={DEFAULT_ATHLETE_AVATAR}
+                      className="shrink-0 rounded-full border border-brand"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-white" title={displayName}>
+                        {displayName}
+                      </p>
+                      <p className="truncate text-xs text-zinc-400" title={personal.email}>
+                        {personal.email}
+                      </p>
+                    </div>
+                  </div>
+                  {personal.sections.map((section) => (
+                    <section key={section.title} className="border-b border-white/10 py-2">
+                      <h2 className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
+                        {section.title}
+                      </h2>
+                      {section.items.map((item) => {
+                        const icons = {
+                          account: FaUser,
+                          edit: FaPen,
+                          performance: FaChartLine,
+                          switch: FaExchangeAlt,
+                          pending: FaClock,
+                        };
+                        const Icon = icons[item.icon as keyof typeof icons];
+                        return (
+                          <Link
+                            key={item.label}
+                            role="menuitem"
+                            href={item.href}
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex min-h-10 items-center gap-3 rounded-lg px-2 py-2 text-sm text-zinc-100 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                          >
+                            <Icon className="text-brand" aria-hidden="true" />
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </section>
+                  ))}
+                  {personal.groupSlug && (
                     <Link
-                      href={profileHref}
+                      role="menuitem"
+                      href={`/${personal.groupSlug}/minha-conta`}
                       onClick={() => setDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
+                      className="mt-2 block rounded-lg px-2 py-2 text-sm text-brand hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                     >
-                      Meu desempenho
+                      Ver área pessoal
                     </Link>
                   )}
-                  {isPendingMembership && (
-                    <Link
-                      href={pendingApprovalHref}
-                      onClick={() => setDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
-                    >
-                      Solicitação em análise
-                    </Link>
-                  )}
-                  {!isPendingMembership && !accountComplete && (
-                    <Link
-                      href={completeProfileHref}
-                      onClick={() => setDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
-                    >
-                      Completar Perfil Fut7Pro
-                    </Link>
-                  )}
-                  {canSwitchRacha && (
-                    <Link
-                      href={switchRachaHref}
-                      onClick={() => setDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
-                    >
-                      Trocar de grupo
-                    </Link>
-                  )}
-                  <div className="my-1 h-px bg-white/10" />
                   <button
+                    role="menuitem"
                     type="button"
-                    onClick={() => signOut({ callbackUrl: homeHref })}
-                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5"
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      void signOut({ callbackUrl: homeHref });
+                    }}
+                    className="mt-1 flex min-h-10 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-red-300 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                   >
+                    <FaSignOutAlt aria-hidden="true" />
                     Sair da conta
                   </button>
                 </div>
@@ -253,7 +260,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
         </div>
         {/* Botão Mobile */}
         <button
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand md:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand lg:hidden"
           onClick={onOpenSidebar}
           aria-label="Abrir menu"
         >

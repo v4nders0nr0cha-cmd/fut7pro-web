@@ -169,7 +169,7 @@ describe("login publico integrado ao Header", () => {
 
     await waitFor(() => {
       expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Pelé/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Abrir área pessoal" })).toBeInTheDocument();
     });
 
     expect(mockUpdateSession).not.toHaveBeenCalled();
@@ -182,11 +182,25 @@ describe("login publico integrado ao Header", () => {
 
     render(<Header />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Pelé/i }));
-    fireEvent.click(screen.getByRole("button", { name: "Sair da conta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Abrir área pessoal" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sair da conta" }));
 
     await waitFor(() => {
       expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
     });
+  });
+
+  it("fecha o menu pessoal pelo teclado e por clique externo", () => {
+    mockSessionState = { data: approvedSession(), status: "authenticated" };
+    render(<Header />);
+    const trigger = screen.getByRole("button", { name: "Abrir área pessoal" });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("menu", { name: "Área pessoal" })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("menu", { name: "Área pessoal" })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    fireEvent.click(trigger);
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("menu", { name: "Área pessoal" })).not.toBeInTheDocument();
   });
 });

@@ -38,6 +38,7 @@ jest.mock("@/utils/athlete-premium-contract", () => ({
       titulosGrandesTorneios: [],
       titulosAnuais: [],
       titulosQuadrimestrais: [],
+      conquistasIndividuaisFut7Pro: [],
     },
     badges: [],
     legendaryProgress: {},
@@ -46,13 +47,23 @@ jest.mock("@/utils/athlete-premium-contract", () => ({
 
 jest.mock("@/components/athlete-premium/AthletePremiumProfileView", () => ({
   __esModule: true,
-  default: ({ ownerActions }: { ownerActions?: ReactNode }) => (
+  default: ({
+    ownerActions,
+    publicProfilePath,
+    achievementGroups,
+  }: {
+    ownerActions?: ReactNode;
+    publicProfilePath?: string | null;
+    achievementGroups?: Record<string, unknown[]>;
+  }) => (
     <div>
       <div>Desempenho do atleta carregado</div>
       <div>Card Oficial Fut7Pro</div>
       <button type="button">Baixar Card Oficial</button>
       <button type="button">Compartilhar Card Oficial</button>
       {ownerActions}
+      <span>Link público: {publicProfilePath || "indisponível"}</span>
+      <span>Categorias: {Object.keys(achievementGroups || {}).length}</span>
     </div>
   ),
 }));
@@ -60,11 +71,6 @@ jest.mock("@/components/athlete-premium/AthletePremiumProfileView", () => ({
 jest.mock("@/components/athlete-premium/LegendaryUnlockedModal", () => ({
   __esModule: true,
   default: () => null,
-}));
-
-jest.mock("@/components/atletas/ConquistasDoAtleta", () => ({
-  __esModule: true,
-  default: () => <div>Conquistas</div>,
 }));
 
 jest.mock("@/components/atletas/HistoricoJogos", () => ({
@@ -122,8 +128,10 @@ describe("RachaPerfilPage", () => {
     expect(screen.getByText("Card Oficial Fut7Pro")).toBeInTheDocument();
     expect(screen.getByText("Baixar Card Oficial")).toBeInTheDocument();
     expect(screen.getByText("Compartilhar Card Oficial")).toBeInTheDocument();
-    expect(screen.getByText("Solicitar vaga de mensalista")).toBeInTheDocument();
-    expect(screen.getByText("Conquistas")).toBeInTheDocument();
+    expect(screen.queryByText("Solicitar vaga de mensalista")).not.toBeInTheDocument();
+    expect(screen.queryByText("Conquistas")).not.toBeInTheDocument();
+    expect(screen.getByText("Link público: /seu-racha/atletas/neymar")).toBeInTheDocument();
+    expect(screen.getByText("Categorias: 4")).toBeInTheDocument();
     expect(mockedUseOwnerAthletePremiumProfile).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: true })
     );

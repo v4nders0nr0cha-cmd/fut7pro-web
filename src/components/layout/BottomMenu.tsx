@@ -15,7 +15,7 @@ const menu = [
   { label: "Sugestões", icon: FaLightbulb, href: "/comunicacao/sugestoes" },
   { label: "Comunicação", icon: FaBell, href: "/comunicacao/notificacoes" },
   { label: "Mensagens", icon: FaCommentDots, href: "/comunicacao/mensagens" },
-  { label: "Perfil", icon: FaUser, href: "/perfil" },
+  { label: "Perfil", icon: FaUser, href: "/minha-conta" },
 ];
 
 const PUBLIC_AUTH_ROUTE_SEGMENTS = [
@@ -89,7 +89,7 @@ export default function BottomMenu() {
   if (!isLoggedIn) {
     if (isVitrineSlug) {
       return (
-        <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
+        <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden animate-slide-down">
           <button
             type="button"
             onClick={() => router.push(publicHref("/entrar"))}
@@ -106,7 +106,7 @@ export default function BottomMenu() {
     }
 
     return (
-      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-center items-center px-1 py-2 md:hidden animate-slide-down">
+      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-center items-center px-1 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden animate-slide-down">
         <button
           type="button"
           onClick={() => router.push(publicHref("/entrar"))}
@@ -124,7 +124,7 @@ export default function BottomMenu() {
 
   if (isPendingMembership) {
     return (
-      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
+      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden animate-slide-down">
         <button
           type="button"
           onClick={() => router.push(publicHref("/aguardando-aprovacao"))}
@@ -136,6 +136,14 @@ export default function BottomMenu() {
           <FaUser size={18} />
           Solicitação em análise
         </button>
+        <button
+          type="button"
+          onClick={() => router.push(publicHref("/minha-conta"))}
+          className="ml-2 min-h-11 rounded-full border border-brand/50 px-3 text-xs font-bold text-brand"
+          aria-label="Minha área pessoal"
+        >
+          Minha conta
+        </button>
       </nav>
     );
   }
@@ -146,7 +154,7 @@ export default function BottomMenu() {
     const targetHref = accountComplete ? publicHref(href) : href;
 
     return (
-      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
+      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden animate-slide-down">
         <button
           type="button"
           onClick={() => router.push(targetHref)}
@@ -158,19 +166,27 @@ export default function BottomMenu() {
           <FaUser size={18} />
           {label}
         </button>
+        <button
+          type="button"
+          onClick={() => router.push(publicHref("/minha-conta"))}
+          className="ml-2 min-h-11 rounded-full border border-brand/50 px-3 text-xs font-bold text-brand"
+          aria-label="Minha área pessoal"
+        >
+          Minha conta
+        </button>
       </nav>
     );
   }
 
   // SE LOGADO E APROVADO: mostra menu privado do atleta
   return (
-    <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 py-2 md:hidden animate-slide-down">
+    <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden animate-slide-down">
       {menu.map((item) => {
         const resolvedHref = publicHref(item.href);
         const isActive =
           item.href === "/"
             ? pathname === "/" || pathname === resolvedHref
-            : pathname.startsWith(resolvedHref) || pathname.startsWith(item.href);
+            : pathname === resolvedHref || pathname.startsWith(`${resolvedHref}/`);
 
         let badgeValue = 0;
         if (item.label === "Comunicação" && badge > 0) badgeValue = badge;
