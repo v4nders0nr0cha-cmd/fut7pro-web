@@ -22,7 +22,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ role: s
     `${getApiBase()}/admin/administradores/${encodeURIComponent(role)}/mensalidade`,
     {
       method: "PUT",
-      headers: buildHeaders(user, tenantSlug),
+      headers: buildHeaders(user, tenantSlug, { includeContentType: true }),
       body: await req.text(),
     }
   );
