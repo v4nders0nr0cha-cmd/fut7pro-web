@@ -1,6 +1,7 @@
 "use client";
 
 import Head from "next/head";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   FaUserPlus,
@@ -19,6 +20,8 @@ import { useJogadores } from "@/hooks/useJogadores";
 import { useAthleteRequests } from "@/hooks/useAthleteRequests";
 import { useAutoApproveAthletes } from "@/hooks/useAutoApproveAthletes";
 import { useRacha } from "@/context/RachaContext";
+import { useAdminBadges } from "@/hooks/useAdminBadges";
+import { useMe } from "@/hooks/useMe";
 import type { Jogador } from "@/types/jogador";
 import type { AthleteRequest } from "@/types/athlete-request";
 import JogadorForm from "@/components/admin/JogadorForm";
@@ -72,13 +75,13 @@ function ModalLifecycleJogador({
         <div className="text-sm text-gray-200 text-center">
           {archiving ? (
             <>
-              <b>{jogador.nome}</b> já possui histórico no racha. Para preservar partidas, rankings,
+              <b>{jogador.nome}</b> já possui histórico no grupo. Para preservar partidas, rankings,
               conquistas e estatísticas anteriores, ele será arquivado em vez de excluído. O jogador
               deixará de aparecer em novas operações e poderá ser restaurado.
             </>
           ) : (
             <>
-              <b>{jogador.nome}</b> nunca possuiu histórico no racha e será excluído
+              <b>{jogador.nome}</b> nunca possuiu histórico no grupo e será excluído
               definitivamente. Essa ação é irreversível.
             </>
           )}
@@ -258,7 +261,7 @@ function ModalVincularJogador({
             Nome, apelido, foto e posições passam a ser atualizados pela conta do atleta.
           </p>
           <p>
-            Se a conta escolhida já tiver histórico no racha, as estatísticas serão mescladas e
+            Se a conta escolhida já tiver histórico no grupo, as estatísticas serão mescladas e
             somadas automaticamente, sem perda de dados.
           </p>
         </div>
@@ -399,7 +402,7 @@ function ModalRejeitarSolicitacao({
         <h2 className="text-lg text-red-400 font-bold">Rejeitar solicitação</h2>
         <p className="text-sm text-gray-200">
           Você está recusando <strong>{solicitacao.name}</strong>. A conta continua ativa no
-          Fut7Pro, mas não entra no racha.
+          Fut7Pro, mas não entra no grupo.
         </p>
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
@@ -744,6 +747,15 @@ export default function Page() {
     [solicitacoes]
   );
   const solicitacoesCount = solicitacoesPendentes.length;
+  const { monthlyPending, monthlyLoading } = useAdminBadges();
+  const { me } = useMe({ context: "admin", tenantSlug });
+  const canManageMonthlyRequests = [
+    "PRESIDENTE",
+    "VICE_PRESIDENTE",
+    "DIRETOR_FINANCEIRO",
+    "ADMIN",
+    "SUPERADMIN",
+  ].includes(String(me?.membership?.role || "").toUpperCase());
   const autoApproveBusy = autoApproveLoading || autoApproveUpdating;
   const autoApproveErrorResolved =
     autoApproveLocalError || (autoApproveError ? autoApproveErrorMessage : null);
@@ -1199,14 +1211,14 @@ export default function Page() {
         <title>Gestão de Jogadores | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Administre a lista de jogadores do seu racha, incluindo cadastro, edição e exclusão."
+          content="Administre a lista de jogadores do seu grupo, incluindo cadastro, edição e exclusão."
         />
       </Head>
 
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-2 sm:px-6 max-w-5xl mx-auto">
         {missingTenantScope && (
           <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            Não foi possível identificar o racha ativo. Acesse o Hub e selecione o racha antes de
+            Não foi possível identificar o grupo ativo. Acesse o Hub e selecione o grupo antes de
             gerenciar jogadores.
           </div>
         )}
@@ -1296,7 +1308,7 @@ export default function Page() {
           <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
-                <h2 className="text-base font-bold text-yellow-400">Solicitações de jogadores</h2>
+                <h2 className="text-base font-bold text-yellow-400">Solicitações de entrada</h2>
                 <p className="text-sm text-gray-300">
                   Jogadores que pedirem entrada pelo site do seu grupo aparecerão aqui para
                   aprovação.
@@ -1344,6 +1356,36 @@ export default function Page() {
             {autoApproveErrorResolved && (
               <div className="mt-2 text-xs text-red-300">{autoApproveErrorResolved}</div>
             )}
+          </div>
+
+          <div className="mt-5 rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-emerald-300">Solicitações de mensalista</h2>
+                <p className="mt-1 text-sm text-zinc-300">
+                  Atletas já vinculados que desejam passar à condição de mensalista.
+                </p>
+                <p className="mt-2 text-sm text-emerald-100">
+                  {monthlyLoading
+                    ? "Consultando pendências..."
+                    : monthlyPending === null
+                      ? "Não foi possível consultar as pendências."
+                      : `${monthlyPending} pendente${monthlyPending === 1 ? "" : "s"}`}
+                </p>
+              </div>
+              {canManageMonthlyRequests ? (
+                <Link
+                  href="/admin/jogadores/mensalistas#solicitacoes-mensalista"
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-emerald-400/50 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-400/10"
+                >
+                  Gerenciar solicitações de mensalista
+                </Link>
+              ) : (
+                <p className="text-sm text-zinc-300">
+                  A aprovação é feita por quem possui permissão financeira no grupo.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="mt-5">

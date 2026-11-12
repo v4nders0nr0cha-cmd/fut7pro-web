@@ -10,6 +10,7 @@ import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import { useMensalistaCompetencias } from "@/hooks/useMensalistaCompetencias";
 import type { Jogador } from "@/types/jogador";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+import { revalidateAdminRequestBadges } from "@/lib/admin-request-badges";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const POSICAO_LABEL: Record<string, string> = {
@@ -251,8 +252,7 @@ function ModalDiasMensalista({
 
         {semAgenda ? (
           <div className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-            Nenhum dia cadastrado no racha. Configure a agenda em <b>Admin &gt; Rachas</b> antes de
-            continuar.
+            Nenhum dia cadastrado no grupo. Configure a agenda do grupo antes de continuar.
           </div>
         ) : (
           <div className="mt-4 space-y-2">
@@ -277,7 +277,7 @@ function ModalDiasMensalista({
 
         {!semAgenda && agendaOptions.length === 1 && (
           <p className="mt-3 text-xs text-emerald-300">
-            O racha possui apenas um dia oficial, ele já foi vinculado automaticamente.
+            O grupo possui apenas um dia oficial, ele já foi vinculado automaticamente.
           </p>
         )}
 
@@ -355,7 +355,7 @@ function ModalRemoverMensalista({
         <div className="text-sm leading-relaxed text-gray-200">
           Você está removendo <b>{jogador.nome}</b> da lista de mensalistas.
           <br />
-          Ele continuará cadastrado no racha, mas perderá o status de mensalista.
+          Ele continuará cadastrado no grupo, mas perderá o status de mensalista.
           <br />
           Essa ação pode ser revertida a qualquer momento.
         </div>
@@ -387,9 +387,9 @@ export default function MensalistasPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { rachaId } = useRacha();
+  const { rachaId, tenantSlug } = useRacha();
   const resolvedRachaId = rachaId || "";
-  const missingTenantScope = !resolvedRachaId;
+  const missingTenantScope = !resolvedRachaId || !tenantSlug;
 
   const hoje = useMemo(() => new Date(), []);
   const competenciaAno = hoje.getFullYear();
@@ -412,6 +412,15 @@ export default function MensalistasPage() {
   } = useMensalistaCompetencias(competenciaAno, competenciaMes, Boolean(resolvedRachaId));
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [tipsOpen, setTipsOpen] = useState(false);
+  const tipsDialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = tipsDialogRef.current;
+    if (!dialog) return;
+    if (tipsOpen && !dialog.open) dialog.showModal();
+    if (!tipsOpen && dialog.open) dialog.close();
+  }, [tipsOpen]);
   const [modalDiasOpen, setModalDiasOpen] = useState(false);
   const [modalDiasContexto, setModalDiasContexto] = useState<ModalDiasContexto>("create");
   const [modalDiasJogador, setModalDiasJogador] = useState<Jogador | null>(null);
@@ -424,6 +433,7 @@ export default function MensalistasPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const [mensalistaRequests, setMensalistaRequests] = useState<MensalistaRequestItem[]>([]);
+  const [mensalistaRequestsTotal, setMensalistaRequestsTotal] = useState<number | null>(null);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState<string | null>(null);
   const [requestActionId, setRequestActionId] = useState<string | null>(null);
@@ -495,7 +505,7 @@ export default function MensalistasPage() {
 
   const formatDiasList = useCallback(
     (athleteId: string) => {
-      if (agendaOptions.length === 0) return "Agenda do racha não configurada.";
+      if (agendaOptions.length === 0) return "Agenda do grupo não configurada.";
       const ids = getDiasMensalista(athleteId);
       if (ids.length === 0) return "Nenhum dia vinculado.";
       return ids.map((id) => agendaLabelMap[id] || "Dia removido").join(", ");
@@ -524,8 +534,9 @@ export default function MensalistasPage() {
   const editarDiasAthleteId = searchParams.get("editarDias");
 
   const loadMensalistaRequests = useCallback(async () => {
-    if (!resolvedRachaId) {
+    if (!resolvedRachaId || !tenantSlug) {
       setMensalistaRequests([]);
+      setMensalistaRequestsTotal(null);
       setRequestsLoading(false);
       return;
     }
@@ -564,7 +575,13 @@ export default function MensalistasPage() {
           ? ((payload as { items: unknown[] }).items as MensalistaRequestItem[])
           : [];
       setMensalistaRequests(items);
+      setMensalistaRequestsTotal(
+        typeof (payload as { total?: unknown })?.total === "number"
+          ? (payload as { total: number }).total
+          : null
+      );
     } catch (fetchError) {
+      setMensalistaRequestsTotal(null);
       setRequestsError(
         fetchError instanceof Error
           ? fetchError.message
@@ -573,7 +590,7 @@ export default function MensalistasPage() {
     } finally {
       setRequestsLoading(false);
     }
-  }, [resolvedRachaId]);
+  }, [resolvedRachaId, tenantSlug]);
 
   useEffect(() => {
     loadMensalistaRequests();
@@ -691,7 +708,7 @@ export default function MensalistasPage() {
     if (!modalDiasJogador || loadingId || salvarDiasInFlightRef.current) return;
 
     if (agendaOptions.length === 0) {
-      setAcaoErro("Cadastre ao menos um dia na agenda do racha antes de continuar.");
+      setAcaoErro("Cadastre ao menos um dia na agenda do grupo antes de continuar.");
       return;
     }
 
@@ -934,6 +951,7 @@ export default function MensalistasPage() {
       }
 
       await Promise.all([mutate(), loadMensalistaRequests()]);
+      await revalidateAdminRequestBadges();
 
       if (agendaIds.length === 1) {
         competenciaSyncInFlightRef.current.add(request.athleteId);
@@ -992,6 +1010,7 @@ export default function MensalistasPage() {
       }
 
       await loadMensalistaRequests();
+      await revalidateAdminRequestBadges();
     } catch (actionError) {
       setRequestsError(
         actionError instanceof Error
@@ -1009,7 +1028,7 @@ export default function MensalistasPage() {
         <title>Mensalistas | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Cadastre e gerencie jogadores mensalistas do seu racha, defina dias oficiais de participação e mantenha o fluxo financeiro organizado."
+          content="Organize os atletas mensalistas do seu grupo, acompanhe solicitações e gerencie os dias de participação conforme as regras definidas pela organização."
         />
         <meta
           name="keywords"
@@ -1018,44 +1037,85 @@ export default function MensalistasPage() {
       </Head>
 
       <main className="mx-auto max-w-5xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
-        <h1 className="mb-6 text-center text-3xl font-bold text-yellow-400">
-          Jogadores Mensalistas
-        </h1>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-yellow-400">Gestão de Mensalistas</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-300">
+              Organize os atletas mensalistas do seu grupo, acompanhe solicitações e gerencie os
+              dias de participação conforme as regras definidas pela organização.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTipsOpen(true)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-zinc-600 px-3 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800"
+          >
+            <FaInfoCircle aria-hidden="true" /> Dicas sobre mensalistas
+          </button>
+        </div>
+
+        <dialog
+          ref={tipsDialogRef}
+          onClose={() => setTipsOpen(false)}
+          aria-labelledby="mensalistas-tips-title"
+          className="w-[min(92vw,36rem)] rounded-2xl border border-zinc-700 bg-[#1c1f26] p-0 text-zinc-100 shadow-2xl backdrop:bg-black/75"
+        >
+          <div className="border-b border-zinc-700 px-5 py-4">
+            <h2 id="mensalistas-tips-title" className="text-lg font-semibold text-yellow-300">
+              Dicas sobre mensalistas
+            </h2>
+          </div>
+          <div className="space-y-3 px-5 py-4 text-sm leading-6 text-zinc-300">
+            <p>
+              <strong className="text-white">Avulso:</strong> Participante ocasional, que comparece
+              eventualmente e não integra regularmente o grupo.
+            </p>
+            <p>
+              <strong className="text-white">Diarista:</strong> Atleta do grupo que participa
+              regularmente ou com certa frequência, contribuindo por dia conforme as regras locais.
+            </p>
+            <p>
+              <strong className="text-white">Mensalista:</strong> Atleta do grupo com participação
+              mensal e condições de vaga e contribuição definidas pela organização.
+            </p>
+            <p>
+              <strong className="text-white">Anualista:</strong> Modalidade possível em alguns
+              grupos, mas ainda não implementada no Fut7Pro.
+            </p>
+            <p className="rounded-lg border border-yellow-400/25 bg-yellow-400/5 p-3">
+              Vagas, prioridades, valores, descontos, isenções e eventuais penalidades são definidos
+              pela organização de cada grupo. Consulte o estatuto e as regras estabelecidas pelos
+              responsáveis.
+            </p>
+          </div>
+          <div className="flex justify-end border-t border-zinc-700 px-5 py-4">
+            <button
+              type="button"
+              onClick={() => setTipsOpen(false)}
+              className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
+            >
+              Fechar
+            </button>
+          </div>
+        </dialog>
 
         {missingTenantScope && (
           <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            Não foi possível identificar o racha ativo. Acesse o Hub e selecione um racha para
+            Não foi possível identificar o grupo ativo. Acesse o Hub e selecione um grupo para
             gerenciar mensalistas.
           </div>
         )}
 
         {isAgendaError && (
           <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            Não foi possível carregar os dias do racha. Verifique a agenda em{" "}
-            <b>Admin &gt; Rachas</b>.
+            Não foi possível carregar os dias do grupo. Verifique a agenda nas configurações.
           </div>
         )}
 
-        <div className="mb-8 flex flex-col items-start gap-4 rounded-xl border-l-4 border-yellow-400 bg-[#23272f] p-4 sm:flex-row sm:items-center">
-          <FaInfoCircle className="shrink-0 text-2xl text-yellow-300" />
-          <div className="text-sm leading-relaxed text-gray-200">
-            <b>Recomendação:</b> Mantenha <b>60% a 70% das vagas do racha para mensalistas</b>.
-            <br />
-            Jogadores mensalistas ajudam a manter o caixa fixo, garantindo:
-            <ul className="mb-2 mt-2 list-disc pl-5 text-gray-300">
-              <li>Vaga garantida em dias de racha</li>
-              <li>Descontos no pagamento à vista</li>
-              <li>Benefícios em lojas e parceiros</li>
-            </ul>
-            Mantenha algumas vagas para <b>diaristas</b> para estimular a concorrência e renovação.
-            <br />
-            <span className="mt-2 block">
-              Importante: <b>Mensalistas também pagam multa em caso de falta</b>.
-            </span>
-          </div>
-        </div>
-
-        <section className="mb-8 rounded-2xl border border-emerald-400/40 bg-[#191f29] p-4 sm:p-5">
+        <section
+          id="solicitacoes-mensalista"
+          className="mb-8 scroll-mt-28 rounded-2xl border border-emerald-400/40 bg-[#191f29] p-4 sm:p-5"
+        >
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-lg font-bold text-emerald-300">Solicitações de mensalista</h2>
@@ -1065,7 +1125,7 @@ export default function MensalistasPage() {
               </p>
             </div>
             <span className="inline-flex w-fit rounded-full border border-emerald-300/45 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">
-              Pendentes: {pendingRequests.length}
+              Pendentes: {mensalistaRequestsTotal === null ? "—" : mensalistaRequestsTotal}
             </span>
           </div>
 
@@ -1174,7 +1234,7 @@ export default function MensalistasPage() {
           {agendaOptions.length > 0 && (
             <>
               {" "}
-              Agenda atual do racha:{" "}
+              Agenda atual do grupo:{" "}
               <span className="font-semibold text-cyan-200">
                 {agendaOptions.map((item) => item.label).join(" • ")}
               </span>

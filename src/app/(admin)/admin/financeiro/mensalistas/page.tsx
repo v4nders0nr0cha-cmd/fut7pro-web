@@ -421,12 +421,13 @@ export default function MensalistasPage() {
       const pagoPorLancamento = Boolean(lancamento);
       const pagoPorCompetencia = Boolean(competenciaItem?.isPaid);
       const pagamentoConfirmado = pagoPorLancamento || pagoPorCompetencia;
+      const isento = competenciaItem?.isExempt === true && !pagamentoConfirmado;
 
       return {
         id: mensalista.id,
         nome: mensalista.nome,
-        valor: valorFinal,
-        statusPagamento: pagamentoConfirmado ? "pago" : "pendente",
+        valor: isento ? 0 : valorFinal,
+        statusPagamento: pagamentoConfirmado ? "pago" : isento ? "isento" : "pendente",
         pagamentoData: lancamento?.data || competenciaItem?.paidAt || null,
         diasResumo,
         jogosNoMes: jogosAtleta,
@@ -475,7 +476,12 @@ export default function MensalistasPage() {
     () => mensalistasCalculados.filter((item) => item.statusPagamento === "pago").length,
     [mensalistasCalculados]
   );
-  const quantidadePendentes = mensalistasCalculados.length - quantidadePagos;
+  const quantidadePendentes = mensalistasCalculados.filter(
+    (item) => item.statusPagamento === "pendente"
+  ).length;
+  const quantidadeIsentos = mensalistasCalculados.filter(
+    (item) => item.statusPagamento === "isento"
+  ).length;
   const progressoRecebimento =
     totalPrevisto > 0 ? Math.min((totalRecebido / totalPrevisto) * 100, 100) : 0;
 
@@ -962,9 +968,12 @@ export default function MensalistasPage() {
               >
                 Pendentes: {quantidadePendentes}
               </button>
+              <span className="rounded-md border border-blue-500/50 px-3 py-1 text-xs font-semibold text-blue-200">
+                Isentos: {quantidadeIsentos}
+              </span>
             </div>
             <p className="mt-2 text-xs text-gray-400">
-              Quantidade de mensalistas pagos e pendentes no mês.
+              Quantidade de mensalistas pagos, pendentes e isentos no mês.
             </p>
           </div>
         </div>
@@ -976,7 +985,8 @@ export default function MensalistasPage() {
               {formatCurrency(totalPrevisto)}
             </span>
             <span className="text-xs text-gray-400">
-              {quantidadePagos} de {mensalistasCalculados.length} atleta(s) com pagamento confirmado
+              {quantidadePagos} de {quantidadePagos + quantidadePendentes} atleta(s) sujeitos à
+              cobrança com pagamento confirmado
             </span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-neutral-800">

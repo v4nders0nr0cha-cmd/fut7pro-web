@@ -20,10 +20,18 @@ const mockJogadores = Array.from({ length: 28 }, (_, index) => {
             ? "Meia"
             : "Atacante",
     mensalista: true,
+    status: "Ativo",
     isBot: false,
     partidas: 10,
   };
 });
+
+let mockAgendaItems = [{ id: "agenda-1", weekday: 2, time: "19:30", active: true }];
+let mockCompetencias = mockJogadores.map((jogador) => ({
+  athleteId: jogador.id,
+  isPaid: true,
+  agendaIds: ["agenda-1"],
+}));
 
 jest.mock("@/context/RachaContext", () => ({
   useRacha: () => ({ rachaId: "racha-1", tenantSlug: "racha-1" }),
@@ -55,17 +63,13 @@ jest.mock("@/hooks/useNiveisAtletas", () => ({
 
 jest.mock("@/hooks/useRachaAgenda", () => ({
   useRachaAgenda: () => ({
-    items: [{ id: "agenda-1", weekday: 2, time: "19:30", active: true }],
+    items: mockAgendaItems,
   }),
 }));
 
 jest.mock("@/hooks/useMensalistaCompetencias", () => ({
   useMensalistaCompetencias: () => ({
-    items: mockJogadores.map((jogador) => ({
-      athleteId: jogador.id,
-      isPaid: true,
-      agendaIds: ["agenda-1"],
-    })),
+    items: mockCompetencias,
   }),
 }));
 
@@ -115,6 +119,7 @@ function ParticipantesHarness({
   return (
     <>
       <span data-testid="total-selecionados">{participantes.length}</span>
+      <span data-testid="ids-selecionados">{participantes.map((item) => item.id).join(",")}</span>
       <span data-testid="goleiros-selecionados">
         {participantes.filter((participante) => participante.posicao === "GOL").length}
       </span>
@@ -135,6 +140,68 @@ function ParticipantesHarness({
 describe("ParticipantesRacha", () => {
   beforeEach(() => {
     (global.fetch as jest.Mock).mockClear();
+    mockJogadores.forEach((jogador) => {
+      jogador.status = "Ativo";
+      jogador.mensalista = true;
+    });
+    mockAgendaItems = [{ id: "agenda-1", weekday: 2, time: "19:30", active: true }];
+    mockCompetencias = mockJogadores.map((jogador) => ({
+      athleteId: jogador.id,
+      isPaid: true,
+      agendaIds: ["agenda-1"],
+    }));
+  });
+
+  it("pré-seleciona o Presidente nos dois dias oficiais e respeita o dia dos demais", async () => {
+    mockAgendaItems = [
+      { id: "agenda-1", weekday: 2, time: "19:30", active: true },
+      { id: "agenda-2", weekday: 5, time: "19:30", active: true },
+    ];
+    mockJogadores.forEach((jogador, index) => {
+      jogador.mensalista = index < 2;
+    });
+    mockCompetencias = [
+      { athleteId: "jogador-1", isPaid: false, agendaIds: ["agenda-1", "agenda-2"] },
+      { athleteId: "jogador-2", isPaid: false, agendaIds: ["agenda-2"] },
+    ];
+    const base = {
+      duracaoRachaMin: 90,
+      duracaoPartidaMin: 6,
+      numTimes: 2,
+      jogadoresPorTime: 7,
+      horaPartida: "19:30",
+    };
+    const tuesday = render(
+      <ParticipantesHarness config={{ ...base, dataPartida: "2025-12-30" }} />
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("ids-selecionados")).toHaveTextContent("jogador-1")
+    );
+    expect(screen.getByTestId("ids-selecionados")).not.toHaveTextContent("jogador-2");
+    tuesday.unmount();
+    render(<ParticipantesHarness config={{ ...base, dataPartida: "2026-01-02" }} />);
+    await waitFor(() =>
+      expect(screen.getByTestId("ids-selecionados")).toHaveTextContent("jogador-2")
+    );
+    expect(screen.getByTestId("ids-selecionados")).toHaveTextContent("jogador-1");
+  });
+
+  it("não pré-seleciona mensalistas inativos ou suspensos", async () => {
+    mockJogadores[0].status = "Inativo";
+    mockJogadores[4].status = "Suspenso";
+    render(
+      <ParticipantesHarness
+        config={{
+          duracaoRachaMin: 90,
+          duracaoPartidaMin: 6,
+          numTimes: 4,
+          jogadoresPorTime: 7,
+          dataPartida: "2025-12-30",
+          horaPartida: "19:30",
+        }}
+      />
+    );
+    await waitFor(() => expect(screen.getByTestId("total-selecionados")).toHaveTextContent("26"));
   });
 
   it("limita mensalistas automaticos a capacidade configurada", async () => {

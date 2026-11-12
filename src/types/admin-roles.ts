@@ -16,6 +16,7 @@ export type AdminRoleSlot = {
   avatarUrl?: string | null;
   position?: string | null;
   athleteStatus?: string | null;
+  monthlyExempt?: boolean | null;
   pendingInvite?: boolean;
   pendingInviteId?: string | null;
   pendingInviteExpiresAt?: string | null;
