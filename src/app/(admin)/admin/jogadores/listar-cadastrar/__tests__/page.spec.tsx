@@ -10,6 +10,7 @@ const toggleAutoApprove = jest.fn();
 let jogadores: Jogador[] = [];
 let autoApproveAthletes = false;
 let autoApproveAthletesUntil: string | null = null;
+let monthlyPending = 0;
 
 jest.mock(
   "next/head",
@@ -59,6 +60,9 @@ jest.mock("@/hooks/useAthleteRequests", () => ({
     approve: jest.fn(),
     reject: jest.fn(),
   }),
+}));
+jest.mock("@/hooks/useAdminBadges", () => ({
+  useAdminBadges: () => ({ monthlyPending, monthlyLoading: false }),
 }));
 jest.mock("@/hooks/useAutoApproveAthletes", () => ({
   useAutoApproveAthletes: () => ({
@@ -111,9 +115,22 @@ describe("Gerenciar jogadores - lifecycle", () => {
     jest.clearAllMocks();
     autoApproveAthletes = false;
     autoApproveAthletesUntil = null;
+    monthlyPending = 0;
     deleteJogador.mockResolvedValue({ id: "athlete-1" });
     archiveJogador.mockResolvedValue({ id: "athlete-1" });
     restoreJogador.mockResolvedValue({ id: "athlete-1" });
+  });
+
+  it("reúne pedidos de mensalista no acesso Solicitações", () => {
+    jogadores = [];
+    monthlyPending = 2;
+    render(<Page />);
+    expect(screen.getByRole("heading", { name: "Solicitações de entrada" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Solicitações de mensalista" })).toBeInTheDocument();
+    expect(screen.getByText("2 pendentes")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Gerenciar solicitações de mensalista" })
+    ).toHaveAttribute("href", "/admin/jogadores/mensalistas#solicitacoes-mensalista");
   });
 
   it("oferece Excluir somente quando canDelete=true e não há histórico", () => {
