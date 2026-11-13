@@ -32,7 +32,7 @@ const menu: MenuItem[] = [
   {
     label: "Solicitações",
     icon: FaUserPlus,
-    href: "/admin/jogadores/listar-cadastrar#solicitacoes",
+    href: "/admin/solicitacoes",
     badgeKey: "solicitacoes",
   },
   { label: "Mais", icon: FaEllipsisH, href: "/admin/mais", badgeKey: "mais" },
@@ -85,6 +85,7 @@ export default function BottomMenuAdmin() {
             href={item.href}
             className="flex-1 flex flex-col items-center justify-center text-xs relative group min-h-[56px]"
             aria-label={item.label}
+            aria-current={isActive ? "page" : undefined}
             data-testid={`admin-bottom-link-${slugifyTestId(item.href)}`}
           >
             <item.icon

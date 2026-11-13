@@ -2,8 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { signOut } from "next-auth/react";
 import Header from "../Header";
 
+let mockPathname = "/admin/dashboard";
+
 jest.mock("next/navigation", () => ({
-  usePathname: () => "/admin/dashboard",
+  usePathname: () => mockPathname,
   useRouter: () => ({ push: jest.fn() }),
 }));
 
@@ -65,6 +67,9 @@ jest.mock("@/components/ui/AvatarFut7Pro", () => ({
 }));
 
 describe("Admin Header", () => {
+  beforeEach(() => {
+    mockPathname = "/admin/dashboard";
+  });
   it("mantém atalhos em rotas /admin e usa nome global no topo", () => {
     render(<Header />);
 
@@ -78,9 +83,18 @@ describe("Admin Header", () => {
       "href",
       "/admin/comunicacao/mensagens"
     );
-    expect(
-      screen.getByTestId("admin-header-link-admin-jogadores-listar-cadastrar-solicitacoes")
-    ).toHaveAttribute("href", "/admin/jogadores/listar-cadastrar#solicitacoes");
+    expect(screen.getByTestId("admin-header-link-admin-solicitacoes")).toHaveAttribute(
+      "href",
+      "/admin/solicitacoes"
+    );
+  });
+
+  it("destaca Solicitações na nova rota no cabeçalho desktop e tablet", () => {
+    mockPathname = "/admin/solicitacoes";
+    render(<Header />);
+    const link = screen.getByTestId("admin-header-link-admin-solicitacoes");
+    expect(link).toHaveAttribute("aria-current", "page");
+    expect(link).toHaveClass("sm:flex");
   });
 
   it("envia Trocar de grupo para /admin/selecionar-racha", () => {

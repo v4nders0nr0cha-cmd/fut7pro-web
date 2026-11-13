@@ -1,7 +1,6 @@
 "use client";
 
 import Head from "next/head";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   FaUserPlus,
@@ -20,8 +19,6 @@ import { useJogadores } from "@/hooks/useJogadores";
 import { useAthleteRequests } from "@/hooks/useAthleteRequests";
 import { useAutoApproveAthletes } from "@/hooks/useAutoApproveAthletes";
 import { useRacha } from "@/context/RachaContext";
-import { useAdminBadges } from "@/hooks/useAdminBadges";
-import { useMe } from "@/hooks/useMe";
 import type { Jogador } from "@/types/jogador";
 import type { AthleteRequest } from "@/types/athlete-request";
 import JogadorForm from "@/components/admin/JogadorForm";
@@ -747,15 +744,6 @@ export default function Page() {
     [solicitacoes]
   );
   const solicitacoesCount = solicitacoesPendentes.length;
-  const { monthlyPending, monthlyLoading } = useAdminBadges();
-  const { me } = useMe({ context: "admin", tenantSlug });
-  const canManageMonthlyRequests = [
-    "PRESIDENTE",
-    "VICE_PRESIDENTE",
-    "DIRETOR_FINANCEIRO",
-    "ADMIN",
-    "SUPERADMIN",
-  ].includes(String(me?.membership?.role || "").toUpperCase());
   const autoApproveBusy = autoApproveLoading || autoApproveUpdating;
   const autoApproveErrorResolved =
     autoApproveLocalError || (autoApproveError ? autoApproveErrorMessage : null);
@@ -1356,36 +1344,6 @@ export default function Page() {
             {autoApproveErrorResolved && (
               <div className="mt-2 text-xs text-red-300">{autoApproveErrorResolved}</div>
             )}
-          </div>
-
-          <div className="mt-5 rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-base font-bold text-emerald-300">Solicitações de mensalista</h2>
-                <p className="mt-1 text-sm text-zinc-300">
-                  Atletas já vinculados que desejam passar à condição de mensalista.
-                </p>
-                <p className="mt-2 text-sm text-emerald-100">
-                  {monthlyLoading
-                    ? "Consultando pendências..."
-                    : monthlyPending === null
-                      ? "Não foi possível consultar as pendências."
-                      : `${monthlyPending} pendente${monthlyPending === 1 ? "" : "s"}`}
-                </p>
-              </div>
-              {canManageMonthlyRequests ? (
-                <Link
-                  href="/admin/jogadores/mensalistas#solicitacoes-mensalista"
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-emerald-400/50 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-400/10"
-                >
-                  Gerenciar solicitações de mensalista
-                </Link>
-              ) : (
-                <p className="text-sm text-zinc-300">
-                  A aprovação é feita por quem possui permissão financeira no grupo.
-                </p>
-              )}
-            </div>
           </div>
 
           <div className="mt-5">
