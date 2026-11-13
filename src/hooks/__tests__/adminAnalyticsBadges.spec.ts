@@ -52,6 +52,7 @@ describe("useAdminAnalytics", () => {
     });
 
     const { result } = renderHook(() => useAdminAnalytics());
+    expect(mockSWR.mock.calls[0][0]).toBe("/api/admin/analytics?period=year&slug=slug-test");
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isError).toBe(false);
   });
