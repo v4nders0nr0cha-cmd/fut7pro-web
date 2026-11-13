@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { useApiState } from "./useApiState";
 import type { Jogador } from "@/types/jogador";
 
-const fetcher = async (url: string) => {
+const fetcher = async ([url]: [string, string]) => {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error("Erro ao buscar jogadores");
@@ -136,7 +136,7 @@ export function useJogadores(rachaId: string, options?: UseJogadoresOptions) {
   const query = params.toString();
 
   const { data, error, isLoading, mutate } = useSWR<Jogador[]>(
-    rachaId ? `/api/jogadores${query ? `?${query}` : ""}` : null,
+    rachaId ? [`/api/jogadores${query ? `?${query}` : ""}`, rachaId] : null,
     fetcher,
     {
       onError: (err) => {

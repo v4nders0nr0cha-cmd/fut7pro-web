@@ -5,7 +5,7 @@ import { useCampeoes } from "@/hooks/useCampeoes";
 import { useNotifications } from "@/hooks/useNotifications";
 import { Role, Permission } from "@/common/enums";
 
-const swrMock = jest.fn((key: string) => {
+const swrMock = jest.fn((key: string | [string, string]) => {
   const map: Record<string, any> = {
     "/api/jogadores?status=active": {
       data: [{ id: "j1", nome: "Jogador 1", timeId: "t1" }],
@@ -35,7 +35,14 @@ const swrMock = jest.fn((key: string) => {
       mutate: jest.fn(),
     },
   };
-  return map[key] || { data: [], isLoading: false, error: undefined, mutate: jest.fn() };
+  return (
+    map[Array.isArray(key) ? key[0] : key] || {
+      data: [],
+      isLoading: false,
+      error: undefined,
+      mutate: jest.fn(),
+    }
+  );
 });
 
 jest.mock("swr", () => ({
@@ -67,6 +74,7 @@ describe("Data hooks", () => {
     const { result } = renderHook(() => useJogadores("r1"));
     expect(result.current.jogadores).toHaveLength(1);
     expect(result.current.isLoading).toBe(false);
+    expect(swrMock).toHaveBeenCalledWith(["/api/jogadores?status=active", "r1"]);
   });
 
   it.each(["archive", "restore"] as const)(

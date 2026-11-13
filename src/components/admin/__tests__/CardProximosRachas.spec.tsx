@@ -4,7 +4,8 @@ import CardProximosRachas from "@/components/admin/CardProximosRachas";
 describe("CardProximosRachas", () => {
   it("exibe skeleton quando loading", () => {
     const { container } = render(<CardProximosRachas proximos={[]} isLoading />);
-    expect(container.querySelectorAll(".animate-pulse").length).toBe(4);
+    expect(container.firstElementChild).toHaveAttribute("aria-busy", "true");
+    expect(container.querySelectorAll('[class*="motion-safe:animate-pulse"]').length).toBe(4);
   });
 
   it("mostra lista de dias e horarios", () => {

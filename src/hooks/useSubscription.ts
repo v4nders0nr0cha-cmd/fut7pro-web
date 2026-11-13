@@ -78,14 +78,18 @@ function mapFriendlyError(error: unknown, fallback: string): FriendlyError {
   };
 }
 
-export function useSubscription(tenantId?: string) {
+export function useSubscription(tenantId?: string, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
   const scope = tenantId ?? "";
   const [stored, setStored] = useState<ScopedState>(() => initialState(scope));
   const generation = useRef(0);
   const subscriptionRequest = useRef(0);
   const plansRequest = useRef(0);
   // A render for a new group must never expose the previous group's subscription.
-  const state = stored.scope === scope ? stored : initialState(scope);
+  const state =
+    enabled && stored.scope === scope
+      ? stored
+      : { ...initialState(scope), subscriptionLoading: enabled, plansLoading: enabled };
 
   const update = useCallback(
     (expectedScope: string, change: (current: ScopedState) => ScopedState) => {
@@ -189,13 +193,23 @@ export function useSubscription(tenantId?: string) {
 
   useEffect(() => {
     generation.current += 1;
+    if (!enabled) {
+      setStored({
+        ...initialState(scope),
+        subscriptionLoading: false,
+        plansLoading: false,
+      });
+      return () => {
+        generation.current += 1;
+      };
+    }
     setStored(initialState(scope));
     void refreshPlans();
     void refreshSubscription();
     return () => {
       generation.current += 1;
     };
-  }, [scope, refreshPlans, refreshSubscription]);
+  }, [enabled, scope, refreshPlans, refreshSubscription]);
 
   const error = state.subscriptionError ?? state.plansError;
   return {

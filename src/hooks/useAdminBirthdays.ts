@@ -2,15 +2,17 @@
 
 import useSWR from "swr";
 import type { BirthdayEntry } from "@/types/birthdays";
+import { useRacha } from "@/context/RachaContext";
 
 type AdminBirthdaysOptions = {
   month?: number;
   rangeDays?: number;
   limit?: number;
   enabled?: boolean;
+  tenantId?: string;
 };
 
-const fetcher = async (url: string): Promise<BirthdayEntry[]> => {
+const fetcher = async ([url]: [string, string]): Promise<BirthdayEntry[]> => {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.text();
@@ -30,7 +32,10 @@ function buildKey(options: AdminBirthdaysOptions) {
 
 export function useAdminBirthdays(options: AdminBirthdaysOptions = {}) {
   const enabled = options.enabled ?? true;
-  const key = enabled ? buildKey(options) : null;
+  const { rachaId } = useRacha();
+  const key = enabled
+    ? ([buildKey(options), options.tenantId ?? rachaId ?? "active"] as [string, string])
+    : null;
   const { data, error, isLoading, mutate } = useSWR<BirthdayEntry[]>(key, fetcher, {
     revalidateOnFocus: false,
   });

@@ -4,7 +4,10 @@ import CardResumoFinanceiro from "@/components/admin/CardResumoFinanceiro";
 describe("CardResumoFinanceiro (dashboard)", () => {
   it("exibe skeleton enquanto carrega", () => {
     const { container } = render(<CardResumoFinanceiro isLoading />);
-    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThanOrEqual(1);
+    expect(container.firstElementChild).toHaveAttribute("aria-busy", "true");
+    expect(
+      container.querySelectorAll('[class*="motion-safe:animate-pulse"]').length
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("mostra estado vazio quando não há resumo", () => {

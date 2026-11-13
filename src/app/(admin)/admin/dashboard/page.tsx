@@ -74,26 +74,69 @@ function isSameMonth(date: Date, compare: Date) {
   return date.getFullYear() === compare.getFullYear() && date.getMonth() === compare.getMonth();
 }
 
+function DashboardDataError({
+  label,
+  message = "Não foi possível carregar agora. Tente atualizar a página.",
+  isStatus = false,
+}: {
+  label: string;
+  message?: string;
+  isStatus?: boolean;
+}) {
+  return (
+    <div
+      role={isStatus ? "status" : "alert"}
+      className="min-h-[160px] rounded-xl bg-[#23272F] p-6 text-sm text-gray-300 flex flex-col justify-center"
+    >
+      <span className="font-semibold text-white">{label}</span>
+      <span className="mt-2">{message}</span>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
-  const { me } = useMe({ context: "admin" });
+  const { me, error: errorMe } = useMe({ context: "admin" });
   const { rachaId, tenantSlug: contextTenantSlug } = useRacha();
   const tenantId = rachaId || me?.tenant?.tenantId || "";
   const slug = contextTenantSlug || me?.tenant?.tenantSlug || "";
+  const isTenantSynchronized = Boolean(
+    me?.tenant?.tenantId && (!rachaId || rachaId === me.tenant.tenantId)
+  );
 
-  const { lancamentos, isLoading: loadingFinanceiro } = useFinanceiro();
-  const { items: agendaItems, isLoading: loadingAgenda } = useRachaAgenda({
-    enabled: Boolean(tenantId || slug),
+  const {
+    lancamentos,
+    isLoading: loadingFinanceiro,
+    error: errorFinanceiro,
+  } = useFinanceiro(tenantId);
+  const {
+    items: agendaItems,
+    isLoading: loadingAgenda,
+    error: errorAgenda,
+  } = useRachaAgenda({
+    enabled: isTenantSynchronized && Boolean(tenantId || slug),
+    tenantId,
   });
-  const { jogadores, isLoading: loadingJogadores } = useJogadores(tenantId);
-  const { birthdays: aniversariantes, isLoading: loadingAniversariantes } = useAdminBirthdays({
+  const {
+    jogadores,
+    isLoading: loadingJogadores,
+    error: errorJogadores,
+  } = useJogadores(isTenantSynchronized ? tenantId : "");
+  const {
+    birthdays: aniversariantes,
+    isLoading: loadingAniversariantes,
+    error: errorAniversariantes,
+  } = useAdminBirthdays({
     rangeDays: 30,
     limit: 3,
+    enabled: isTenantSynchronized,
+    tenantId,
   });
   const {
     subscription,
     subscriptionStatus,
-    loading: loadingSubscription,
-  } = useSubscription(tenantId);
+    subscriptionLoading: loadingSubscription,
+    subscriptionError,
+  } = useSubscription(tenantId, { enabled: isTenantSynchronized });
 
   const resumoFinanceiro = useMemo(() => {
     if (!lancamentos?.length) return null;
@@ -135,6 +178,16 @@ export default function AdminDashboard() {
       .filter((item) => item.jogos > 0)
       .slice(0, 3);
   }, [jogadores]);
+
+  if (!isTenantSynchronized) {
+    return (
+      <div role={errorMe ? "alert" : "status"} className="px-4 pt-20 md:pt-6 text-gray-300">
+        {errorMe
+          ? "Não foi possível carregar as informações do grupo. Atualize a página."
+          : "Carregando informações do grupo..."}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -223,35 +276,67 @@ export default function AdminDashboard() {
               </span>
             </Link>
           </div>
-          <CardResumoFinanceiro
-            resumo={resumoFinanceiro ?? undefined}
-            isLoading={loadingFinanceiro}
-          />
+          {errorFinanceiro && !loadingFinanceiro ? (
+            <DashboardDataError label="Resumo financeiro" />
+          ) : (
+            <CardResumoFinanceiro
+              resumo={resumoFinanceiro ?? undefined}
+              isLoading={loadingFinanceiro}
+            />
+          )}
         </section>
 
         <CardRelatoriosEngajamento />
 
-        <FinanceiroChart
-          lancamentos={lancamentos}
-          isLoading={loadingFinanceiro || loadingSubscription}
-          emptyMessage="Cadastre lançamentos para visualizar o desempenho financeiro."
-        />
+        {errorFinanceiro && !loadingFinanceiro ? (
+          <DashboardDataError label="Resumo mensal" />
+        ) : (
+          <FinanceiroChart
+            lancamentos={lancamentos}
+            isLoading={loadingFinanceiro}
+            emptyMessage="Cadastre lançamentos para visualizar o desempenho financeiro."
+          />
+        )}
 
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-          <CardCicloPlano
-            subscription={subscription}
-            status={subscriptionStatus}
-            loading={loadingSubscription}
-          />
-          <CardPlanoAtual
-            subscription={subscription}
-            status={subscriptionStatus}
-            loading={loadingSubscription}
-          />
+          {subscriptionError && !loadingSubscription ? (
+            <DashboardDataError label="Ciclo do plano" />
+          ) : !loadingSubscription && !subscription ? (
+            <DashboardDataError
+              label="Assinatura em sincronização"
+              message="Estamos concluindo a vinculação do plano deste grupo."
+              isStatus
+            />
+          ) : (
+            <CardCicloPlano
+              subscription={subscription}
+              status={subscriptionStatus}
+              loading={loadingSubscription}
+            />
+          )}
+          {subscriptionError && !loadingSubscription ? (
+            <DashboardDataError label="Plano atual" />
+          ) : !loadingSubscription && !subscription ? (
+            <DashboardDataError
+              label="Assinatura em sincronização"
+              message="Estamos concluindo a vinculação do plano deste grupo."
+              isStatus
+            />
+          ) : (
+            <CardPlanoAtual
+              subscription={subscription}
+              status={subscriptionStatus}
+              loading={loadingSubscription}
+            />
+          )}
         </div>
 
         <section className="w-full grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3">
-          <CardProximosRachas proximos={proximosRachas} isLoading={loadingAgenda} />
+          {errorAgenda && !loadingAgenda ? (
+            <DashboardDataError label="Próximos jogos" />
+          ) : (
+            <CardProximosRachas proximos={proximosRachas} isLoading={loadingAgenda} />
+          )}
 
           <div className="block hover:scale-[1.025] transition">
             <div className="bg-[#23272F] rounded-xl shadow p-5 flex flex-col h-full">
@@ -259,7 +344,11 @@ export default function AdminDashboard() {
                 <FaMedal className="text-yellow-500 w-6 h-6" />
                 <span className="text-lg font-bold text-gray-100">Mais assíduos</span>
               </div>
-              {loadingJogadores ? (
+              {errorJogadores && !loadingJogadores ? (
+                <span role="alert" className="text-sm text-gray-400">
+                  Não foi possível carregar as presenças. Tente atualizar a página.
+                </span>
+              ) : loadingJogadores ? (
                 <div className="flex flex-col gap-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
                     <div key={idx} className="h-5 bg-neutral-700 rounded w-5/6 animate-pulse" />
@@ -307,10 +396,17 @@ export default function AdminDashboard() {
                 <FaBirthdayCake className="text-blue-400 w-6 h-6" />
                 <span className="text-lg font-bold text-gray-100">Aniversariantes</span>
               </div>
-              {loadingAniversariantes ? (
+              {errorAniversariantes && !loadingAniversariantes ? (
+                <span role="alert" className="text-sm text-gray-400">
+                  Não foi possível carregar os aniversariantes. Tente atualizar a página.
+                </span>
+              ) : loadingAniversariantes ? (
                 <div className="flex flex-col gap-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
-                    <div key={idx} className="h-5 bg-neutral-700 rounded w-5/6 animate-pulse" />
+                    <div
+                      key={idx}
+                      className="h-5 bg-neutral-700 rounded w-5/6 motion-safe:animate-pulse"
+                    />
                   ))}
                 </div>
               ) : aniversariantes.length ? (

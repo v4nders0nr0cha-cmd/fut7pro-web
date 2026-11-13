@@ -95,17 +95,21 @@ export default function CardPlanoAtual({
 }: CardPlanoAtualProps) {
   if (loading) {
     return (
-      <div className="bg-[#23272F] rounded-xl p-6 flex flex-col h-full min-h-[140px] shadow gap-3 justify-between animate-pulse">
+      <div
+        className="bg-[#23272F] rounded-xl p-6 flex flex-col h-full min-h-[160px] shadow gap-3 justify-between"
+        aria-busy="true"
+      >
         <div className="flex items-center gap-4">
           <div className="bg-[#222f3e] rounded-full p-3">
             <FaFileAlt className="text-[#f5f7fa] w-8 h-8" />
           </div>
           <div>
             <div className="text-gray-300 text-sm font-medium">Plano atual</div>
-            <div className="h-6 w-40 bg-zinc-700 rounded mt-1" />
+            <div className="h-6 w-40 bg-zinc-700 rounded mt-1 motion-safe:animate-pulse" />
           </div>
         </div>
-        <div className="h-5 w-full bg-zinc-800 rounded" />
+        <div className="h-5 w-full bg-zinc-800 rounded motion-safe:animate-pulse" />
+        <span className="sr-only">Consultando plano atual</span>
       </div>
     );
   }

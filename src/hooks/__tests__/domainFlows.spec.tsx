@@ -63,7 +63,7 @@ function contarPosicoes(times: TimeSorteado[]) {
   }));
 }
 
-const swrMock = jest.fn((key: string) => {
+const swrMock = jest.fn((key: string | [string, string]) => {
   const map: Record<string, any> = {
     "/api/admin/financeiro": {
       data: [
@@ -154,7 +154,14 @@ const swrMock = jest.fn((key: string) => {
     },
   };
 
-  return map[key] || { data: [], isLoading: false, error: undefined, mutate: mutateMock };
+  return (
+    map[Array.isArray(key) ? key[0] : key] || {
+      data: [],
+      isLoading: false,
+      error: undefined,
+      mutate: mutateMock,
+    }
+  );
 });
 
 jest.mock("swr", () => ({
@@ -187,12 +194,20 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
   it("useFinanceiro retorna lancamentos e filtra por tipo", () => {
     const { result } = renderHook(() => useFinanceiro());
     expect(result.current.lancamentos).toHaveLength(1);
+    expect(swrMock).toHaveBeenCalledWith(["/api/admin/financeiro", "tenant-1"]);
     expect(result.current.getLancamentosPorTipo("entrada")).toHaveLength(1);
     expect(result.current.getLancamentoById("l1")?.descricao).toBe("Mensalidade");
     expect(
       result.current.getLancamentosPorPeriodo("2025-01-01", "2025-01-02").map((l) => l.id)
     ).toContain("l1");
     expect(result.current.isLoading).toBe(false);
+  });
+
+  it("não apresenta lançamentos do grupo antigo enquanto o novo contexto é confirmado", () => {
+    const { result } = renderHook(() => useFinanceiro("tenant-2"));
+    expect(result.current.lancamentos).toEqual([]);
+    expect(result.current.isLoading).toBe(true);
+    expect(swrMock).toHaveBeenCalledWith(null);
   });
 
   it("useFinanceiro chama addLancamento e dispara mutate", async () => {
