@@ -67,6 +67,62 @@ async function expectCountsAndLinks(page: Page, variant: "header" | "bottom") {
 test.describe("Admin Smoke Navigation — fixtures locais", () => {
   test.setTimeout(420000);
 
+  test("controles principais da sidebar, cabeçalho e dashboard alcançam seus destinos", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await login(page, "presidente@fixture.invalid");
+    const sidebarRoutes = [
+      { section: "partidas", path: "/admin/partidas" },
+      { section: null, path: "/admin/conquistas" },
+      { section: "financeiro", path: "/admin/financeiro/patrocinadores" },
+      { section: "personalizacao", path: "/admin/personalizacao/identidade-visual" },
+      { section: "administracao", path: "/admin/administracao/administradores" },
+      { section: "comunicacao", path: "/admin/comunicacao/notificacoes" },
+      { section: "configuracoes-do-grupo", path: "/admin/configuracoes/dominio-proprio" },
+    ];
+    for (const { section, path } of sidebarRoutes) {
+      await page.goto("/admin/dashboard");
+      const sidebar = page.getByTestId("admin-sidebar-desktop");
+      await expect(sidebar).toBeVisible({ timeout: 30000 });
+      if (section) await sidebar.getByTestId(`admin-sidebar-toggle-${section}`).click();
+      const link = sidebar.locator(`[data-admin-nav-link="true"][href="${path}"]`);
+      await expect(link, `Link da sidebar ausente: ${path}`).toBeVisible();
+      await link.click();
+      await expectDestination(page, path);
+    }
+
+    for (const path of ["/admin/comunicacao/notificacoes", "/admin/comunicacao/mensagens"]) {
+      await page.goto("/admin/dashboard");
+      const link = page.locator(`header [href="${path}"]`);
+      await expect(link, `Link do cabeçalho ausente: ${path}`).toBeVisible();
+      await link.click();
+      await expectDestination(page, path);
+    }
+
+    for (const { testId, path } of [
+      { testId: "admin-dashboard-card-partidas-resultados", path: "/admin/partidas" },
+      {
+        testId: "admin-dashboard-card-sorteio-inteligente",
+        path: "/admin/partidas/sorteio-inteligente",
+      },
+      {
+        testId: "admin-dashboard-quick-cadastrar-jogador",
+        path: "/admin/jogadores/listar-cadastrar",
+      },
+      {
+        testId: "admin-dashboard-quick-enviar-notificacao",
+        path: "/admin/comunicacao/notificacoes",
+      },
+    ]) {
+      await page.goto("/admin/dashboard");
+      const link = page.getByTestId(testId);
+      await expect(link, `Atalho do dashboard ausente: ${testId}`).toBeVisible();
+      await link.click();
+      await expectDestination(page, path);
+    }
+  });
+
   test("presidente: sidebar e Solicitações desktop navegam por clique", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await login(page, "presidente@fixture.invalid");

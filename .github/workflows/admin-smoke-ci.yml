@@ -125,7 +125,7 @@ jobs:
 
       - name: Build isolated admin frontend
         env:
-          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
+          NODE_OPTIONS: --max-old-space-size=4096 --require ./tests/admin/deny-production-api.cjs
         run: pnpm build
 
       - name: Run admin smoke (mandatory)
