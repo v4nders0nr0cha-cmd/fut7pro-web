@@ -1344,8 +1344,18 @@ export default function PlanosLimitesPage() {
 
       {showPixModal && pixCharge && (
         <Modal onClose={() => setShowPixModal(false)}>
-          <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-2">Pagamento via PIX</h3>
+          <div className="w-full max-w-lg rounded-2xl border border-[#2b2b2b] bg-[#1b1f27] p-6 shadow-xl">
+            <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-3 rounded-t-2xl border-b border-[#2b2b2b] bg-[#1b1f27] px-6 py-4">
+              <h3 className="text-xl font-bold text-white">Pagamento via PIX</h3>
+              <button
+                type="button"
+                onClick={() => setShowPixModal(false)}
+                aria-label="Fechar pagamento via PIX"
+                className="shrink-0 rounded-lg border border-[#384152] p-2 text-gray-200 hover:border-yellow-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-400"
+              >
+                <FaTimes aria-hidden="true" />
+              </button>
+            </div>
             <p className="text-sm text-gray-300 mb-4">
               Escaneie o QR Code ou copie o código. A liberação do painel ocorre após a confirmação
               do pagamento.
@@ -1705,9 +1715,11 @@ export default function PlanosLimitesPage() {
 
 function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/70 px-3 py-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-3 py-3 sm:py-6">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-3xl">{children}</div>
+      <div className="relative z-10 w-full max-w-3xl max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain sm:max-h-[calc(100dvh-3rem)]">
+        {children}
+      </div>
     </div>
   );
 }
