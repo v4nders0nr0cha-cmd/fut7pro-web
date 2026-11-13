@@ -33,16 +33,29 @@ loadEnvFile(".env.e2e.local");
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || "https://app.fut7pro.com.br";
 const useLocalWebServer = process.env.PLAYWRIGHT_WEB_SERVER === "1";
+const useAdminFixture = process.env.ADMIN_SMOKE_FIXTURE === "1";
+
+if (useAdminFixture) {
+  for (const key of ["NEXT_PUBLIC_API_URL", "API_URL", "BACKEND_URL"]) {
+    if (process.env[key] !== "http://127.0.0.1:4317") {
+      throw new Error(`${key} deve apontar para a fixture local no Admin Smoke.`);
+    }
+  }
+  if (baseURL !== "http://127.0.0.1:3000" || !useLocalWebServer) {
+    throw new Error("Admin Smoke exige frontend local na porta 3000.");
+  }
+}
 
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: useAdminFixture ? 0 : process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
     baseURL,
+    actionTimeout: useAdminFixture ? 15000 : 0,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -70,11 +83,23 @@ export default defineConfig({
     },
   ],
   webServer: useLocalWebServer
-    ? {
-        command: "pnpm dev",
-        url: `${baseURL.replace(/\/+$/, "")}/admin/login`,
-        reuseExistingServer: !process.env.CI,
-        timeout: 600_000,
-      }
+    ? [
+        ...(useAdminFixture
+          ? [
+              {
+                command: "node tests/admin/fixture-server.mjs",
+                url: "http://127.0.0.1:4317/health",
+                reuseExistingServer: !process.env.CI,
+                timeout: 30_000,
+              },
+            ]
+          : []),
+        {
+          command: useAdminFixture ? "pnpm start" : "pnpm dev",
+          url: `${baseURL.replace(/\/+$/, "")}/admin/login`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 600_000,
+        },
+      ]
     : undefined,
 });

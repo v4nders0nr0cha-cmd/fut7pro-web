@@ -80,6 +80,16 @@ jobs:
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 45
+    env:
+      ADMIN_SMOKE_FIXTURE: "1"
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:4317
+      API_URL: http://127.0.0.1:4317
+      BACKEND_URL: http://127.0.0.1:4317
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXTAUTH_SECRET: ci-admin-fixture-only-secret
+      NEXT_PUBLIC_TURNSTILE_ENABLED: "false"
+      DISABLE_WEB_DIRECT_DB: "true"
 
     steps:
       - name: Checkout code
@@ -101,63 +111,29 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate required secrets
-        env:
-          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
-          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-          E2E_ACTIVE_TENANT_SLUG: ${{ secrets.E2E_ACTIVE_TENANT_SLUG }}
-          E2E_BLOCKED_TENANT_SLUG: ${{ secrets.E2E_BLOCKED_TENANT_SLUG }}
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-        run: |
-          required_vars=(
-            E2E_ADMIN_EMAIL
-            E2E_ADMIN_PASSWORD
-            E2E_ACTIVE_TENANT_SLUG
-            E2E_BLOCKED_TENANT_SLUG
-            NEXT_PUBLIC_API_URL
-            NEXTAUTH_SECRET
-          )
-
-          missing=0
-          for var in "${required_vars[@]}"; do
-            if [ -z "${!var}" ]; then
-              echo "::error::Secret obrigatório não configurado: ${var}"
-              missing=1
-            fi
-          done
-
-          if [ "$missing" -ne 0 ]; then
-            echo "Configure os secrets obrigatórios para executar o smoke admin."
-            exit 1
-          fi
-
       - name: Create local env for CI web server
-        env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         run: |
           {
             echo "NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}"
-            echo "API_URL=${NEXT_PUBLIC_API_URL}"
-            echo "BACKEND_URL=${NEXT_PUBLIC_API_URL}"
+            echo "API_URL=${API_URL}"
+            echo "BACKEND_URL=${BACKEND_URL}"
             echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
             echo "NEXTAUTH_URL=http://127.0.0.1:3000"
             echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}"
             echo "DISABLE_WEB_DIRECT_DB=true"
-            echo "NODE_ENV=test"
           } > .env.local
+
+      - name: Build isolated admin frontend
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096 --require ./tests/admin/deny-production-api.cjs
+        run: pnpm build
 
       - name: Run admin smoke (mandatory)
         env:
+          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
           PLAYWRIGHT_WEB_SERVER: "1"
           PLAYWRIGHT_BASE_URL: "http://127.0.0.1:3000"
           PLAYWRIGHT_JSON_OUTPUT_FILE: "test-results/admin-smoke-report.json"
-          E2E_RUN_ACTIVE_SMOKE: "1"
-          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
-          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-          E2E_ACTIVE_TENANT_SLUG: ${{ secrets.E2E_ACTIVE_TENANT_SLUG }}
-          E2E_BLOCKED_TENANT_SLUG: ${{ secrets.E2E_BLOCKED_TENANT_SLUG }}
         run: |
           pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=line,json
           node <<'NODE'
