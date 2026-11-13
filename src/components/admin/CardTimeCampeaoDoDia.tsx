@@ -70,10 +70,21 @@ export default function CardTimeCampeaoDoDia({
 
   if (loading) {
     return (
-      <div className="relative flex flex-col items-center justify-center bg-[#23272F] rounded-xl shadow-lg px-6 py-7 h-full min-h-[265px]" aria-busy="true">
-        <div className="w-24 h-16 mb-4 bg-zinc-700 rounded-xl motion-safe:animate-pulse" aria-hidden="true" />
-        <span className="text-xl font-bold text-[#ffd600] mb-2 text-center">Time Campeão do Dia</span>
-        <div className="h-4 w-56 bg-zinc-800 rounded motion-safe:animate-pulse" aria-hidden="true" />
+      <div
+        className="relative flex flex-col items-center justify-center bg-[#23272F] rounded-xl shadow-lg px-6 py-7 h-full min-h-[265px]"
+        aria-busy="true"
+      >
+        <div
+          className="w-24 h-16 mb-4 bg-zinc-700 rounded-xl motion-safe:animate-pulse"
+          aria-hidden="true"
+        />
+        <span className="text-xl font-bold text-[#ffd600] mb-2 text-center">
+          Time Campeão do Dia
+        </span>
+        <div
+          className="h-4 w-56 bg-zinc-800 rounded motion-safe:animate-pulse"
+          aria-hidden="true"
+        />
         <span className="sr-only">Carregando campeão do dia</span>
       </div>
     );
@@ -111,7 +122,8 @@ export default function CardTimeCampeaoDoDia({
               : "Cadastre foto, gols, passes e resultados do dia."}
       </span>
       <span className="mt-2 px-4 py-1 rounded bg-[#ffd600] text-black text-xs font-bold flex items-center gap-2 shadow transition group-hover:bg-yellow-400">
-        <FaUserEdit /> {campeao ? "Editar Campeão" : isError ? "Ver resultados" : "Cadastrar Campeão"}
+        <FaUserEdit />{" "}
+        {campeao ? "Editar Campeão" : isError ? "Ver resultados" : "Cadastrar Campeão"}
       </span>
     </Link>
   );

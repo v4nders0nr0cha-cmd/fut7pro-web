@@ -27,11 +27,18 @@ export default function FinanceiroChart({ lancamentos, isLoading, emptyMessage }
 
   if (loading) {
     return (
-      <div className="bg-[#191919] rounded-xl p-4 shadow w-full max-w-2xl mx-auto my-6 min-h-[280px]" aria-busy="true">
+      <div
+        className="bg-[#191919] rounded-xl p-4 shadow w-full max-w-2xl mx-auto my-6 min-h-[280px]"
+        aria-busy="true"
+      >
         <h3 className="font-bold text-yellow-400 text-center mb-2">Resumo Mensal</h3>
         <div className="h-[220px] flex items-end justify-around gap-3 px-4" aria-hidden="true">
           {[42, 68, 54, 82, 60, 74].map((height, index) => (
-            <div key={index} className="w-8 rounded-t bg-neutral-700/60 motion-safe:animate-pulse" style={{ height: `${height}%` }} />
+            <div
+              key={index}
+              className="w-8 rounded-t bg-neutral-700/60 motion-safe:animate-pulse"
+              style={{ height: `${height}%` }}
+            />
           ))}
         </div>
         <span className="sr-only">Carregando resumo mensal</span>

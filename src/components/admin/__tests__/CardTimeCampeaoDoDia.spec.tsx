@@ -63,11 +63,19 @@ describe("CardTimeCampeaoDoDia", () => {
   });
 
   it("mantém o título durante o carregamento e não confunde erro com cadastro", () => {
-    usePublicDestaquesDoDiaMock.mockReturnValue({ destaque: null, isLoading: true, isError: false });
+    usePublicDestaquesDoDiaMock.mockReturnValue({
+      destaque: null,
+      isLoading: true,
+      isError: false,
+    });
     const view = render(<CardTimeCampeaoDoDia />);
     expect(screen.getByText("Time Campeão do Dia")).toBeInTheDocument();
     expect(screen.getByText("Carregando campeão do dia")).toBeInTheDocument();
-    usePublicDestaquesDoDiaMock.mockReturnValue({ destaque: null, isLoading: false, isError: true });
+    usePublicDestaquesDoDiaMock.mockReturnValue({
+      destaque: null,
+      isLoading: false,
+      isError: true,
+    });
     view.rerender(<CardTimeCampeaoDoDia />);
     expect(screen.getByText("Ver resultados")).toBeInTheDocument();
     expect(screen.queryByText("Cadastrar Campeão")).not.toBeInTheDocument();

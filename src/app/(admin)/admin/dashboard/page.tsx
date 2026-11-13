@@ -74,9 +74,20 @@ function isSameMonth(date: Date, compare: Date) {
   return date.getFullYear() === compare.getFullYear() && date.getMonth() === compare.getMonth();
 }
 
-function DashboardDataError({ label, message = "Não foi possível carregar agora. Tente atualizar a página.", isStatus = false }: { label: string; message?: string; isStatus?: boolean }) {
+function DashboardDataError({
+  label,
+  message = "Não foi possível carregar agora. Tente atualizar a página.",
+  isStatus = false,
+}: {
+  label: string;
+  message?: string;
+  isStatus?: boolean;
+}) {
   return (
-    <div role={isStatus ? "status" : "alert"} className="min-h-[160px] rounded-xl bg-[#23272F] p-6 text-sm text-gray-300 flex flex-col justify-center">
+    <div
+      role={isStatus ? "status" : "alert"}
+      className="min-h-[160px] rounded-xl bg-[#23272F] p-6 text-sm text-gray-300 flex flex-col justify-center"
+    >
       <span className="font-semibold text-white">{label}</span>
       <span className="mt-2">{message}</span>
     </div>
@@ -90,11 +101,19 @@ export default function AdminDashboard() {
   const slug = contextTenantSlug || me?.tenant?.tenantSlug || "";
 
   const { lancamentos, isLoading: loadingFinanceiro, error: errorFinanceiro } = useFinanceiro();
-  const { items: agendaItems, isLoading: loadingAgenda, error: errorAgenda } = useRachaAgenda({
+  const {
+    items: agendaItems,
+    isLoading: loadingAgenda,
+    error: errorAgenda,
+  } = useRachaAgenda({
     enabled: Boolean(tenantId || slug),
   });
   const { jogadores, isLoading: loadingJogadores, error: errorJogadores } = useJogadores(tenantId);
-  const { birthdays: aniversariantes, isLoading: loadingAniversariantes, error: errorAniversariantes } = useAdminBirthdays({
+  const {
+    birthdays: aniversariantes,
+    isLoading: loadingAniversariantes,
+    error: errorAniversariantes,
+  } = useAdminBirthdays({
     rangeDays: 30,
     limit: 3,
   });
@@ -233,35 +252,67 @@ export default function AdminDashboard() {
               </span>
             </Link>
           </div>
-          {errorFinanceiro && !loadingFinanceiro ? <DashboardDataError label="Resumo financeiro" /> : <CardResumoFinanceiro
-            resumo={resumoFinanceiro ?? undefined}
-            isLoading={loadingFinanceiro}
-          />}
+          {errorFinanceiro && !loadingFinanceiro ? (
+            <DashboardDataError label="Resumo financeiro" />
+          ) : (
+            <CardResumoFinanceiro
+              resumo={resumoFinanceiro ?? undefined}
+              isLoading={loadingFinanceiro}
+            />
+          )}
         </section>
 
         <CardRelatoriosEngajamento />
 
-        {errorFinanceiro && !loadingFinanceiro ? <DashboardDataError label="Resumo mensal" /> : <FinanceiroChart
-          lancamentos={lancamentos}
-          isLoading={loadingFinanceiro}
-          emptyMessage="Cadastre lançamentos para visualizar o desempenho financeiro."
-        />}
+        {errorFinanceiro && !loadingFinanceiro ? (
+          <DashboardDataError label="Resumo mensal" />
+        ) : (
+          <FinanceiroChart
+            lancamentos={lancamentos}
+            isLoading={loadingFinanceiro}
+            emptyMessage="Cadastre lançamentos para visualizar o desempenho financeiro."
+          />
+        )}
 
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-          {subscriptionError && !loadingSubscription ? <DashboardDataError label="Ciclo do plano" /> : !loadingSubscription && !subscription ? <DashboardDataError label="Assinatura em sincronização" message="Estamos concluindo a vinculação do plano deste grupo." isStatus /> : <CardCicloPlano
-            subscription={subscription}
-            status={subscriptionStatus}
-            loading={loadingSubscription}
-          />}
-          {subscriptionError && !loadingSubscription ? <DashboardDataError label="Plano atual" /> : !loadingSubscription && !subscription ? <DashboardDataError label="Assinatura em sincronização" message="Estamos concluindo a vinculação do plano deste grupo." isStatus /> : <CardPlanoAtual
-            subscription={subscription}
-            status={subscriptionStatus}
-            loading={loadingSubscription}
-          />}
+          {subscriptionError && !loadingSubscription ? (
+            <DashboardDataError label="Ciclo do plano" />
+          ) : !loadingSubscription && !subscription ? (
+            <DashboardDataError
+              label="Assinatura em sincronização"
+              message="Estamos concluindo a vinculação do plano deste grupo."
+              isStatus
+            />
+          ) : (
+            <CardCicloPlano
+              subscription={subscription}
+              status={subscriptionStatus}
+              loading={loadingSubscription}
+            />
+          )}
+          {subscriptionError && !loadingSubscription ? (
+            <DashboardDataError label="Plano atual" />
+          ) : !loadingSubscription && !subscription ? (
+            <DashboardDataError
+              label="Assinatura em sincronização"
+              message="Estamos concluindo a vinculação do plano deste grupo."
+              isStatus
+            />
+          ) : (
+            <CardPlanoAtual
+              subscription={subscription}
+              status={subscriptionStatus}
+              loading={loadingSubscription}
+            />
+          )}
         </div>
 
         <section className="w-full grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3">
-          {errorAgenda && !loadingAgenda ? <DashboardDataError label="Próximos jogos" /> : <CardProximosRachas proximos={proximosRachas} isLoading={loadingAgenda} />}
+          {errorAgenda && !loadingAgenda ? (
+            <DashboardDataError label="Próximos jogos" />
+          ) : (
+            <CardProximosRachas proximos={proximosRachas} isLoading={loadingAgenda} />
+          )}
 
           <div className="block hover:scale-[1.025] transition">
             <div className="bg-[#23272F] rounded-xl shadow p-5 flex flex-col h-full">
@@ -270,7 +321,9 @@ export default function AdminDashboard() {
                 <span className="text-lg font-bold text-gray-100">Mais assíduos</span>
               </div>
               {errorJogadores && !loadingJogadores ? (
-                <span role="alert" className="text-sm text-gray-400">Não foi possível carregar as presenças. Tente atualizar a página.</span>
+                <span role="alert" className="text-sm text-gray-400">
+                  Não foi possível carregar as presenças. Tente atualizar a página.
+                </span>
               ) : loadingJogadores ? (
                 <div className="flex flex-col gap-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
@@ -320,11 +373,16 @@ export default function AdminDashboard() {
                 <span className="text-lg font-bold text-gray-100">Aniversariantes</span>
               </div>
               {errorAniversariantes && !loadingAniversariantes ? (
-                <span role="alert" className="text-sm text-gray-400">Não foi possível carregar os aniversariantes. Tente atualizar a página.</span>
+                <span role="alert" className="text-sm text-gray-400">
+                  Não foi possível carregar os aniversariantes. Tente atualizar a página.
+                </span>
               ) : loadingAniversariantes ? (
                 <div className="flex flex-col gap-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
-                    <div key={idx} className="h-5 bg-neutral-700 rounded w-5/6 motion-safe:animate-pulse" />
+                    <div
+                      key={idx}
+                      className="h-5 bg-neutral-700 rounded w-5/6 motion-safe:animate-pulse"
+                    />
                   ))}
                 </div>
               ) : aniversariantes.length ? (

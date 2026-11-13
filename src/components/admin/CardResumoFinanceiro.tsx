@@ -18,10 +18,19 @@ const formatCurrency = (value: number) =>
 export default function CardResumoFinanceiro({ resumo, isLoading }: Props) {
   if (isLoading) {
     return (
-      <div className="bg-[#23272F] rounded-xl p-6 shadow flex flex-col gap-3 h-full min-h-[140px]" aria-busy="true">
+      <div
+        className="bg-[#23272F] rounded-xl p-6 shadow flex flex-col gap-3 h-full min-h-[140px]"
+        aria-busy="true"
+      >
         <span className="text-[#8de97c] font-bold text-lg">Saldo do período</span>
-        <div className="h-6 w-24 bg-neutral-600 rounded motion-safe:animate-pulse" aria-hidden="true" />
-        <div className="h-3 w-40 bg-neutral-700 rounded motion-safe:animate-pulse" aria-hidden="true" />
+        <div
+          className="h-6 w-24 bg-neutral-600 rounded motion-safe:animate-pulse"
+          aria-hidden="true"
+        />
+        <div
+          className="h-3 w-40 bg-neutral-700 rounded motion-safe:animate-pulse"
+          aria-hidden="true"
+        />
         <span className="sr-only">Carregando resumo financeiro</span>
       </div>
     );

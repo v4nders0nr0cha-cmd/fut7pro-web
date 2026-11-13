@@ -95,7 +95,10 @@ export default function CardPlanoAtual({
 }: CardPlanoAtualProps) {
   if (loading) {
     return (
-      <div className="bg-[#23272F] rounded-xl p-6 flex flex-col h-full min-h-[160px] shadow gap-3 justify-between" aria-busy="true">
+      <div
+        className="bg-[#23272F] rounded-xl p-6 flex flex-col h-full min-h-[160px] shadow gap-3 justify-between"
+        aria-busy="true"
+      >
         <div className="flex items-center gap-4">
           <div className="bg-[#222f3e] rounded-full p-3">
             <FaFileAlt className="text-[#f5f7fa] w-8 h-8" />
