@@ -107,6 +107,14 @@ const server = http.createServer(async (req, res) => {
   if (account.blocked || !account.group) {
     return send(res, 403, { message: "Acesso ao grupo bloqueado" });
   }
+  if (url.pathname === "/admin/about" && req.method === "GET") {
+    return send(res, 200, {
+      data: {
+        nome: tenant.name,
+        presidente: { nome: "Presidente Fixture", email: "presidente@fixture.invalid" },
+      },
+    });
+  }
   if (url.pathname === "/admin/solicitacoes/count") {
     return send(res, 200, { count: 2 });
   }
