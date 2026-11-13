@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaBell, FaEnvelope, FaUserPlus, FaUser, FaBars } from "react-icons/fa";
+import { FaBell, FaEnvelope, FaUser, FaBars } from "react-icons/fa";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -16,8 +16,9 @@ import { DEFAULT_ADMIN_AVATAR, getAvatarSrc } from "@/utils/avatar";
 import { useRacha } from "@/context/RachaContext";
 import { getAdminProfileSections } from "./adminProfileNavigation";
 import { LogOut } from "lucide-react";
+import AdminRequestsMenu from "@/components/admin/AdminRequestsMenu";
 
-type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
+type BadgeKey = "notificacoes" | "mensagens";
 
 interface MenuItem {
   label: string;
@@ -38,12 +39,6 @@ const menu: MenuItem[] = [
     icon: FaEnvelope,
     href: "/admin/comunicacao/mensagens",
     badgeKey: "mensagens",
-  },
-  {
-    label: "Solicitações",
-    icon: FaUserPlus,
-    href: "/admin/solicitacoes",
-    badgeKey: "solicitacoes",
   },
 ];
 
@@ -77,7 +72,7 @@ function slugifyTestId(value: string) {
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const { badges } = useAdminBadges();
+  const { badges, entryPending, entryLoading, monthlyPending, monthlyLoading } = useAdminBadges();
   const { data: session } = useSession();
   const { me } = useMe({ context: "admin" });
   const { tenantSlug: contextTenantSlug } = useRacha();
@@ -184,6 +179,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </Link>
           );
         })}
+        <AdminRequestsMenu
+          variant="header"
+          total={badges.solicitacoes}
+          entryPending={entryPending}
+          entryLoading={entryLoading}
+          monthlyPending={monthlyPending}
+          monthlyLoading={monthlyLoading}
+        />
 
         {/* LOGIN OU PERFIL */}
         {!isLoggedIn ? (

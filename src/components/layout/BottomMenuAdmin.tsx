@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaHome, FaBell, FaEnvelope, FaUserPlus, FaUser, FaEllipsisH } from "react-icons/fa";
+import { FaHome, FaBell, FaEnvelope, FaUser, FaEllipsisH } from "react-icons/fa";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
+import AdminRequestsMenu from "@/components/admin/AdminRequestsMenu";
 import { useSession } from "next-auth/react";
 import type { IconType } from "react-icons";
 
-type BadgeKey = "dashboard" | "notificacoes" | "mensagens" | "solicitacoes" | "mais";
+type BadgeKey = "dashboard" | "notificacoes" | "mensagens";
 
 interface MenuItem {
   label: string;
@@ -29,13 +30,6 @@ const menu: MenuItem[] = [
     href: "/admin/comunicacao/mensagens",
     badgeKey: "mensagens",
   },
-  {
-    label: "Solicitações",
-    icon: FaUserPlus,
-    href: "/admin/solicitacoes",
-    badgeKey: "solicitacoes",
-  },
-  { label: "Mais", icon: FaEllipsisH, href: "/admin/mais", badgeKey: "mais" },
 ];
 
 function slugifyTestId(value: string) {
@@ -50,7 +44,7 @@ function slugifyTestId(value: string) {
 export default function BottomMenuAdmin() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const { badges } = useAdminBadges();
+  const { badges, entryPending, entryLoading, monthlyPending, monthlyLoading } = useAdminBadges();
   const { data: session } = useSession();
   const isLoggedIn = !!session?.user;
 
@@ -77,7 +71,7 @@ export default function BottomMenuAdmin() {
       {menu.map((item) => {
         const baseHref = item.href.split("#")[0];
         const isActive = pathname.startsWith(baseHref);
-        const badgeValue = item.badgeKey === "mais" ? 0 : (badges[item.badgeKey] ?? 0);
+        const badgeValue = badges[item.badgeKey] ?? 0;
 
         return (
           <Link
@@ -105,6 +99,33 @@ export default function BottomMenuAdmin() {
           </Link>
         );
       })}
+      <AdminRequestsMenu
+        variant="bottom"
+        total={badges.solicitacoes}
+        entryPending={entryPending}
+        entryLoading={entryLoading}
+        monthlyPending={monthlyPending}
+        monthlyLoading={monthlyLoading}
+      />
+      <Link
+        href="/admin/mais"
+        aria-label="Mais"
+        aria-current={pathname.startsWith("/admin/mais") ? "page" : undefined}
+        data-testid="admin-bottom-link-admin-mais"
+        className="relative flex min-h-[56px] flex-1 flex-col items-center justify-center text-xs group"
+      >
+        <FaEllipsisH
+          size={24}
+          className={`mb-0.5 ${pathname.startsWith("/admin/mais") ? "text-brand" : "text-zinc-300"}`}
+        />
+        <span
+          className={
+            pathname.startsWith("/admin/mais") ? "font-semibold text-brand" : "text-zinc-300"
+          }
+        >
+          Mais
+        </span>
+      </Link>
     </nav>
   );
 }

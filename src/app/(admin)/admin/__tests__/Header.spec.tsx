@@ -4,6 +4,10 @@ import Header from "../Header";
 
 let mockPathname = "/admin/dashboard";
 
+jest.mock("@/context/RachaContext", () => ({
+  useRacha: () => ({ tenantSlug: "chelsea" }),
+}));
+
 jest.mock("next/navigation", () => ({
   usePathname: () => mockPathname,
   useRouter: () => ({ push: jest.fn() }),
@@ -16,6 +20,10 @@ jest.mock("@/hooks/useAdminBadges", () => ({
       mensagens: 1,
       solicitacoes: 3,
     },
+    entryPending: 2,
+    entryLoading: false,
+    monthlyPending: 1,
+    monthlyLoading: false,
   }),
 }));
 
@@ -39,6 +47,7 @@ jest.mock("@/hooks/useMe", () => ({
       user: { avatarUrl: null },
       athlete: { id: "ath-1", slug: "ath-1", firstName: "suporte", avatarUrl: null },
       tenant: { tenantSlug: "chelsea" },
+      membership: { role: "PRESIDENTE" },
     },
   }),
 }));
@@ -83,18 +92,25 @@ describe("Admin Header", () => {
       "href",
       "/admin/comunicacao/mensagens"
     );
-    expect(screen.getByTestId("admin-header-link-admin-solicitacoes")).toHaveAttribute(
+    const trigger = screen.getByTestId("admin-header-requests-trigger");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(trigger);
+    expect(screen.getByRole("link", { name: /Entrada de jogadores/ })).toHaveAttribute(
       "href",
-      "/admin/solicitacoes"
+      "/admin/jogadores/listar-cadastrar#solicitacoes"
+    );
+    expect(screen.getByRole("link", { name: /Solicitações de mensalista/ })).toHaveAttribute(
+      "href",
+      "/admin/jogadores/mensalistas#solicitacoes-mensalista"
     );
   });
 
-  it("destaca Solicitações na nova rota no cabeçalho desktop e tablet", () => {
-    mockPathname = "/admin/solicitacoes";
+  it("destaca Solicitações na página operacional no cabeçalho desktop", () => {
+    mockPathname = "/admin/jogadores/mensalistas";
     render(<Header />);
-    const link = screen.getByTestId("admin-header-link-admin-solicitacoes");
-    expect(link).toHaveAttribute("aria-current", "page");
-    expect(link).toHaveClass("sm:flex");
+    const trigger = screen.getByTestId("admin-header-requests-trigger");
+    expect(trigger).toHaveAttribute("aria-current", "page");
+    expect(trigger.parentElement).toHaveClass("lg:block");
   });
 
   it("envia Trocar de grupo para /admin/selecionar-racha", () => {

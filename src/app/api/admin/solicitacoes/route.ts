@@ -28,8 +28,9 @@ export async function GET(req: NextRequest) {
   }
 
   const headers = buildHeaders(user, tenantSlug, { includeContentType: false });
-  const targetUrl = new URL(`${getApiBase()}${BASE_PATH}`);
-  appendSafeQueryParams(req.nextUrl.searchParams, targetUrl);
+  const countOnly = req.nextUrl.searchParams.get("count") === "1";
+  const targetUrl = new URL(`${getApiBase()}${BASE_PATH}${countOnly ? "/count" : ""}`);
+  if (!countOnly) appendSafeQueryParams(req.nextUrl.searchParams, targetUrl);
 
   const { response, body } = await proxyBackend(targetUrl.toString(), {
     method: "GET",
