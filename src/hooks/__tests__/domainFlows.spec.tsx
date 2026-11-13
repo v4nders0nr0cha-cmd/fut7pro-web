@@ -203,6 +203,13 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
     expect(result.current.isLoading).toBe(false);
   });
 
+  it("não apresenta lançamentos do grupo antigo enquanto o novo contexto é confirmado", () => {
+    const { result } = renderHook(() => useFinanceiro("tenant-2"));
+    expect(result.current.lancamentos).toEqual([]);
+    expect(result.current.isLoading).toBe(true);
+    expect(swrMock).toHaveBeenCalledWith(null);
+  });
+
   it("useFinanceiro chama addLancamento e dispara mutate", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

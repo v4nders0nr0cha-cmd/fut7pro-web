@@ -199,11 +199,12 @@ export function useFinanceiro(expectedTenantId?: string) {
   );
 
   const lancamentos = useMemo(() => {
+    if (!tenantReady) return [];
     const origem = Array.isArray(data) ? data : [];
     const normalizados = origem.map(normalizeLancamento);
     if (!tenantId) return normalizados;
     return normalizados.filter((item) => !item.tenantId || item.tenantId === tenantId);
-  }, [data, tenantId]);
+  }, [data, tenantId, tenantReady]);
 
   const addLancamento = async (lancamento: Partial<LancamentoFinanceiro>) => {
     if (!tenantId) return null;
@@ -299,8 +300,8 @@ export function useFinanceiro(expectedTenantId?: string) {
   return {
     lancamentos,
     isLoading: isLoading || apiState.isLoading || Boolean(expectedTenantId && !tenantReady),
-    isError: !!error || apiState.isError,
-    error: apiState.error || (error instanceof Error ? error.message : null),
+    isError: tenantReady && (!!error || apiState.isError),
+    error: tenantReady ? apiState.error || (error instanceof Error ? error.message : null) : null,
     isSuccess: apiState.isSuccess,
     mutate,
     addLancamento,
