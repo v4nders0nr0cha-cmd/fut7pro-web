@@ -111,3 +111,15 @@ it("preserva dados válidos durante atualização do mesmo grupo", async () => {
   });
   expect(result.current.subscriptionLoading).toBe(false);
 });
+
+it("aguarda o contexto do grupo antes de iniciar consultas", async () => {
+  api.getSubscriptionByTenant.mockResolvedValue(subscription("grupo-a"));
+  const view = renderHook(({ enabled }) => useSubscription("grupo-a", { enabled }), {
+    initialProps: { enabled: false },
+  });
+  expect(api.getSubscriptionByTenant).not.toHaveBeenCalled();
+  expect(view.result.current.subscription).toBeNull();
+  view.rerender({ enabled: true });
+  await waitFor(() => expect(view.result.current.subscriptionLoading).toBe(false));
+  expect(api.getSubscriptionByTenant).toHaveBeenCalledWith("grupo-a");
+});

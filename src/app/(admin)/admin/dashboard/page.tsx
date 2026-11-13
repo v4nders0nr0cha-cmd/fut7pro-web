@@ -95,20 +95,32 @@ function DashboardDataError({
 }
 
 export default function AdminDashboard() {
-  const { me } = useMe({ context: "admin" });
+  const { me, error: errorMe } = useMe({ context: "admin" });
   const { rachaId, tenantSlug: contextTenantSlug } = useRacha();
   const tenantId = rachaId || me?.tenant?.tenantId || "";
   const slug = contextTenantSlug || me?.tenant?.tenantSlug || "";
+  const isTenantSynchronized = Boolean(
+    me?.tenant?.tenantId && (!rachaId || rachaId === me.tenant.tenantId)
+  );
 
-  const { lancamentos, isLoading: loadingFinanceiro, error: errorFinanceiro } = useFinanceiro();
+  const {
+    lancamentos,
+    isLoading: loadingFinanceiro,
+    error: errorFinanceiro,
+  } = useFinanceiro(tenantId);
   const {
     items: agendaItems,
     isLoading: loadingAgenda,
     error: errorAgenda,
   } = useRachaAgenda({
-    enabled: Boolean(tenantId || slug),
+    enabled: isTenantSynchronized && Boolean(tenantId || slug),
+    tenantId,
   });
-  const { jogadores, isLoading: loadingJogadores, error: errorJogadores } = useJogadores(tenantId);
+  const {
+    jogadores,
+    isLoading: loadingJogadores,
+    error: errorJogadores,
+  } = useJogadores(isTenantSynchronized ? tenantId : "");
   const {
     birthdays: aniversariantes,
     isLoading: loadingAniversariantes,
@@ -116,13 +128,15 @@ export default function AdminDashboard() {
   } = useAdminBirthdays({
     rangeDays: 30,
     limit: 3,
+    enabled: isTenantSynchronized,
+    tenantId,
   });
   const {
     subscription,
     subscriptionStatus,
     subscriptionLoading: loadingSubscription,
     subscriptionError,
-  } = useSubscription(tenantId);
+  } = useSubscription(tenantId, { enabled: isTenantSynchronized });
 
   const resumoFinanceiro = useMemo(() => {
     if (!lancamentos?.length) return null;
@@ -164,6 +178,16 @@ export default function AdminDashboard() {
       .filter((item) => item.jogos > 0)
       .slice(0, 3);
   }, [jogadores]);
+
+  if (!isTenantSynchronized) {
+    return (
+      <div role={errorMe ? "alert" : "status"} className="px-4 pt-20 md:pt-6 text-gray-300">
+        {errorMe
+          ? "Não foi possível carregar as informações do grupo. Atualize a página."
+          : "Carregando informações do grupo..."}
+      </div>
+    );
+  }
 
   return (
     <>

@@ -87,7 +87,7 @@ async function readFinanceiroErrorMessage(response: Response): Promise<string> {
   }
 }
 
-const fetcher = async (url: string): Promise<FinanceiroApiItem[]> => {
+const fetcher = async ([url]: [string, string]): Promise<FinanceiroApiItem[]> => {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
     const message = await readFinanceiroErrorMessage(response);
@@ -169,14 +169,15 @@ const buildFinanceiroPayload = (input: FinanceiroInput) => {
   };
 };
 
-export function useFinanceiro() {
+export function useFinanceiro(expectedTenantId?: string) {
   const { me } = useMe();
   const apiState = useApiState();
 
   const tenantId = me?.tenant?.tenantId;
+  const tenantReady = Boolean(tenantId && (!expectedTenantId || expectedTenantId === tenantId));
 
   const { data, error, isLoading, mutate } = useSWR<FinanceiroApiItem[], FinanceiroFetchError>(
-    tenantId ? "/api/admin/financeiro" : null,
+    tenantReady ? (["/api/admin/financeiro", tenantId!] as [string, string]) : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -297,7 +298,7 @@ export function useFinanceiro() {
 
   return {
     lancamentos,
-    isLoading: isLoading || apiState.isLoading,
+    isLoading: isLoading || apiState.isLoading || Boolean(expectedTenantId && !tenantReady),
     isError: !!error || apiState.isError,
     error: apiState.error || (error instanceof Error ? error.message : null),
     isSuccess: apiState.isSuccess,
