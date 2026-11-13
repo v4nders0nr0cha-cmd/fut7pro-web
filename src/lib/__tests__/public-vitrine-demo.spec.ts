@@ -51,6 +51,17 @@ describe("public-vitrine-demo", () => {
     expect(maestro.nome).toBe("Paulo");
   });
 
+  it("retorna a rodada demonstrativa completa mesmo com limite solicitado", () => {
+    const response = getVitrineMatchesResponse(
+      new URLSearchParams("scope=latest-scored-day&limit=1")
+    );
+
+    expect(response.roundStatus).toBe("complete");
+    expect(response.roundDate).toBe(VITRINE_DEMO_DAY);
+    expect(response.results.length).toBeGreaterThan(1);
+    expect(response.total).toBe(response.results.length);
+  });
+
   it("retorna tenant demonstrativo no mesmo formato publico e com logo existente", () => {
     const tenant = getVitrineTenantResponse();
 
