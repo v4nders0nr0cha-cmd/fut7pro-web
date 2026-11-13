@@ -115,6 +115,16 @@ const server = http.createServer(async (req, res) => {
       },
     });
   }
+  if (url.pathname === "/admin/administradores" && req.method === "GET") {
+    return send(res, 200, {
+      slots: [
+        { role: "PRESIDENTE", status: "ACTIVE", name: "Presidente Fixture" },
+        { role: "VICE_PRESIDENTE", status: "EMPTY" },
+        { role: "DIRETOR_FUTEBOL", status: "EMPTY" },
+        { role: "DIRETOR_FINANCEIRO", status: "EMPTY" },
+      ],
+    });
+  }
   if (url.pathname === "/admin/solicitacoes/count") {
     return send(res, 200, { count: 2 });
   }
