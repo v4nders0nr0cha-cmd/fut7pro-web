@@ -2,6 +2,12 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import Header from "@/components/layout/Header";
 import BottomMenu from "@/components/layout/BottomMenu";
 
+it("mostra foco discreto apenas na navegacao por teclado no link do grupo", () => {
+  render(<Header />);
+  const home = screen.getByRole("link", { name: /Página inicial Racha Teste/ });
+  expect(home).toHaveClass("focus:outline-none", "focus-visible:ring-2");
+});
+
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(() => ({ data: null, status: "unauthenticated" })),
   signOut: jest.fn(),

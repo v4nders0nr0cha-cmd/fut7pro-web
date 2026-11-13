@@ -127,6 +127,8 @@ export type PublicMatchesResponse = {
   slug: string;
   total: number;
   results: PublicMatch[];
+  roundStatus?: "complete" | "partial" | "none";
+  roundDate?: string;
 };
 
 export type MatchdayStatus = "not_started" | "in_progress" | "finished";

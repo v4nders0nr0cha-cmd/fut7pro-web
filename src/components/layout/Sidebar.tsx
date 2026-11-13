@@ -32,10 +32,14 @@ export default function Sidebar() {
   const { publicHref, publicSlug } = usePublicLinks();
   const [regrasOpen, setRegrasOpen] = useState(false);
   const currentYear = new Date().getFullYear();
-  const { matches } = usePublicMatches({
+  const {
+    matches,
+    roundStatus,
+    isLoading: matchesLoading,
+    isError: matchesError,
+  } = usePublicMatches({
     slug: publicSlug,
-    scope: "recent",
-    limit: 24,
+    scope: "latest-scored-day",
   });
   const { rankings: topGeral } = usePublicPlayerRankings({
     slug: publicSlug,
@@ -78,8 +82,9 @@ export default function Sidebar() {
   });
 
   const dayHighlights = resolveLatestDayHighlights(matches);
-  const artilheiroDia = dayHighlights.artilheiro;
-  const maestroDia = dayHighlights.maestro;
+  const roundIncomplete = roundStatus === "partial" || dayHighlights.roundStatus === "partial";
+  const artilheiroDia = matchesError || roundIncomplete ? null : dayHighlights.artilheiro;
+  const maestroDia = matchesError || roundIncomplete ? null : dayHighlights.maestro;
   const atacanteAno = topAtacante?.[0];
   const meiaAno = topAssist?.[0];
   const zagueiroAno = topZagueiro?.[0];
@@ -91,8 +96,24 @@ export default function Sidebar() {
   const maioresPontuadores = topGeral?.slice(0, 5);
 
   const artilheiroDiaData = {
-    name: artilheiroDia?.name ?? "Artilheiro em atualização",
-    value: artilheiroDia ? `${artilheiroDia.goals} gols` : "Em processamento",
+    name:
+      artilheiroDia?.name ??
+      (matchesLoading
+        ? "Carregando destaque"
+        : matchesError
+          ? "Destaque indisponível"
+          : roundIncomplete
+            ? "Aguardando placares da rodada"
+            : "Sem artilheiro no último dia"),
+    value: artilheiroDia
+      ? `${artilheiroDia.goals} gols`
+      : matchesLoading
+        ? "Carregando partidas"
+        : matchesError
+          ? "Falha ao carregar"
+          : roundIncomplete
+            ? "Rodada incompleta"
+            : "Nenhum gol registrado",
     href: publicHref(
       artilheiroDia?.slug
         ? `/atletas/${artilheiroDia.slug}`
@@ -102,8 +123,24 @@ export default function Sidebar() {
   };
 
   const maestroDiaData = {
-    name: maestroDia?.name ?? "Maestro em atualização",
-    value: maestroDia ? `${maestroDia.assists} assistências` : "Em processamento",
+    name:
+      maestroDia?.name ??
+      (matchesLoading
+        ? "Carregando destaque"
+        : matchesError
+          ? "Destaque indisponível"
+          : roundIncomplete
+            ? "Aguardando placares da rodada"
+            : "Sem maestro no último dia"),
+    value: maestroDia
+      ? `${maestroDia.assists} assistências`
+      : matchesLoading
+        ? "Carregando partidas"
+        : matchesError
+          ? "Falha ao carregar"
+          : roundIncomplete
+            ? "Rodada incompleta"
+            : "Nenhuma assistência registrada",
     href: publicHref(
       maestroDia?.slug ? `/atletas/${maestroDia.slug}` : "/estatisticas/melhores-por-posicao/meias"
     ),
@@ -456,29 +493,30 @@ function parseMatchDate(value?: string | null) {
 }
 
 function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  const day = (date: Date) => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Fortaleza",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const part = (type: string) => parts.find((item) => item.type === type)?.value;
+    return `${part("year")}-${part("month")}-${part("day")}`;
+  };
+  return day(a) === day(b);
 }
 
 function hasValidScore(match: PublicMatch) {
-  return (
-    (typeof match.scoreA === "number" && typeof match.scoreB === "number") ||
-    (typeof match.score?.teamA === "number" && typeof match.score?.teamB === "number")
-  );
+  return typeof match.scoreA === "number" && typeof match.scoreB === "number";
 }
 
-function resolveLatestDayHighlights(matches: PublicMatch[]) {
+export function resolveLatestDayHighlights(matches: PublicMatch[]) {
   const datedMatches = matches
     .map((match) => ({ match, date: parseMatchDate(match.date) }))
-    .filter((item): item is { match: PublicMatch; date: Date } =>
-      Boolean(item.date && hasValidScore(item.match))
-    );
+    .filter((item): item is { match: PublicMatch; date: Date } => Boolean(item.date));
 
   if (!datedMatches.length) {
-    return { artilheiro: null, maestro: null };
+    return { artilheiro: null, maestro: null, roundStatus: "none" as const };
   }
 
   const latestDate = datedMatches
@@ -488,10 +526,15 @@ function resolveLatestDayHighlights(matches: PublicMatch[]) {
     .filter((item) => isSameDay(item.date, latestDate))
     .map((item) => item.match);
 
+  if (matchesDoDia.some((match) => !hasValidScore(match))) {
+    return { artilheiro: null, maestro: null, roundStatus: "partial" as const };
+  }
+
   const stats = buildDayHighlightStats(matchesDoDia);
   return {
     artilheiro: pickDayHighlight(stats, "goals", "assists", 1),
     maestro: pickDayHighlight(stats, "assists", "goals", 1),
+    roundStatus: "complete" as const,
   };
 }
 

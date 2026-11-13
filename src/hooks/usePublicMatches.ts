@@ -1,7 +1,7 @@
 import useSWR from "swr";
 import type { PublicMatchesResponse } from "@/types/partida";
 
-type Scope = "today" | "recent" | "upcoming";
+type Scope = "today" | "recent" | "upcoming" | "latest-scored-day";
 
 type PublicMatchesOptions = {
   slug?: string;
@@ -69,6 +69,8 @@ export function usePublicMatches(options: PublicMatchesOptions = {}) {
     matches: enabled ? (data?.results ?? []) : [],
     total: enabled ? (data?.total ?? 0) : 0,
     slug: data?.slug ?? slug,
+    roundStatus: enabled ? data?.roundStatus : undefined,
+    roundDate: enabled ? data?.roundDate : undefined,
     isLoading: enabled ? isLoading : false,
     isValidating: enabled ? Boolean(isValidating) : false,
     isError: Boolean(error),

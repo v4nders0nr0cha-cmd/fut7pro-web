@@ -448,9 +448,12 @@ function selectMatches(searchParams?: URLSearchParams | null) {
     results = results.filter((match) => sameDemoDay(match.date));
   } else if (scope === "upcoming") {
     results = [];
+  } else if (scope === "latest-scored-day") {
+    const latestDay = results[0]?.date.slice(0, 10);
+    results = results.filter((match) => match.date.slice(0, 10) === latestDay);
   }
 
-  return applyLimit(results, searchParams);
+  return scope === "latest-scored-day" ? results : applyLimit(results, searchParams);
 }
 
 function buildPlayerTotals(matches: DemoMatchConfig[] = demoMatches) {
@@ -716,6 +719,20 @@ export function getVitrineMatchesResponse(
   searchParams?: URLSearchParams | null
 ): PublicMatchesResponse {
   const results = selectMatches(searchParams);
+  if (searchParams?.get("scope") === "latest-scored-day") {
+    const roundStatus = results.length
+      ? results.some((match) => match.scoreA === null || match.scoreB === null)
+        ? "partial"
+        : "complete"
+      : "none";
+    return {
+      slug: VITRINE_SLUG,
+      total: roundStatus === "partial" ? 0 : results.length,
+      results: roundStatus === "partial" ? [] : results,
+      roundStatus,
+      roundDate: results[0]?.date.slice(0, 10),
+    };
+  }
   return { slug: VITRINE_SLUG, total: results.length, results };
 }
 
