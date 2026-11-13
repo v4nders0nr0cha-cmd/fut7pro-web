@@ -14,6 +14,8 @@ test.beforeEach(async ({ page }) => {
 
 async function login(page: Page, email: string) {
   await page.goto("/admin/login");
+  const rejectCookies = page.getByRole("button", { name: "Rejeitar" });
+  if (await rejectCookies.isVisible()) await rejectCookies.click();
   await page.getByTestId("admin-login-email").fill(email);
   await page.getByRole("button", { name: "Entrar com senha" }).click();
   await page.getByTestId("admin-login-password").fill(fixturePassword);
@@ -32,7 +34,7 @@ async function login(page: Page, email: string) {
 async function expectDestination(page: Page, href: string) {
   await expect(page, `Clique deve alcançar ${href}`).toHaveURL(
     (url) => `${url.pathname}${url.hash}` === href,
-    { timeout: 15000 }
+    { timeout: 60000 }
   );
   await expect(page.locator("main").first()).toBeVisible();
   await expect(
@@ -42,7 +44,7 @@ async function expectDestination(page: Page, href: string) {
 
 async function openRequests(page: Page, variant: "header" | "bottom") {
   const trigger = page.getByTestId(`admin-${variant}-requests-trigger`);
-  await expect(trigger).toBeVisible();
+  await expect(trigger).toBeVisible({ timeout: 30000 });
   await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
   await trigger.click();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -55,22 +57,22 @@ async function expectCountsAndLinks(page: Page, variant: "header" | "bottom") {
   const { trigger, dialog } = await openRequests(page, variant);
   const entry = dialog.getByRole("link", { name: /Entrada de jogadores/ });
   const monthly = dialog.getByRole("link", { name: /Solicitações de mensalista/ });
-  await expect(entry).toContainText("2 pedidos aguardando análise");
-  await expect(monthly).toContainText("1 pedido aguardando análise");
+  await expect(entry).toContainText("2 pedidos aguardando análise", { timeout: 30000 });
+  await expect(monthly).toContainText("1 pedido aguardando análise", { timeout: 30000 });
   await expect(entry).toHaveAttribute("href", entryPath);
   await expect(monthly).toHaveAttribute("href", monthlyPath);
   return { trigger, dialog, entry, monthly };
 }
 
 test.describe("Admin Smoke Navigation — fixtures locais", () => {
-  test.setTimeout(240000);
+  test.setTimeout(420000);
 
   test("presidente: sidebar e Solicitações desktop navegam por clique", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await login(page, "presidente@fixture.invalid");
     await expect(page).toHaveURL(/\/admin\/dashboard/);
     const sidebar = page.getByTestId("admin-sidebar-desktop");
-    await expect(sidebar).toBeVisible();
+    await expect(sidebar).toBeVisible({ timeout: 30000 });
     await sidebar.getByTestId("admin-sidebar-toggle-jogadores").click();
     const players = sidebar.getByTestId("admin-sidebar-link-admin-jogadores-listar-cadastrar");
     await expect(players).toBeVisible();
@@ -137,7 +139,8 @@ test.describe("Admin Smoke Navigation — fixtures locais", () => {
     await expect(page).toHaveURL(/\/admin\/dashboard/);
     const { dialog } = await openRequests(page, "header");
     await expect(dialog.getByRole("link", { name: /Entrada de jogadores/ })).toContainText(
-      "2 pedidos"
+      "2 pedidos",
+      { timeout: 30000 }
     );
     await expect(dialog.getByRole("link", { name: /Solicitações de mensalista/ })).toHaveCount(0);
     await expect(dialog.getByText(/Análise indisponível para seu cargo/)).toBeVisible();

@@ -123,6 +123,11 @@ jobs:
             echo "DISABLE_WEB_DIRECT_DB=true"
           } > .env.local
 
+      - name: Build isolated admin frontend
+        env:
+          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
+        run: pnpm build
+
       - name: Run admin smoke (mandatory)
         env:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs

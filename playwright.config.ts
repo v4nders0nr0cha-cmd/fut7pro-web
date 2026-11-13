@@ -55,6 +55,7 @@ export default defineConfig({
   reporter: "html",
   use: {
     baseURL,
+    actionTimeout: useAdminFixture ? 15000 : 0,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -94,7 +95,7 @@ export default defineConfig({
             ]
           : []),
         {
-          command: "pnpm dev",
+          command: useAdminFixture ? "pnpm start" : "pnpm dev",
           url: `${baseURL.replace(/\/+$/, "")}/admin/login`,
           reuseExistingServer: !process.env.CI,
           timeout: 600_000,
