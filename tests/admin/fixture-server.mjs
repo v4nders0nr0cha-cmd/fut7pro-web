@@ -13,12 +13,17 @@ const accounts = {
 };
 
 function send(res, status, data) {
-  res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+  });
   res.end(JSON.stringify(data));
 }
 
 function token(email) {
-  const payload = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })
+  ).toString("base64url");
   return `fixture.${payload}.${Buffer.from(email).toString("base64url")}`;
 }
 
@@ -49,26 +54,46 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === "/auth/me") {
     return send(res, 200, {
-      id: `fixture-${account.role.toLowerCase()}`, name: "Usuário Fixture", email,
-      role: account.role, tenantId: account.group ? tenant.id : null,
-      tenantSlug: account.group ? tenant.slug : null, emailVerified: true,
+      id: `fixture-${account.role.toLowerCase()}`,
+      name: "Usuário Fixture",
+      email,
+      role: account.role,
+      tenantId: account.group ? tenant.id : null,
+      tenantSlug: account.group ? tenant.slug : null,
+      emailVerified: true,
     });
   }
   if (url.pathname === "/admin/hub") {
-    return send(res, 200, account.group ? [{
-      tenantId: tenant.id, tenantSlug: tenant.slug, tenantName: tenant.name,
-      role: account.role, subscription: { status: account.blocked ? "BLOQUEADO" : "ATIVO", blocked: account.blocked },
-    }] : []);
+    return send(
+      res,
+      200,
+      account.group
+        ? [
+            {
+              tenantId: tenant.id,
+              tenantSlug: tenant.slug,
+              tenantName: tenant.name,
+              role: account.role,
+              subscription: {
+                status: account.blocked ? "BLOQUEADO" : "ATIVO",
+                blocked: account.blocked,
+              },
+            },
+          ]
+        : []
+    );
   }
   if (url.pathname === "/admin/access") {
     if (!account.group || req.headers["x-tenant-slug"] !== tenant.slug) {
       return send(res, 403, { message: "Grupo não autorizado" });
     }
     return send(res, 200, {
-      allowed: !account.blocked, blocked: account.blocked,
+      allowed: !account.blocked,
+      blocked: account.blocked,
       status: account.blocked ? "BLOQUEADO" : "ATIVO",
       reason: account.blocked ? "Assinatura bloqueada" : null,
-      tenant, role: account.role,
+      tenant,
+      role: account.role,
     });
   }
   if (url.pathname === "/me") {
@@ -83,10 +108,12 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, { count: 2 });
   }
   if (url.pathname === "/admin/mensalistas/requests/count") {
-    if (account.role === "DIRETOR_FUTEBOL") return send(res, 403, { message: "Sem permissão financeira" });
+    if (account.role === "DIRETOR_FUTEBOL")
+      return send(res, 403, { message: "Sem permissão financeira" });
     return send(res, 200, { total: 1 });
   }
-  if (url.pathname === `/public/${tenant.slug}/tenant`) return send(res, 200, { themeKey: "default" });
+  if (url.pathname === `/public/${tenant.slug}/tenant`)
+    return send(res, 200, { themeKey: "default" });
   return send(res, 404, { message: `Fixture sem contrato: ${req.method} ${url.pathname}` });
 });
 

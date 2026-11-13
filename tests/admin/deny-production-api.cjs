@@ -16,10 +16,12 @@ for (const protocol of ["http", "https"]) {
     const original = client[method];
     client[method] = function (...args) {
       const target = args[0];
-      const hostname = typeof target === "string" || target instanceof URL
-        ? new URL(target).hostname
-        : target?.hostname || target?.host;
-      if (hostname === blocked) throw new Error(`Admin smoke blocked production API via ${protocol}.${method}`);
+      const hostname =
+        typeof target === "string" || target instanceof URL
+          ? new URL(target).hostname
+          : target?.hostname || target?.host;
+      if (hostname === blocked)
+        throw new Error(`Admin smoke blocked production API via ${protocol}.${method}`);
       return original.apply(this, args);
     };
   }
