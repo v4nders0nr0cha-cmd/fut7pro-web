@@ -37,31 +37,38 @@ const initialState = (scope: string): ScopedState => ({
 function mapFriendlyError(error: unknown, fallback: string): FriendlyError {
   if (error instanceof BillingApiError) {
     const status = error.status;
-    if (status === 403) return {
-      title: "Não foi possível carregar os dados do plano",
-      message: "Verifique o grupo selecionado e tente novamente.",
-      status,
-    };
-    if (status === 404) return {
-      title: "Assinatura em sincronização",
-      message: "Ainda estamos concluindo a vinculação do plano do seu racha. Tente novamente em alguns instantes.",
-      status,
-    };
-    if (status === 409) return {
-      title: "Atualização em andamento",
-      message: "Aguarde alguns instantes e tente novamente.",
-      status,
-    };
-    if (status === 429) return {
-      title: "Muitas consultas em pouco tempo",
-      message: "Aguarde alguns instantes antes de tentar novamente.",
-      status,
-    };
-    if (status >= 500) return {
-      title: "Serviço de assinatura indisponível",
-      message: "Não foi possível carregar os dados do seu plano agora. Tente novamente em instantes.",
-      status,
-    };
+    if (status === 403)
+      return {
+        title: "Não foi possível carregar os dados do plano",
+        message: "Verifique o grupo selecionado e tente novamente.",
+        status,
+      };
+    if (status === 404)
+      return {
+        title: "Assinatura em sincronização",
+        message:
+          "Ainda estamos concluindo a vinculação do plano do seu racha. Tente novamente em alguns instantes.",
+        status,
+      };
+    if (status === 409)
+      return {
+        title: "Atualização em andamento",
+        message: "Aguarde alguns instantes e tente novamente.",
+        status,
+      };
+    if (status === 429)
+      return {
+        title: "Muitas consultas em pouco tempo",
+        message: "Aguarde alguns instantes antes de tentar novamente.",
+        status,
+      };
+    if (status >= 500)
+      return {
+        title: "Serviço de assinatura indisponível",
+        message:
+          "Não foi possível carregar os dados do seu plano agora. Tente novamente em instantes.",
+        status,
+      };
     return { title: "Falha ao carregar assinatura", message: error.message || fallback, status };
   }
   return {
@@ -80,9 +87,12 @@ export function useSubscription(tenantId?: string) {
   // A render for a new group must never expose the previous group's subscription.
   const state = stored.scope === scope ? stored : initialState(scope);
 
-  const update = useCallback((expectedScope: string, change: (current: ScopedState) => ScopedState) => {
-    setStored((current) => current.scope === expectedScope ? change(current) : current);
-  }, []);
+  const update = useCallback(
+    (expectedScope: string, change: (current: ScopedState) => ScopedState) => {
+      setStored((current) => (current.scope === expectedScope ? change(current) : current));
+    },
+    []
+  );
 
   const refreshSubscription = useCallback(async () => {
     const currentGeneration = generation.current;
@@ -152,17 +162,23 @@ export function useSubscription(tenantId?: string) {
     const currentGeneration = generation.current;
     const request = ++subscriptionRequest.current;
     const subscriptionId = state.subscription.id;
-    update(scope, (current) => ({ ...current, subscriptionLoading: true, subscriptionError: null }));
+    update(scope, (current) => ({
+      ...current,
+      subscriptionLoading: true,
+      subscriptionError: null,
+    }));
     try {
       const status = await BillingAPI.getSubscriptionStatus(subscriptionId);
-      if (generation.current !== currentGeneration || subscriptionRequest.current !== request) return;
+      if (generation.current !== currentGeneration || subscriptionRequest.current !== request)
+        return;
       update(scope, (current) => ({
         ...current,
         subscriptionStatus: status,
         subscriptionLoading: false,
       }));
     } catch (error) {
-      if (generation.current !== currentGeneration || subscriptionRequest.current !== request) return;
+      if (generation.current !== currentGeneration || subscriptionRequest.current !== request)
+        return;
       update(scope, (current) => ({
         ...current,
         subscriptionLoading: false,
@@ -176,7 +192,9 @@ export function useSubscription(tenantId?: string) {
     setStored(initialState(scope));
     void refreshPlans();
     void refreshSubscription();
-    return () => { generation.current += 1; };
+    return () => {
+      generation.current += 1;
+    };
   }, [scope, refreshPlans, refreshSubscription]);
 
   const error = state.subscriptionError ?? state.plansError;

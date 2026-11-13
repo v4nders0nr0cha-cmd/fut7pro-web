@@ -10,7 +10,13 @@ jest.mock("@/lib/api/billing", () => ({
     getSubscriptionStatus: jest.fn(),
   },
   BillingApiError: class BillingApiError extends Error {
-    constructor(message: string, public status: number, public body: unknown) { super(message); }
+    constructor(
+      message: string,
+      public status: number,
+      public body: unknown
+    ) {
+      super(message);
+    }
   },
 }));
 
@@ -26,7 +32,10 @@ const subscription = (tenantId: string): Subscription => ({
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (error: Error) => void;
-  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
   return { promise, resolve, reject };
 }
 
@@ -68,7 +77,9 @@ it("distingue ausência confirmada de falha e recupera após nova consulta", asy
 it("nunca mostra resposta atrasada de um grupo anterior", async () => {
   const oldRequest = deferred<Subscription | null>();
   const newRequest = deferred<Subscription | null>();
-  api.getSubscriptionByTenant.mockReturnValueOnce(oldRequest.promise).mockReturnValueOnce(newRequest.promise);
+  api.getSubscriptionByTenant
+    .mockReturnValueOnce(oldRequest.promise)
+    .mockReturnValueOnce(newRequest.promise);
   const { result, rerender } = renderHook(({ tenantId }) => useSubscription(tenantId), {
     initialProps: { tenantId: "grupo-a" },
   });
@@ -89,9 +100,14 @@ it("preserva dados válidos durante atualização do mesmo grupo", async () => {
   const refresh = deferred<Subscription | null>();
   api.getSubscriptionByTenant.mockReturnValueOnce(refresh.promise);
   let pending!: Promise<void>;
-  act(() => { pending = result.current.refreshSubscription(); });
+  act(() => {
+    pending = result.current.refreshSubscription();
+  });
   expect(result.current.subscriptionLoading).toBe(true);
   expect(result.current.subscription?.id).toBe("sub-grupo-a");
-  await act(async () => { refresh.resolve(subscription("grupo-a")); await pending; });
+  await act(async () => {
+    refresh.resolve(subscription("grupo-a"));
+    await pending;
+  });
   expect(result.current.subscriptionLoading).toBe(false);
 });

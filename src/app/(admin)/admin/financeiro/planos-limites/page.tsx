@@ -284,11 +284,15 @@ function buildPixPricingFromInvoice(
 function BillingSkeleton() {
   return (
     <div data-testid="billing-planos-skeleton" className="mb-10" aria-busy="true">
-      <p className="mb-4 text-sm text-gray-400" role="status">Consultando sua assinatura...</p>
+      <p className="mb-4 text-sm text-gray-400" role="status">
+        Consultando sua assinatura...
+      </p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
         <div className="rounded-2xl border border-[#2b2b2b] bg-[#23272F] p-6 shadow-lg">
           <h2 className="text-lg font-bold text-white mb-1">Plano e acesso</h2>
-          <p className="text-sm text-gray-400 mb-6">Status financeiro e liberação do painel são tratados separadamente.</p>
+          <p className="text-sm text-gray-400 mb-6">
+            Status financeiro e liberação do painel são tratados separadamente.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="h-14 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
             <div className="h-14 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
@@ -1100,9 +1104,15 @@ export default function PlanosLimitesPage() {
             </div>
 
             {plansLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" aria-busy="true">
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                aria-busy="true"
+              >
                 {[0, 1, 2].map((index) => (
-                  <div key={index} className="h-72 rounded-2xl border border-zinc-700 bg-[#23272F] p-6">
+                  <div
+                    key={index}
+                    className="h-72 rounded-2xl border border-zinc-700 bg-[#23272F] p-6"
+                  >
                     <div className="h-5 w-32 rounded bg-zinc-700/70 motion-safe:animate-pulse" />
                     <div className="mt-6 h-10 w-44 rounded bg-zinc-700/50 motion-safe:animate-pulse" />
                     <div className="mt-8 h-4 w-full rounded bg-zinc-700/40 motion-safe:animate-pulse" />

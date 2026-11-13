@@ -3,7 +3,9 @@ import PlanosLimitesPage from "../page";
 import useSubscription from "@/hooks/useSubscription";
 import BillingAPI from "@/lib/api/billing";
 
-jest.mock("next-auth/react", () => ({ useSession: () => ({ data: { user: { name: "Admin", email: "admin@example.com" } } }) }));
+jest.mock("next-auth/react", () => ({
+  useSession: () => ({ data: { user: { name: "Admin", email: "admin@example.com" } } }),
+}));
 let activeGroup = "grupo-a";
 jest.mock("@/context/RachaContext", () => ({ useRacha: () => ({ rachaId: activeGroup }) }));
 jest.mock("@/hooks/useSubscription");
@@ -40,13 +42,23 @@ beforeEach(() => {
 
 it("não apresenta PIX de um grupo depois da troca de contexto", async () => {
   let finish!: (value: unknown) => void;
-  api.createPixCharge.mockReturnValue(new Promise((resolve) => { finish = resolve; }) as any);
+  api.createPixCharge.mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }) as any
+  );
   const ready = {
     ...base,
     loading: false,
     subscriptionLoading: false,
     subscriptionResolved: true,
-    subscription: { id: "sub-a", tenantId: "grupo-a", planKey: "monthly_essential", status: "active", requiresUpfront: false },
+    subscription: {
+      id: "sub-a",
+      tenantId: "grupo-a",
+      planKey: "monthly_essential",
+      status: "active",
+      requiresUpfront: false,
+    },
     subscriptionStatus: { active: true },
   };
   mockedHook.mockReturnValue(ready);
@@ -54,7 +66,10 @@ it("não apresenta PIX de um grupo depois da troca de contexto", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Atualizar pagamento" }));
   fireEvent.click(screen.getByRole("button", { name: "Gerar PIX" }));
   activeGroup = "grupo-b";
-  mockedHook.mockReturnValue({ ...ready, subscription: { ...ready.subscription, id: "sub-b", tenantId: "grupo-b" } });
+  mockedHook.mockReturnValue({
+    ...ready,
+    subscription: { ...ready.subscription, id: "sub-b", tenantId: "grupo-b" },
+  });
   view.rerender(<PlanosLimitesPage />);
   await act(async () => {
     finish({
@@ -73,7 +88,12 @@ it("não libera atualização de pagamento enquanto a assinatura está pendente"
 });
 
 it("não confunde resposta vazia confirmada com falha", () => {
-  mockedHook.mockReturnValue({ ...base, loading: false, subscriptionLoading: false, subscriptionResolved: true });
+  mockedHook.mockReturnValue({
+    ...base,
+    loading: false,
+    subscriptionLoading: false,
+    subscriptionResolved: true,
+  });
   render(<PlanosLimitesPage />);
   expect(screen.getByTestId("billing-planos-sync-state")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Atualizar pagamento" })).not.toBeInTheDocument();
@@ -81,13 +101,23 @@ it("não confunde resposta vazia confirmada com falha", () => {
 
 it("permite apenas uma criação de cobrança por cliques repetidos", async () => {
   let finish!: (value: unknown) => void;
-  api.createPixCharge.mockReturnValue(new Promise((resolve) => { finish = resolve; }) as any);
+  api.createPixCharge.mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }) as any
+  );
   mockedHook.mockReturnValue({
     ...base,
     loading: false,
     subscriptionLoading: false,
     subscriptionResolved: true,
-    subscription: { id: "sub-a", tenantId: "grupo-a", planKey: "monthly_essential", status: "active", requiresUpfront: false },
+    subscription: {
+      id: "sub-a",
+      tenantId: "grupo-a",
+      planKey: "monthly_essential",
+      status: "active",
+      requiresUpfront: false,
+    },
     subscriptionStatus: { active: true },
   });
   render(<PlanosLimitesPage />);
@@ -100,5 +130,7 @@ it("permite apenas uma criação de cobrança por cliques repetidos", async () =
     pix: { qrCode: "pix-code" },
     invoice: { id: "invoice-a", amount: 15000, periodStart: null, periodEnd: null },
   });
-  await waitFor(() => expect(screen.queryByRole("button", { name: "Gerar PIX" })).not.toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: "Gerar PIX" })).not.toBeInTheDocument()
+  );
 });
