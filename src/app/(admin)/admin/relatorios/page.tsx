@@ -67,23 +67,36 @@ export default function RelatoriosPage() {
     link.click();
   }
 
-  function compartilharRelatorio() {
+  async function compartilharRelatorio() {
     const label = PERIODOS.find((p) => p.value === periodo)?.label || periodo;
     const texto = resumoCompat
       ? `Relatório de Participação Fut7Pro - ${label}\n\nParticipações em partidas: ${resumoCompat.participacoes}\nAtletas participantes: ${resumoCompat.atletas}\nNovos atletas: ${resumoCompat.novos}\nPartidas: ${resumoCompat.partidas}`
       : `Relatório de Participação Fut7Pro - ${label}\n\nDados indisponíveis no momento.`;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      navigator
-        .share({
+    if (typeof navigator === "undefined") return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
           title: "Relatório de Participação",
           text: texto,
-        })
-        .catch(() => {});
-    } else {
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(texto);
+      showFut7Toast({
+        tone: "success",
+        title: "Resumo copiado",
+        message: "Cole o resumo onde quiser compartilhar.",
+      });
+    } catch {
       showFut7Toast({
         tone: "warning",
         title: "Compartilhamento indisponível",
-        message: "Seu navegador não suporta compartilhamento direto nesta tela.",
+        message: "Não foi possível copiar o resumo neste navegador.",
       });
     }
   }
