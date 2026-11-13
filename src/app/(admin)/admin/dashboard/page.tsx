@@ -74,17 +74,26 @@ function isSameMonth(date: Date, compare: Date) {
   return date.getFullYear() === compare.getFullYear() && date.getMonth() === compare.getMonth();
 }
 
+function DashboardDataError({ label, message = "Não foi possível carregar agora. Tente atualizar a página.", isStatus = false }: { label: string; message?: string; isStatus?: boolean }) {
+  return (
+    <div role={isStatus ? "status" : "alert"} className="min-h-[160px] rounded-xl bg-[#23272F] p-6 text-sm text-gray-300 flex flex-col justify-center">
+      <span className="font-semibold text-white">{label}</span>
+      <span className="mt-2">{message}</span>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { me } = useMe({ context: "admin" });
   const { rachaId, tenantSlug: contextTenantSlug } = useRacha();
   const tenantId = rachaId || me?.tenant?.tenantId || "";
   const slug = contextTenantSlug || me?.tenant?.tenantSlug || "";
 
-  const { lancamentos, isLoading: loadingFinanceiro } = useFinanceiro();
-  const { items: agendaItems, isLoading: loadingAgenda } = useRachaAgenda({
+  const { lancamentos, isLoading: loadingFinanceiro, error: errorFinanceiro } = useFinanceiro();
+  const { items: agendaItems, isLoading: loadingAgenda, error: errorAgenda } = useRachaAgenda({
     enabled: Boolean(tenantId || slug),
   });
-  const { jogadores, isLoading: loadingJogadores } = useJogadores(tenantId);
+  const { jogadores, isLoading: loadingJogadores, error: errorJogadores } = useJogadores(tenantId);
   const { birthdays: aniversariantes, isLoading: loadingAniversariantes } = useAdminBirthdays({
     rangeDays: 30,
     limit: 3,
@@ -92,7 +101,8 @@ export default function AdminDashboard() {
   const {
     subscription,
     subscriptionStatus,
-    loading: loadingSubscription,
+    subscriptionLoading: loadingSubscription,
+    subscriptionError,
   } = useSubscription(tenantId);
 
   const resumoFinanceiro = useMemo(() => {
@@ -223,35 +233,35 @@ export default function AdminDashboard() {
               </span>
             </Link>
           </div>
-          <CardResumoFinanceiro
+          {errorFinanceiro && !loadingFinanceiro ? <DashboardDataError label="Resumo financeiro" /> : <CardResumoFinanceiro
             resumo={resumoFinanceiro ?? undefined}
             isLoading={loadingFinanceiro}
-          />
+          />}
         </section>
 
         <CardRelatoriosEngajamento />
 
-        <FinanceiroChart
+        {errorFinanceiro && !loadingFinanceiro ? <DashboardDataError label="Resumo mensal" /> : <FinanceiroChart
           lancamentos={lancamentos}
-          isLoading={loadingFinanceiro || loadingSubscription}
+          isLoading={loadingFinanceiro}
           emptyMessage="Cadastre lançamentos para visualizar o desempenho financeiro."
-        />
+        />}
 
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-          <CardCicloPlano
+          {subscriptionError && !loadingSubscription ? <DashboardDataError label="Ciclo do plano" /> : !loadingSubscription && !subscription ? <DashboardDataError label="Assinatura em sincronização" message="Estamos concluindo a vinculação do plano deste grupo." isStatus /> : <CardCicloPlano
             subscription={subscription}
             status={subscriptionStatus}
             loading={loadingSubscription}
-          />
-          <CardPlanoAtual
+          />}
+          {subscriptionError && !loadingSubscription ? <DashboardDataError label="Plano atual" /> : !loadingSubscription && !subscription ? <DashboardDataError label="Assinatura em sincronização" message="Estamos concluindo a vinculação do plano deste grupo." isStatus /> : <CardPlanoAtual
             subscription={subscription}
             status={subscriptionStatus}
             loading={loadingSubscription}
-          />
+          />}
         </div>
 
         <section className="w-full grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3">
-          <CardProximosRachas proximos={proximosRachas} isLoading={loadingAgenda} />
+          {errorAgenda && !loadingAgenda ? <DashboardDataError label="Próximos jogos" /> : <CardProximosRachas proximos={proximosRachas} isLoading={loadingAgenda} />}
 
           <div className="block hover:scale-[1.025] transition">
             <div className="bg-[#23272F] rounded-xl shadow p-5 flex flex-col h-full">
@@ -259,7 +269,9 @@ export default function AdminDashboard() {
                 <FaMedal className="text-yellow-500 w-6 h-6" />
                 <span className="text-lg font-bold text-gray-100">Mais assíduos</span>
               </div>
-              {loadingJogadores ? (
+              {errorJogadores && !loadingJogadores ? (
+                <span role="alert" className="text-sm text-gray-400">Não foi possível carregar as presenças. Tente atualizar a página.</span>
+              ) : loadingJogadores ? (
                 <div className="flex flex-col gap-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
                     <div key={idx} className="h-5 bg-neutral-700 rounded w-5/6 animate-pulse" />
