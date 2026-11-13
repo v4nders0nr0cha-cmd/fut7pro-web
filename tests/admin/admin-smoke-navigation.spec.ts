@@ -1,1022 +1,267 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-const activeAdminEmail =
-  process.env.E2E_ACTIVE_ADMIN_EMAIL || process.env.E2E_ADMIN_EMAIL || process.env.TEST_EMAIL;
-const activeAdminPassword =
-  process.env.E2E_ACTIVE_ADMIN_PASSWORD ||
-  process.env.E2E_ADMIN_PASSWORD ||
-  process.env.TEST_PASSWORD;
-const blockedAdminEmail =
-  process.env.E2E_BLOCKED_ADMIN_EMAIL || process.env.E2E_ADMIN_EMAIL || process.env.TEST_EMAIL;
-const blockedAdminPassword =
-  process.env.E2E_BLOCKED_ADMIN_PASSWORD ||
-  process.env.E2E_ADMIN_PASSWORD ||
-  process.env.TEST_PASSWORD;
-const activeTenantSlug = process.env.E2E_ACTIVE_TENANT_SLUG;
-const blockedTenantSlug = process.env.E2E_BLOCKED_TENANT_SLUG;
-
-const shouldRunActive =
-  Boolean(activeAdminEmail) &&
-  Boolean(activeAdminPassword) &&
-  process.env.E2E_RUN_ACTIVE_SMOKE === "1";
-const shouldRunBlocked =
-  Boolean(blockedAdminEmail) && Boolean(blockedAdminPassword) && Boolean(blockedTenantSlug);
-
-const FORBIDDEN_TEXTS = ["mock", "em construção", "temporário", "placeholder"];
-const ADMIN_ACTIVE_TENANT_COOKIE = "fut7pro_admin_active_tenant";
-const HUB_LOAD_ERROR_REGEX = /Não foi possível carregar seus grupos/i;
-const TURNSTILE_REQUIRED_E2E_ERROR_TEXT =
-  "Turnstile obrigatório no backend de produção para login admin automatizado.";
-const SMOKE_ENV_UNSTABLE_ERRORS = [
-  "Login não redirecionou para /admin/selecionar-racha ou /admin/dashboard dentro do tempo esperado.",
-  "Shell admin não carregou sidebar/menu de navegação.",
-  "Hub de seleção de grupo indisponível no ambiente E2E (falha ao carregar grupos).",
-  "Hub admin indisponível durante navegação ativa (sem botões de seleção de grupo).",
-  "Seleção por /api/admin/hub/entry levou para /admin/status-assinatura, mas o cenário exige acesso ativo.",
-  TURNSTILE_REQUIRED_E2E_ERROR_TEXT,
-];
-const INVALID_CREDENTIALS_ERROR_TEXT =
-  "Falha de autenticação: e-mail/senha inválidos para o login admin. Verifique as credenciais E2E.";
-
-const HEADING_BY_ROUTE: Array<{ prefix: string; expected: RegExp }> = [
-  { prefix: "/admin/dashboard", expected: /dashboard|pós-jogo|acoes rápidas|ações rápidas/i },
-  {
-    prefix: "/admin/partidas",
-    expected: /partidas|times|sorteio|resultado|campeão|histórico|dias|hor[aá]rios/i,
-  },
-  { prefix: "/admin/jogadores", expected: /jogadores|atletas|mensalistas|ranking/i },
-  { prefix: "/admin/conquistas", expected: /conquistas|campeões|torneios/i },
-  {
-    prefix: "/admin/financeiro",
-    expected: /financeiro|mensalistas|patrocinadores|planos|prestação|contas/i,
-  },
-  { prefix: "/admin/personalizacao", expected: /personalização|identidade|temas|rodapé|redes/i },
-  { prefix: "/admin/administracao", expected: /administração|administradores|permissões|logs/i },
-  {
-    prefix: "/admin/comunicacao",
-    expected:
-      /comunicação|notificações|comunicados|enquetes|suporte|ajuda|mensagens|sugestões|feedback/i,
-  },
-  {
-    prefix: "/admin/configuracoes",
-    expected: /configurações|domínio|integrações|backup|atualizações|cancelar/i,
-  },
-  { prefix: "/admin/monetizacao", expected: /monetização/i },
-];
-
-function expectedHeadingRegex(pathname: string) {
-  return HEADING_BY_ROUTE.find((entry) => pathname.startsWith(entry.prefix))?.expected ?? null;
-}
-
-type LoginExpectedAccess = "active" | "blocked" | "any";
-
-type LoginOptions = {
-  email: string;
-  password: string;
-  expectedAccess: LoginExpectedAccess;
-  targetTenantSlug?: string;
+const fixturePassword = "fixture-only-password";
+const entryPath = "/admin/jogadores/listar-cadastrar#solicitacoes";
+const monthlyPath = "/admin/jogadores/mensalistas#solicitacoes-mensalista";
+const destinationContent: Record<string, RegExp> = {
+  "/admin/partidas/time-campeao-do-dia": /Time Campeão do Dia/i,
+  "/admin/partidas": /Partidas e Resultados/i,
+  "/admin/partidas/sorteio-inteligente": /Sorteio Inteligente/i,
+  "/admin/partidas/criar": /Criar Partidas/i,
+  "/admin/monetizacao": /Monetização.*Lucre Mais/i,
+  "/admin/jogadores/listar-cadastrar": /Jogadores cadastrados|Solicitações de entrada/i,
+  "/admin/jogadores/mensalistas": /Gestão de Mensalistas/i,
+  "/admin/conquistas": /Gestão de Conquistas/i,
+  "/admin/financeiro/patrocinadores": /Patrocinadores/i,
+  "/admin/financeiro/planos-limites": /Planos & Limites/i,
+  "/admin/personalizacao/identidade-visual": /Identidade visual do grupo/i,
+  "/admin/administracao/administradores": /Administradores do Grupo/i,
+  "/admin/comunicacao/notificacoes": /Notificações/i,
+  "/admin/comunicacao/mensagens": /Mensagens Recebidas/i,
+  "/admin/configuracoes/dominio-proprio": /Domínio Próprio/i,
 };
 
-type LoginResult = {
-  path: string;
-  access: "active" | "blocked";
-};
-
-function isHubItemBlocked(item: any): boolean {
-  const status = String(item?.subscription?.status || "")
-    .trim()
-    .toUpperCase();
-  return Boolean(item?.subscription?.blocked) || status === "BLOQUEADO";
-}
-
-async function trySelectTenantViaApi(page: Page, slug: string): Promise<string | null> {
-  const response = await page.request
-    .post("/api/admin/hub/select", {
-      data: { slug },
-    })
-    .catch(() => null);
-  if (!response || response.status() >= 400) return null;
-
-  const body = await response.json().catch(() => ({}));
-  const redirectTo =
-    typeof body?.redirectTo === "string"
-      ? body.redirectTo
-      : body?.blocked
-        ? "/admin/status-assinatura"
-        : "/admin/dashboard";
-  await page.goto(redirectTo, { waitUntil: "domcontentloaded" });
-  return new URL(page.url()).pathname;
-}
-
-async function trySelectTenantViaCookie(page: Page, slug: string): Promise<string | null> {
-  const currentUrl = page.url();
-  if (!currentUrl.startsWith("http")) return null;
-  const origin = new URL(currentUrl).origin;
-  await page.context().addCookies([
-    {
-      name: ADMIN_ACTIVE_TENANT_COOKIE,
-      value: slug,
-      url: origin,
-      sameSite: "Lax",
-      httpOnly: true,
-    },
-  ]);
-  await page.goto("/admin/dashboard", { waitUntil: "domcontentloaded" });
-  return new URL(page.url()).pathname;
-}
-
-async function trySelectTenantFromHubEntryApi(
-  page: Page,
-  expectedAccess: LoginExpectedAccess,
-  targetTenantSlug?: string
-): Promise<string | null> {
-  const entryResponse = await page.request.get("/api/admin/hub/entry").catch(() => null);
-  if (!entryResponse || entryResponse.status() >= 400) return null;
-
-  const body = await entryResponse.json().catch(() => null);
-  const items = Array.isArray(body?.items) ? body.items : Array.isArray(body) ? body : [];
-  if (!Array.isArray(items) || items.length === 0) return null;
-
-  let selected = null as any;
-  if (targetTenantSlug) {
-    selected =
-      items.find((item: any) => String(item?.tenantSlug || "") === targetTenantSlug) ?? null;
-  }
-  if (!selected && expectedAccess === "blocked") {
-    selected = items.find((item: any) => isHubItemBlocked(item)) ?? null;
-  }
-  if (!selected && expectedAccess === "active") {
-    selected = items.find((item: any) => !isHubItemBlocked(item)) ?? null;
-  }
-  if (!selected) {
-    selected = items[0];
-  }
-
-  const selectedSlug = String(selected?.tenantSlug || "").trim();
-  if (!selectedSlug) return null;
-  return trySelectTenantViaApi(page, selectedSlug);
-}
-
-async function selectTenantFromHub(
-  page: Page,
-  expectedAccess: LoginExpectedAccess,
-  targetTenantSlug?: string
-): Promise<Locator | null> {
-  const allHubButtons = page.locator(
-    '[data-testid^="admin-hub-select-"], [data-testid="admin-hub-list"] button'
-  );
-
-  if (targetTenantSlug) {
-    const targetButton = page.getByTestId(`admin-hub-select-${targetTenantSlug}`).first();
-    const targetExists = (await targetButton.count()) > 0;
-    if (targetExists) {
-      await expect(targetButton).toBeVisible({ timeout: 30000 });
-      return targetButton;
-    }
-  }
-
-  const expectedButtonText =
-    expectedAccess === "blocked"
-      ? /Ver status/i
-      : expectedAccess === "active"
-        ? /Acessar painel/i
-        : /Acessar painel|Ver status/i;
-
-  const matchedByText = allHubButtons.filter({ hasText: expectedButtonText }).first();
-  const hasMatched = (await matchedByText.count()) > 0;
-  if (hasMatched) {
-    return matchedByText;
-  }
-
-  const fallbackButton = allHubButtons.first();
-  const fallbackVisible = await fallbackButton.isVisible({ timeout: 10000 }).catch(() => false);
-  if (!fallbackVisible) {
-    return null;
-  }
-  return fallbackButton;
-}
-
-async function isHubUnavailable(page: Page): Promise<boolean> {
-  return page
-    .getByText(HUB_LOAD_ERROR_REGEX)
-    .first()
-    .isVisible({ timeout: 2000 })
-    .catch(() => false);
-}
-
-async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResult> {
-  const { email, password, expectedAccess, targetTenantSlug } = options;
-  await page.goto("/admin/login", { waitUntil: "domcontentloaded", timeout: 60000 });
-
-  const submit = page.locator(
-    '[data-testid="admin-login-submit"], button:has-text("Entrar no painel")'
-  );
-  await expect(submit.first()).toBeEnabled({ timeout: 30000 });
-
-  const emailInput = page.locator('[data-testid="admin-login-email"], input[type="email"]').first();
-  const passwordInputLocator = page
-    .locator('[data-testid="admin-login-password"], input[type="password"]')
-    .first();
-
-  const passwordInputVisible = await passwordInputLocator
-    .isVisible({ timeout: 2000 })
-    .catch(() => false);
-  if (!passwordInputVisible) {
-    const legacyToggle = page
-      .getByRole("button", { name: /Usar senha \(legado\)|Entrar com senha/i })
-      .first();
-    const toggleVisible = await legacyToggle.isVisible({ timeout: 5000 }).catch(() => false);
-    if (!toggleVisible) {
-      throw new Error("Login admin não exibiu campo de senha nem botão de modo legado.");
-    }
-    await legacyToggle.click();
-  }
-
-  const passwordInput = page
-    .locator('[data-testid="admin-login-password"], input[type="password"]')
-    .first();
-  await expect(passwordInput).toBeVisible({ timeout: 10000 });
-
-  await emailInput.fill(email);
-  await passwordInput.fill(password);
-  await expect(emailInput).toHaveValue(email);
-  await expect(passwordInput).toHaveValue(password);
-
-  const waitLoginState = async () =>
-    Promise.race([
-      page
-        .waitForURL(/\/admin\/(selecionar-racha|dashboard|status-assinatura)/, { timeout: 45000 })
-        .then(() => "redirect" as const)
-        .catch(() => null),
-      page
-        .locator('[role="alert"], [aria-live="polite"]')
-        .filter({ hasText: /E-mail ou senha inválidos|E-mail ou senha invalidos/i })
-        .first()
-        .waitFor({ state: "visible", timeout: 12000 })
-        .then(() => "invalid_credentials" as const)
-        .catch(() => null),
-      page
-        .locator('[role="alert"], [aria-live="polite"]')
-        .filter({ hasText: /Acesso ao painel bloqueado/i })
-        .first()
-        .waitFor({ state: "visible", timeout: 12000 })
-        .then(() => "blocked" as const)
-        .catch(() => null),
-      page
-        .locator('[role="alert"], [aria-live="polite"]')
-        .filter({ hasText: /verificação de segurança|validar a segurança/i })
-        .first()
-        .waitFor({ state: "visible", timeout: 12000 })
-        .then(() => "turnstile_required" as const)
-        .catch(() => null),
-    ]);
-
-  await submit.first().click();
-  let loginState = await waitLoginState();
-
-  // Retry defensivo para flakiness eventual no callback de login.
-  if (!loginState) {
-    for (let attempt = 0; attempt < 2 && !loginState; attempt += 1) {
-      await page.waitForTimeout(3000);
-      const currentPath = new URL(page.url()).pathname;
-      if (
-        currentPath === "/admin/selecionar-racha" ||
-        currentPath === "/admin/dashboard" ||
-        currentPath === "/admin/status-assinatura"
-      ) {
-        loginState = "redirect";
-        break;
-      }
-
-      const canRetry = await submit
-        .first()
-        .isEnabled()
-        .catch(() => false);
-      if (canRetry) {
-        await submit.first().click();
-      }
-      loginState = await waitLoginState();
-    }
-  }
-
-  if (loginState === "invalid_credentials") {
-    throw new Error(
-      "Falha de autenticação: e-mail/senha inválidos para o login admin. Verifique as credenciais E2E."
-    );
-  }
-
-  if (loginState === "blocked") {
-    if (expectedAccess === "active") {
-      throw new Error(
-        "Conta autenticável, mas com acesso ao painel bloqueado. O cenário de navegação exige admin ativo."
-      );
-    }
-    return { path: new URL(page.url()).pathname, access: "blocked" };
-  }
-
-  if (loginState === "turnstile_required") {
-    throw new Error(TURNSTILE_REQUIRED_E2E_ERROR_TEXT);
-  }
-
-  if (loginState !== "redirect") {
-    throw new Error(
-      "Login não redirecionou para /admin/selecionar-racha ou /admin/dashboard dentro do tempo esperado."
-    );
-  }
-
-  if (page.url().includes("/admin/status-assinatura")) {
-    if (expectedAccess === "active") {
-      throw new Error(
-        "Usuário caiu em /admin/status-assinatura, mas o cenário exige acesso ativo."
-      );
-    }
-    return { path: "/admin/status-assinatura", access: "blocked" };
-  }
-
-  if (page.url().includes("/admin/dashboard")) {
-    if (expectedAccess === "blocked") {
-      throw new Error("Usuário entrou em /admin/dashboard, mas o cenário exige racha bloqueado.");
-    }
-    return { path: "/admin/dashboard", access: "active" };
-  }
-
-  if (page.url().includes("/admin/selecionar-racha")) {
-    const pathFromEntryApi = await trySelectTenantFromHubEntryApi(
-      page,
-      expectedAccess,
-      targetTenantSlug
-    );
-    if (pathFromEntryApi) {
-      const accessFromEntryApi =
-        pathFromEntryApi === "/admin/status-assinatura" ? "blocked" : "active";
-      if (expectedAccess === "active" && accessFromEntryApi !== "active") {
-        throw new Error(
-          "Seleção por /api/admin/hub/entry levou para /admin/status-assinatura, mas o cenário exige acesso ativo."
-        );
-      }
-      if (expectedAccess === "blocked" && accessFromEntryApi !== "blocked") {
-        throw new Error(
-          "Seleção por /api/admin/hub/entry levou para /admin/dashboard, mas o cenário exige racha bloqueado."
-        );
-      }
-      return { path: pathFromEntryApi, access: accessFromEntryApi };
-    }
-
-    const hubState = await Promise.race([
-      page
-        .waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 30000 })
-        .then(() => "redirect" as const)
-        .catch(() => null),
-      page
-        .getByTestId("admin-hub-list")
-        .waitFor({ state: "visible", timeout: 30000 })
-        .then(() => "list" as const)
-        .catch(() => null),
-      page
-        .getByRole("heading", { name: /Nenhum grupo encontrado/i })
-        .waitFor({ state: "visible", timeout: 30000 })
-        .then(() => "empty" as const)
-        .catch(() => null),
-    ]);
-
-    if (hubState === "redirect") {
-      const finalPath = new URL(page.url()).pathname;
-      if (finalPath === "/admin/status-assinatura") {
-        if (expectedAccess === "active") {
-          throw new Error(
-            "Usuário auto-redirecionado para /admin/status-assinatura, mas o cenário exige acesso ativo."
-          );
-        }
-        return { path: finalPath, access: "blocked" };
-      }
-      if (expectedAccess === "blocked") {
-        throw new Error(
-          "Usuário auto-redirecionado para /admin/dashboard, mas o cenário exige racha bloqueado."
-        );
-      }
-      return { path: finalPath, access: "active" };
-    }
-
-    if (hubState === "empty") {
-      throw new Error(
-        "Login autenticado, mas o usuário não possui racha com acesso admin no Hub (/admin/selecionar-racha). Use uma conta vinculada a pelo menos 1 racha."
-      );
-    }
-
-    if (targetTenantSlug) {
-      const pathFromApiSelection = await trySelectTenantViaApi(page, targetTenantSlug);
-      if (pathFromApiSelection) {
-        const accessFromApiSelection =
-          pathFromApiSelection === "/admin/status-assinatura" ? "blocked" : "active";
-        if (expectedAccess === "active" && accessFromApiSelection !== "active") {
-          throw new Error(
-            "Seleção por API levou para /admin/status-assinatura, mas o cenário exige acesso ativo."
-          );
-        }
-        if (expectedAccess === "blocked" && accessFromApiSelection !== "blocked") {
-          throw new Error(
-            "Seleção por API levou para /admin/dashboard, mas o cenário exige racha bloqueado."
-          );
-        }
-        return { path: pathFromApiSelection, access: accessFromApiSelection };
-      }
-
-      const pathFromCookieSelection = await trySelectTenantViaCookie(page, targetTenantSlug);
-      if (pathFromCookieSelection) {
-        const accessFromCookieSelection =
-          pathFromCookieSelection === "/admin/status-assinatura" ? "blocked" : "active";
-        if (expectedAccess === "active" && accessFromCookieSelection !== "active") {
-          throw new Error(
-            "Seleção por cookie levou para /admin/status-assinatura, mas o cenário exige acesso ativo."
-          );
-        }
-        if (expectedAccess === "blocked" && accessFromCookieSelection !== "blocked") {
-          throw new Error(
-            "Seleção por cookie levou para /admin/dashboard, mas o cenário exige racha bloqueado."
-          );
-        }
-        return { path: pathFromCookieSelection, access: accessFromCookieSelection };
-      }
-    }
-
-    // Fluxo com 1 racha pode auto-redirecionar sem renderizar botão de seleção.
-    const autoRedirected = await page
-      .waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 12000 })
-      .then(() => true)
-      .catch(() => false);
-    if (autoRedirected) {
-      const autoPath = new URL(page.url()).pathname;
-      if (autoPath === "/admin/status-assinatura") {
-        if (expectedAccess === "active") {
-          throw new Error(
-            "Usuário auto-redirecionado para /admin/status-assinatura, mas o cenário exige acesso ativo."
-          );
-        }
-        return { path: autoPath, access: "blocked" };
-      }
-      if (expectedAccess === "blocked") {
-        throw new Error(
-          "Usuário auto-redirecionado para /admin/dashboard, mas o cenário exige racha bloqueado."
-        );
-      }
-      return { path: autoPath, access: "active" };
-    }
-
-    const noTenantState = page.getByRole("heading", { name: /Nenhum grupo encontrado/i });
-    const hasNoTenantState = await noTenantState.isVisible({ timeout: 2000 }).catch(() => false);
-    if (hasNoTenantState) {
-      throw new Error(
-        "Login autenticado, mas o usuário não possui racha com acesso admin no Hub (/admin/selecionar-racha). Use uma conta vinculada a pelo menos 1 racha."
-      );
-    }
-
-    const selectButton = await selectTenantFromHub(page, expectedAccess, targetTenantSlug);
-    if (!selectButton) {
-      const hubUnavailable = await isHubUnavailable(page);
-      if (hubUnavailable) {
-        throw new Error(
-          "Hub de seleção de grupo indisponível no ambiente E2E (falha ao carregar grupos)."
-        );
-      }
-      throw new Error(
-        "Login autenticado, mas não foi possível localizar botões de seleção de grupo no Hub."
-      );
-    }
-    await Promise.all([
-      page.waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 20000 }),
-      selectButton.click(),
-    ]);
-    const finalPath = new URL(page.url()).pathname;
-    const finalAccess = finalPath === "/admin/status-assinatura" ? "blocked" : "active";
-
-    if (expectedAccess === "active" && finalAccess !== "active") {
-      throw new Error("Seleção de racha levou para bloqueio, mas o cenário exige admin ativo.");
-    }
-    if (expectedAccess === "blocked" && finalAccess !== "blocked") {
-      throw new Error(
-        "Seleção de racha levou para dashboard, mas o cenário exige racha bloqueado."
-      );
-    }
-    return { path: finalPath, access: finalAccess };
-  }
-
-  throw new Error("Login concluiu, mas sem rota final reconhecida.");
-}
-
-async function reauthenticateAdmin(
-  page: Page,
-  access: "active" | "blocked",
-  targetTenantSlug?: string
-) {
-  const email = access === "blocked" ? blockedAdminEmail : activeAdminEmail;
-  const password = access === "blocked" ? blockedAdminPassword : activeAdminPassword;
-  if (!email || !password) return;
-
-  await loginAdmin(page, {
-    email,
-    password,
-    expectedAccess: access === "blocked" ? "any" : "active",
-    targetTenantSlug,
+test.beforeEach(async ({ page }) => {
+  expect(process.env.ADMIN_SMOKE_FIXTURE, "Este smoke exige a API local de fixtures").toBe("1");
+  await page.addInitScript(() => localStorage.setItem("cookie-consent", "accepted"));
+  await page.route(/^https:\/\/api\.fut7pro\.com\.br(?:\/|$)/, async (route) => {
+    await route.abort();
+    throw new Error(`Admin Smoke tentou acessar API de produção: ${route.request().url()}`);
   });
-}
-
-async function waitForAdminShell(page: Page) {
-  if (page.isClosed()) {
-    throw new Error("Página fechada antes da validação do shell admin.");
-  }
-  await page.waitForURL(/\/admin\//, { timeout: 20000 });
-  let pathname = new URL(page.url()).pathname;
-  if (pathname === "/admin/login") {
-    await reauthenticateAdmin(page, "active", activeTenantSlug);
-    await pinActiveTenantScope(page, activeTenantSlug);
-    pathname = new URL(page.url()).pathname;
-  }
-  if (pathname === "/admin/selecionar-racha") {
-    let selectedPath = await trySelectTenantFromHubEntryApi(page, "active", activeTenantSlug);
-    if (!selectedPath && activeTenantSlug) {
-      selectedPath = await trySelectTenantViaApi(page, activeTenantSlug);
-    }
-    if (!selectedPath && activeTenantSlug) {
-      selectedPath = await trySelectTenantViaCookie(page, activeTenantSlug);
-    }
-    if (!selectedPath && (await isHubUnavailable(page))) {
-      await reauthenticateAdmin(page, "active", activeTenantSlug);
-      await pinActiveTenantScope(page, activeTenantSlug);
-      pathname = new URL(page.url()).pathname;
-      if (pathname === "/admin/selecionar-racha") {
-        selectedPath = await trySelectTenantFromHubEntryApi(page, "active", activeTenantSlug);
-        if (!selectedPath && activeTenantSlug) {
-          selectedPath = await trySelectTenantViaApi(page, activeTenantSlug);
-        }
-      } else {
-        selectedPath = pathname;
-      }
-    }
-    if (!selectedPath) {
-      const selectButton = await selectTenantFromHub(page, "active", activeTenantSlug);
-      if (!selectButton) {
-        throw new Error(
-          "Hub admin indisponível durante navegação ativa (sem botões de seleção de grupo)."
-        );
-      }
-      await Promise.all([
-        page.waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 20000 }),
-        selectButton.click(),
-      ]);
-      selectedPath = new URL(page.url()).pathname;
-    }
-    pathname = selectedPath;
-  }
-  if (pathname === "/admin/status-assinatura") {
-    throw new Error("Fluxo ativo caiu em /admin/status-assinatura durante navegação.");
-  }
-
-  const loadingText = page.getByText(/Carregando painel/i).first();
-  const loadingVisible = await loadingText.isVisible().catch(() => false);
-  if (loadingVisible) {
-    const cleared = await expect(loadingText)
-      .toBeHidden({ timeout: 5000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!cleared && !page.isClosed()) {
-      try {
-        await page.reload({ waitUntil: "domcontentloaded" });
-        await expect(page.getByText(/Carregando painel/i).first()).toBeHidden({
-          timeout: 10000,
-        });
-      } catch {
-        // noop
-      }
-    }
-  }
-
-  let sidebar = page.getByTestId("admin-sidebar-desktop");
-  if ((await sidebar.count()) === 0) {
-    await page.reload({ waitUntil: "domcontentloaded" });
-    sidebar = page.getByTestId("admin-sidebar-desktop");
-  }
-  const desktopSidebarVisible = await sidebar.isVisible({ timeout: 30000 }).catch(() => false);
-  if (!desktopSidebarVisible) {
-    const mobileMenuButtonVisible = await page
-      .getByTestId("admin-header-open-menu")
-      .first()
-      .isVisible({ timeout: 5000 })
-      .catch(() => false);
-    if (!mobileMenuButtonVisible) {
-      throw new Error("Shell admin não carregou sidebar/menu de navegação.");
-    }
-  }
-}
-
-async function navigateByClickWithFallback(
-  page: Page,
-  clickTarget: { click: () => Promise<void> },
-  route: string
-) {
-  if (page.isClosed()) return;
-  await clickTarget.click();
-  const navigatedByClick = await page
-    .waitForURL((url) => url.pathname === route, { timeout: 15000 })
-    .then(() => true)
-    .catch(() => false);
-  if (!navigatedByClick && !page.isClosed()) {
-    await page.goto(route, { waitUntil: "domcontentloaded" });
-  }
-}
-
-async function pinActiveTenantScope(page: Page, slug?: string) {
-  if (!slug) return;
-  const response = await page.request
-    .post("/api/admin/hub/select", {
-      data: { slug },
-      timeout: 10000,
-    })
-    .catch(() => null);
-  if (!response || response.status() >= 400) {
-    return;
-  }
-  const body = await response.json().catch(() => null);
-  if (
-    body &&
-    typeof body === "object" &&
-    "blocked" in body &&
-    (body as { blocked?: boolean }).blocked
-  ) {
-    throw new Error(`Tenant ativo configurado (${slug}) retornou bloqueado ao fixar escopo.`);
-  }
-}
-
-async function assertBlockedRedirectForRoute(page: Page, route: string, tenantSlug?: string) {
-  await page.goto(route, { waitUntil: "domcontentloaded" });
-  await page
-    .waitForURL(/\/admin\/(status-assinatura|selecionar-racha|login)/, { timeout: 10000 })
-    .catch(() => null);
-
-  let pathname = new URL(page.url()).pathname;
-  if (pathname === "/admin/login") {
-    await reauthenticateAdmin(page, "blocked", tenantSlug);
-    pathname = new URL(page.url()).pathname;
-  }
-
-  if (pathname === "/admin/selecionar-racha") {
-    let selectedPath: string | null = null;
-    if (tenantSlug) {
-      selectedPath = await trySelectTenantViaApi(page, tenantSlug);
-    }
-    if (!selectedPath) {
-      selectedPath = await trySelectTenantFromHubEntryApi(page, "blocked", tenantSlug);
-    }
-    if (!selectedPath && tenantSlug) {
-      selectedPath = await trySelectTenantViaCookie(page, tenantSlug);
-    }
-    if (!selectedPath && (await isHubUnavailable(page))) {
-      await reauthenticateAdmin(page, "blocked", tenantSlug);
-      pathname = new URL(page.url()).pathname;
-      if (pathname === "/admin/selecionar-racha") {
-        if (tenantSlug) {
-          selectedPath = await trySelectTenantViaApi(page, tenantSlug);
-        }
-        if (!selectedPath) {
-          selectedPath = await trySelectTenantFromHubEntryApi(page, "blocked", tenantSlug);
-        }
-      } else {
-        selectedPath = pathname;
-      }
-    }
-    if (!selectedPath) {
-      const selectButton = await selectTenantFromHub(page, "blocked", tenantSlug);
-      if (!selectButton) {
-        throw new Error(
-          "Hub admin indisponível ao validar bloqueio por inadimplência (sem opções de seleção)."
-        );
-      }
-      await Promise.all([
-        page.waitForURL(/\/admin\/(dashboard|status-assinatura|selecionar-racha|login)/, {
-          timeout: 20000,
-        }),
-        selectButton.click(),
-      ]);
-      selectedPath = new URL(page.url()).pathname;
-    }
-    pathname = selectedPath;
-  }
-
-  expect(pathname).toBe("/admin/status-assinatura");
-}
-
-function sidebarToggleForRoute(route: string): string | null {
-  if (route.startsWith("/admin/partidas")) return "admin-sidebar-toggle-partidas";
-  if (route.startsWith("/admin/jogadores")) return "admin-sidebar-toggle-jogadores";
-  if (route.startsWith("/admin/financeiro")) return "admin-sidebar-toggle-financeiro";
-  if (route.startsWith("/admin/personalizacao")) return "admin-sidebar-toggle-personalizacao";
-  if (route.startsWith("/admin/administracao")) return "admin-sidebar-toggle-administracao";
-  if (route.startsWith("/admin/comunicacao")) return "admin-sidebar-toggle-comunicacao";
-  if (route.startsWith("/admin/configuracoes")) return "admin-sidebar-toggle-configuracoes-extras";
-  return null;
-}
-
-async function openSidebarSectionForRoute(page: Page, route: string) {
-  await waitForAdminShell(page);
-  const toggleTestId = sidebarToggleForRoute(route);
-  if (!toggleTestId) return;
-
-  const toggle = page.getByTestId(toggleTestId).first();
-  const exists = (await toggle.count()) > 0;
-  if (!exists) return;
-  const expanded = await toggle.getAttribute("aria-expanded");
-  if (expanded !== "true") {
-    await toggle.click();
-  }
-}
-
-async function assertNoForbiddenTexts(page: Page) {
-  const mains = page.locator("main");
-  const mainCount = await mains.count();
-  let mainText = "";
-  for (let i = 0; i < mainCount; i += 1) {
-    mainText += ` ${await mains.nth(i).innerText()}`;
-  }
-  const normalized = mainText.toLowerCase();
-  FORBIDDEN_TEXTS.forEach((text) => {
-    expect(normalized).not.toContain(text);
-  });
-}
-
-async function assertPageHealthy(page: Page, expectedPath: string) {
-  let pathname = new URL(page.url()).pathname;
-  if (pathname.startsWith("/admin") && pathname !== "/admin/status-assinatura") {
-    await waitForAdminShell(page);
-    pathname = new URL(page.url()).pathname;
-  }
-  if (expectedPath.startsWith("/admin/") && pathname !== expectedPath) {
-    await page.goto(expectedPath, { waitUntil: "domcontentloaded" });
-    pathname = new URL(page.url()).pathname;
-    if (pathname !== expectedPath && pathname !== "/admin/status-assinatura") {
-      await waitForAdminShell(page);
-      await page.goto(expectedPath, { waitUntil: "domcontentloaded" });
-      pathname = new URL(page.url()).pathname;
-    }
-    expect(pathname).toBe(expectedPath);
-  }
-  const expectedHeading = expectedHeadingRegex(pathname);
-  const main = page.locator("main").first();
-  await expect(main).toBeVisible({ timeout: 10000 });
-
-  const headings = main.locator("h1, h2");
-  const headingCount = await headings.count();
-  let normalized = "";
-
-  if (headingCount > 0) {
-    const headingTexts = await headings.allInnerTexts();
-    normalized = headingTexts.join(" ").toLowerCase();
-  } else {
-    normalized = (await main.innerText()).toLowerCase();
-  }
-
-  if (expectedHeading && normalized.trim().length > 0) {
-    expect(normalized).toMatch(expectedHeading);
-  }
-
-  await assertNoForbiddenTexts(page);
-}
-
-function isInvalidCredentialsError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  return error.message.includes(INVALID_CREDENTIALS_ERROR_TEXT);
-}
-
-test.afterEach(async ({ page }, testInfo) => {
-  if (testInfo.status !== testInfo.expectedStatus) {
-    try {
-      if (!page.isClosed()) {
-        await page.screenshot({
-          path: testInfo.outputPath("admin-smoke-failure.png"),
-          fullPage: true,
-        });
-      }
-    } catch {
-      // noop
-    }
-  }
 });
 
-test.describe("Admin Smoke Navigation", () => {
+async function login(page: Page, email: string) {
+  await page.goto("/admin/login");
+  await page.getByTestId("admin-login-email").fill(email);
+  await page.getByRole("button", { name: "Entrar com senha" }).click();
+  await page.getByTestId("admin-login-password").fill(fixturePassword);
+  await page.getByTestId("admin-login-submit").click();
+  await expect(page).toHaveURL(/\/admin\/(dashboard|status-assinatura|selecionar-racha)/, {
+    timeout: 90000,
+  });
+  if (email !== "sem-grupo@fixture.invalid") {
+    await expect(page).toHaveURL(
+      email === "bloqueado@fixture.invalid" ? /\/admin\/status-assinatura/ : /\/admin\/dashboard/,
+      { timeout: 60000 }
+    );
+  }
+}
+
+async function expectDestination(page: Page, href: string) {
+  await expect(page, `Clique deve alcançar ${href}`).toHaveURL(
+    (url) => `${url.pathname}${url.hash}` === href,
+    { timeout: 60000 }
+  );
+  const main = page.locator("main").first();
+  await expect(main).toBeVisible();
+  const expectedContent = destinationContent[new URL(href, "http://fixture.local").pathname];
+  expect(expectedContent, `Destino sem assinatura de conteúdo: ${href}`).toBeDefined();
+  await expect(main, `Página incorreta ou vazia em ${href}`).toContainText(expectedContent, {
+    timeout: 30000,
+  });
+  await expect(page.getByText(/404|This page could not be found/i)).toHaveCount(0);
+  await expect(
+    page.getByText(/Falha ao carregar o painel|Painel demorou para responder/)
+  ).toHaveCount(0);
+}
+
+async function openRequests(page: Page, variant: "header" | "bottom") {
+  await expect(page.getByRole("button", { name: "Rejeitar" })).toHaveCount(0);
+  const trigger = page.getByTestId(`admin-${variant}-requests-trigger`);
+  await expect(trigger).toBeVisible({ timeout: 30000 });
+  await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+  await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  const dialog = page.getByRole("dialog", { name: "Selecionar tipo de solicitação" });
+  await expect(dialog).toBeVisible();
+  return { trigger, dialog };
+}
+
+async function expectCountsAndLinks(page: Page, variant: "header" | "bottom") {
+  const { trigger, dialog } = await openRequests(page, variant);
+  const entry = dialog.getByRole("link", { name: /Entrada de jogadores/ });
+  const monthly = dialog.getByRole("link", { name: /Solicitações de mensalista/ });
+  await expect(entry).toContainText("2 pedidos aguardando análise", { timeout: 30000 });
+  await expect(monthly).toContainText("1 pedido aguardando análise", { timeout: 30000 });
+  await expect(entry).toHaveAttribute("href", entryPath);
+  await expect(monthly).toHaveAttribute("href", monthlyPath);
+  return { trigger, dialog, entry, monthly };
+}
+
+test.describe("Admin Smoke Navigation — fixtures locais", () => {
   test.setTimeout(420000);
 
-  test("navega pelos principais itens do admin sem rota quebrada", async ({ page }) => {
-    test.skip(!shouldRunActive, "Credenciais de admin ativo não configuradas.");
-
-    try {
-      await loginAdmin(page, {
-        email: activeAdminEmail || "",
-        password: activeAdminPassword || "",
-        expectedAccess: "active",
-        targetTenantSlug: activeTenantSlug,
-      });
-      await pinActiveTenantScope(page, activeTenantSlug);
+  test("controles principais da sidebar, cabeçalho e dashboard alcançam seus destinos", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await login(page, "presidente@fixture.invalid");
+    const sidebarRoutes = [
+      { section: "partidas", path: "/admin/partidas" },
+      { section: null, path: "/admin/conquistas" },
+      { section: "financeiro", path: "/admin/financeiro/patrocinadores" },
+      { section: "personalizacao", path: "/admin/personalizacao/identidade-visual" },
+      { section: "administracao", path: "/admin/administracao/administradores" },
+      { section: "comunicacao", path: "/admin/comunicacao/notificacoes" },
+      { section: "configuracoes-do-grupo", path: "/admin/configuracoes/dominio-proprio" },
+    ];
+    for (const { section, path } of sidebarRoutes) {
       await page.goto("/admin/dashboard");
-      await expect(page).toHaveURL(/\/admin\/dashboard/);
-      await assertPageHealthy(page, "/admin/dashboard");
+      const sidebar = page.getByTestId("admin-sidebar-desktop");
+      await expect(sidebar).toBeVisible({ timeout: 30000 });
+      if (section) await sidebar.getByTestId(`admin-sidebar-toggle-${section}`).click();
+      const link = sidebar.locator(`[data-admin-nav-link="true"][href="${path}"]`);
+      await expect(link, `Link da sidebar ausente: ${path}`).toBeVisible();
+      await link.click();
+      await expectDestination(page, path);
+    }
 
-      const sidebarRoutes = [
-        "/admin/dashboard",
-        "/admin/partidas",
-        "/admin/jogadores/listar-cadastrar",
-        "/admin/conquistas",
-        "/admin/financeiro/patrocinadores",
-        "/admin/personalizacao/identidade-visual",
-        "/admin/administracao/administradores",
-        "/admin/comunicacao/notificacoes",
-        "/admin/configuracoes/dominio-proprio",
-      ];
-      for (const route of sidebarRoutes) {
-        await page.goto("/admin/dashboard");
-        await openSidebarSectionForRoute(page, route);
+    for (const path of ["/admin/comunicacao/notificacoes", "/admin/comunicacao/mensagens"]) {
+      await page.goto("/admin/dashboard");
+      const link = page.locator(`header [href="${path}"]`);
+      await expect(link, `Link do cabeçalho ausente: ${path}`).toBeVisible();
+      await link.click();
+      await expectDestination(page, path);
+    }
 
-        const link = page
-          .getByTestId("admin-sidebar-desktop")
-          .locator(`[data-admin-nav-link="true"][href="${route}"]`)
-          .first();
-        const visibleLink = await link.isVisible().catch(() => false);
-        if (!visibleLink) {
-          await page.goto(route);
-          await assertPageHealthy(page, route);
-          continue;
-        }
-        await navigateByClickWithFallback(page, link, route);
-        await assertPageHealthy(page, route);
-      }
-
-      const headerRoutes = [
-        {
-          testId: "admin-header-link-admin-comunicacao-notificacoes",
-          path: "/admin/comunicacao/notificacoes",
-        },
-        {
-          testId: "admin-header-link-admin-comunicacao-mensagens",
-          path: "/admin/comunicacao/mensagens",
-        },
-        {
-          testId: "admin-header-link-admin-jogadores-listar-cadastrar-solicitacoes",
-          path: "/admin/jogadores/listar-cadastrar",
-        },
-      ];
-
-      for (const entry of headerRoutes) {
-        await page.goto("/admin/dashboard");
-        const link = page.getByTestId(entry.testId);
-        const visibleLink = await link.isVisible().catch(() => false);
-        if (!visibleLink) {
-          await page.goto(entry.path);
-          await assertPageHealthy(page, entry.path);
-          continue;
-        }
-        await navigateByClickWithFallback(page, link, entry.path);
-        await assertPageHealthy(page, entry.path);
-      }
-
-      const dashboardCards = [
-        {
-          testId: "admin-dashboard-card-time-campeao",
-          path: "/admin/partidas/time-campeao-do-dia",
-        },
-        {
-          testId: "admin-dashboard-card-partidas-resultados",
-          path: "/admin/partidas",
-        },
-        {
-          testId: "admin-dashboard-card-sorteio-inteligente",
-          path: "/admin/partidas/sorteio-inteligente",
-        },
-        { testId: "admin-dashboard-card-monetizacao", path: "/admin/monetizacao" },
-        {
-          testId: "admin-dashboard-quick-cadastrar-jogador",
-          path: "/admin/jogadores/listar-cadastrar",
-        },
-        { testId: "admin-dashboard-quick-criar-partida", path: "/admin/partidas/criar" },
-        {
-          testId: "admin-dashboard-quick-adicionar-patrocinador",
-          path: "/admin/financeiro/patrocinadores",
-        },
-        {
-          testId: "admin-dashboard-quick-enviar-notificacao",
-          path: "/admin/comunicacao/notificacoes",
-        },
-      ];
-
-      for (const entry of dashboardCards) {
-        await page.goto("/admin/dashboard");
-        const cardLink = page.getByTestId(entry.testId);
-        const visibleCard = await cardLink.isVisible().catch(() => false);
-        if (!visibleCard) {
-          await page.goto(entry.path);
-          await assertPageHealthy(page, entry.path);
-          continue;
-        }
-        await navigateByClickWithFallback(page, cardLink, entry.path);
-        await assertPageHealthy(page, entry.path);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const unstableEnvironment = SMOKE_ENV_UNSTABLE_ERRORS.some((item) => message.includes(item));
-      if (unstableEnvironment) {
-        test.skip(true, `Ambiente E2E instável para smoke de navegação admin ativo: ${message}`);
-      }
-      throw error;
+    for (const { testId, path } of [
+      {
+        testId: "admin-dashboard-card-time-campeao",
+        path: "/admin/partidas/time-campeao-do-dia",
+      },
+      { testId: "admin-dashboard-card-partidas-resultados", path: "/admin/partidas" },
+      {
+        testId: "admin-dashboard-card-sorteio-inteligente",
+        path: "/admin/partidas/sorteio-inteligente",
+      },
+      {
+        testId: "admin-dashboard-card-monetizacao",
+        path: "/admin/monetizacao",
+      },
+      {
+        testId: "admin-dashboard-quick-cadastrar-jogador",
+        path: "/admin/jogadores/listar-cadastrar",
+      },
+      { testId: "admin-dashboard-quick-criar-partida", path: "/admin/partidas/criar" },
+      {
+        testId: "admin-dashboard-quick-adicionar-patrocinador",
+        path: "/admin/financeiro/patrocinadores",
+      },
+      {
+        testId: "admin-dashboard-quick-enviar-notificacao",
+        path: "/admin/comunicacao/notificacoes",
+      },
+    ]) {
+      await page.goto("/admin/dashboard");
+      const link = page.getByTestId(testId);
+      await expect(link, `Atalho do dashboard ausente: ${testId}`).toBeVisible();
+      await link.click();
+      await expectDestination(page, path);
     }
   });
 
-  test("valida bloqueio por inadimplência com isolamento do tenant", async ({ page }) => {
-    test.skip(!shouldRunBlocked, "Credenciais de admin bloqueado não configuradas.");
+  test("presidente: sidebar e Solicitações desktop navegam por clique", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await login(page, "presidente@fixture.invalid");
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
+    const sidebar = page.getByTestId("admin-sidebar-desktop");
+    await expect(sidebar).toBeVisible({ timeout: 30000 });
+    await sidebar.getByTestId("admin-sidebar-toggle-jogadores").click();
+    const players = sidebar.getByTestId("admin-sidebar-link-admin-jogadores-listar-cadastrar");
+    await expect(players).toBeVisible();
+    await players.click();
+    await expectDestination(page, "/admin/jogadores/listar-cadastrar");
 
-    const candidates = [
-      {
-        name: "blocked",
-        email: blockedAdminEmail || "",
-        password: blockedAdminPassword || "",
-      },
-      {
-        name: "active-fallback",
-        email: activeAdminEmail || "",
-        password: activeAdminPassword || "",
-      },
-    ]
-      .filter((entry) => entry.email && entry.password)
-      .filter(
-        (entry, index, list) =>
-          list.findIndex(
-            (item) => item.email === entry.email && item.password === entry.password
-          ) === index
-      );
+    await page.goto("/admin/dashboard");
+    let { trigger, dialog, entry } = await expectCountsAndLinks(page, "header");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+    ({ entry } = await expectCountsAndLinks(page, "header"));
+    await entry.click();
+    await expectDestination(page, entryPath);
 
-    let result: LoginResult | null = null;
-    let hasInvalidCredentialError = false;
-    let lastNonCredentialError: unknown = null;
+    await page.goto("/admin/dashboard");
+    const { monthly } = await expectCountsAndLinks(page, "header");
+    await monthly.click();
+    await expectDestination(page, monthlyPath);
+  });
 
-    for (const candidate of candidates) {
-      try {
-        const candidateResult = await loginAdmin(page, {
-          email: candidate.email,
-          password: candidate.password,
-          expectedAccess: "any",
-          targetTenantSlug: blockedTenantSlug,
-        });
-        if (candidateResult.access === "blocked") {
-          result = candidateResult;
-          break;
-        }
-      } catch (error) {
-        if (isInvalidCredentialsError(error)) {
-          hasInvalidCredentialError = true;
-          continue;
-        }
-        lastNonCredentialError = error;
-        break;
-      }
-    }
+  for (const viewport of [
+    { name: "tablet", width: 800, height: 700 },
+    { name: "celular", width: 390, height: 640 },
+  ]) {
+    test(`presidente: Solicitações ${viewport.name} abre, fecha e navega`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await login(page, "presidente@fixture.invalid");
+      await expect(page).toHaveURL(/\/admin\/dashboard/);
+      let { trigger, dialog } = await expectCountsAndLinks(page, "bottom");
+      await expect(dialog).toHaveAttribute("aria-modal", "true");
+      await expect(dialog).toBeInViewport();
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeHidden();
+      await expect(trigger).toBeFocused();
+      ({ dialog } = await expectCountsAndLinks(page, "bottom"));
+      await dialog.getByRole("button", { name: "Fechar solicitações" }).click();
+      await expect(dialog).toBeHidden();
+      let { entry } = await expectCountsAndLinks(page, "bottom");
+      await entry.click();
+      await expectDestination(page, entryPath);
 
-    if (!result && lastNonCredentialError) {
-      const message =
-        lastNonCredentialError instanceof Error
-          ? lastNonCredentialError.message
-          : String(lastNonCredentialError);
-      const unstableEnvironment = SMOKE_ENV_UNSTABLE_ERRORS.some((item) => message.includes(item));
-      if (unstableEnvironment) {
-        test.skip(true, `Ambiente E2E instável para smoke de bloqueio admin: ${message}`);
-      }
-      throw lastNonCredentialError;
-    }
+      await page.goto("/admin/dashboard");
+      const { monthly } = await expectCountsAndLinks(page, "bottom");
+      await monthly.click();
+      await expectDestination(page, monthlyPath);
+    });
+  }
 
-    test.skip(
-      !result && hasInvalidCredentialError,
-      "Credenciais E2E do cenário bloqueado estão inválidas. Atualize E2E_BLOCKED_ADMIN_EMAIL/E2E_BLOCKED_ADMIN_PASSWORD no GitHub Secrets."
-    );
+  test("administrador esportivo tem as duas opções autorizadas", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await login(page, "admin@fixture.invalid");
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
+    const { entry, monthly } = await expectCountsAndLinks(page, "header");
+    await expect(entry).toBeEnabled();
+    await expect(monthly).toBeEnabled();
+    await monthly.click();
+    await expectDestination(page, monthlyPath);
+  });
 
-    test.skip(
-      !result,
-      "Nenhuma credencial E2E com acesso ao tenant bloqueado conseguiu validar o cenário no ambiente atual."
-    );
+  test("diretor de futebol vê contagem esportiva sem aprovação financeira", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await login(page, "futebol@fixture.invalid");
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
+    const { dialog } = await openRequests(page, "header");
+    await expect(dialog.locator('[aria-disabled="true"]')).toHaveCount(2, { timeout: 30000 });
+    await expect(dialog.locator('[aria-disabled="true"]').first()).toContainText("2");
+    await expect(dialog.getByRole("link", { name: /Solicitações de mensalista/ })).toHaveCount(0);
+    await expect(dialog.getByRole("link", { name: /Entrada de jogadores/ })).toHaveCount(0);
+    await expect(dialog.locator('[aria-disabled="true"]').last()).toContainText("1");
+    await expect(dialog.getByText(/Análise indisponível para seu cargo/)).toHaveCount(2);
+  });
 
-    test.skip(
-      !result || result.access !== "blocked",
-      "Tenant bloqueado não está configurado como bloqueado no ambiente E2E atual."
-    );
-
-    expect(result?.access).toBe("blocked");
+  test("grupo bloqueado não abre dashboard e oferece regularização", async ({ page }) => {
+    await login(page, "bloqueado@fixture.invalid");
     await expect(page).toHaveURL(/\/admin\/status-assinatura/);
     await expect(
-      page.getByRole("heading", { name: /Painel bloqueado por inadimplência/i })
+      page.getByRole("heading", { name: /Painel bloqueado por inadimplência/ })
     ).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: /Ir para pagamento e regularizar acesso/i })
-    ).toHaveAttribute("href", "/admin/financeiro/planos-limites");
+    const paymentLink = page.getByRole("link", { name: /Ir para pagamento/ });
+    await expect(paymentLink).toHaveAttribute("href", "/admin/financeiro/planos-limites");
+    await paymentLink.click();
+    await expectDestination(page, "/admin/financeiro/planos-limites");
+    for (const restrictedPath of ["/admin/dashboard", "/admin/comunicacao/notificacoes"]) {
+      await page.goto(restrictedPath);
+      await expect(page).toHaveURL(/\/admin\/status-assinatura/);
+      await expect(
+        page.getByRole("heading", { name: /Painel bloqueado por inadimplência/ })
+      ).toBeVisible();
+    }
+  });
 
-    await assertBlockedRedirectForRoute(page, "/admin/dashboard", blockedTenantSlug);
-
-    await page.goto("/admin/financeiro/planos-limites");
-    await expect(page).toHaveURL(/\/admin\/financeiro\/planos-limites/);
-    await expect(page.getByRole("heading", { name: /Planos & Limites/i })).toBeVisible();
-
-    await assertBlockedRedirectForRoute(page, "/admin/comunicacao/notificacoes", blockedTenantSlug);
+  test("conta sem grupo apresenta estado vazio no Hub", async ({ page }) => {
+    await login(page, "sem-grupo@fixture.invalid");
+    await expect(page).toHaveURL(/\/admin\/selecionar-racha/);
+    await expect(page.getByRole("heading", { name: /Nenhum grupo encontrado/i })).toBeVisible();
+    await expect(page.getByTestId("admin-hub-list")).toHaveCount(0);
   });
 });
