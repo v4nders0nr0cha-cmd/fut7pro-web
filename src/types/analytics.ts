@@ -1,11 +1,8 @@
 export type AnalyticsPeriod = "day" | "week" | "month" | "year" | "all";
 
 export type AnalyticsSummary = {
-  visits: number;
-  uniqueVisitors: number;
-  engagements: number;
-  avgSessionSeconds: number;
-  playersActive: number;
+  participations: number;
+  uniqueAthletes: number;
   newPlayers: number;
   matchesPublished: number;
   sponsorsClicks: number;
@@ -16,9 +13,8 @@ export type AnalyticsSummary = {
 
 export type AnalyticsTimeseriesPoint = {
   date: string; // ISO date (yyyy-mm-dd)
-  visits: number;
-  uniqueVisitors: number;
-  engagements: number;
+  participations: number;
+  uniqueAthletes: number;
 };
 
 export type AnalyticsEvent = {

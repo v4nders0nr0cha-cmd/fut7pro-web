@@ -3,7 +3,7 @@ import { buildHeaders, proxyBackend, requireUser, resolveTenantSlug } from "../.
 
 export const runtime = "nodejs";
 
-const ALLOWED_PERIODS = new Set(["week", "month", "quarter", "year"]);
+const ALLOWED_PERIODS = new Set(["day", "week", "month", "year", "all"]);
 
 export async function GET(req: NextRequest) {
   const user = await requireUser();
@@ -15,8 +15,14 @@ export async function GET(req: NextRequest) {
   }
 
   const searchParams = req.nextUrl.searchParams;
-  const rawPeriod = (searchParams.get("period") || "week").toLowerCase();
-  const period = ALLOWED_PERIODS.has(rawPeriod) ? rawPeriod : "week";
+  const rawPeriod = (searchParams.get("period") || "year").toLowerCase();
+  if (!ALLOWED_PERIODS.has(rawPeriod)) {
+    return new Response(JSON.stringify({ error: "Periodo invalido" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const period = rawPeriod;
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const tenantSlug = resolveTenantSlug(user);

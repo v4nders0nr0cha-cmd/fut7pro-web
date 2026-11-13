@@ -38,26 +38,19 @@ const PERIODOS: { label: string; value: AnalyticsPeriod }[] = [
   { label: "Sempre", value: "all" },
 ];
 
-function formatTempo(segundos: number | undefined) {
-  if (!segundos || Number.isNaN(segundos)) return "-";
-  const mins = Math.floor(segundos / 60);
-  const secs = Math.max(0, Math.round(segundos % 60));
-  return `${mins}m ${secs.toString().padStart(2, "0")}s`;
-}
-
 export default function RelatoriosPage() {
-  const [periodo, setPeriodo] = useState<AnalyticsPeriod>("week");
+  const [periodo, setPeriodo] = useState<AnalyticsPeriod>("year");
   const relatorioRef = useRef<HTMLDivElement>(null);
 
-  const { analytics, isLoading } = useAdminAnalytics({ period: periodo });
+  const { analytics, isLoading, isError } = useAdminAnalytics({ period: periodo });
 
   const summary = analytics?.summary;
   const resumoCompat = summary
     ? {
-        acessos: summary.visits,
-        jogadores: summary.uniqueVisitors,
-        engajamento: summary.engagements,
-        tempo: formatTempo(summary.avgSessionSeconds),
+        participacoes: summary.participations,
+        atletas: summary.uniqueAthletes,
+        novos: summary.newPlayers,
+        partidas: summary.matchesPublished,
       }
     : undefined;
 
@@ -69,7 +62,7 @@ export default function RelatoriosPage() {
       scale: 2,
     });
     const link = document.createElement("a");
-    link.download = `relatorio-engajamento-${periodo}.png`;
+    link.download = `relatorio-participacao-${periodo}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   }
@@ -77,12 +70,12 @@ export default function RelatoriosPage() {
   function compartilharRelatorio() {
     const label = PERIODOS.find((p) => p.value === periodo)?.label || periodo;
     const texto = resumoCompat
-      ? `Relatório de Engajamento Fut7Pro - ${label}\n\nAcessos: ${resumoCompat.acessos}\nJogadores: ${resumoCompat.jogadores}\nEngajamento: ${resumoCompat.engajamento}\nTempo médio: ${resumoCompat.tempo}`
-      : `Relatório de Engajamento Fut7Pro - ${label}\n\nDados indisponíveis no momento.`;
+      ? `Relatório de Participação Fut7Pro - ${label}\n\nParticipações em partidas: ${resumoCompat.participacoes}\nAtletas participantes: ${resumoCompat.atletas}\nNovos atletas: ${resumoCompat.novos}\nPartidas: ${resumoCompat.partidas}`
+      : `Relatório de Participação Fut7Pro - ${label}\n\nDados indisponíveis no momento.`;
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator
         .share({
-          title: "Relatório de Engajamento",
+          title: "Relatório de Participação",
           text: texto,
         })
         .catch(() => {});
@@ -98,10 +91,10 @@ export default function RelatoriosPage() {
   return (
     <>
       <Head>
-        <title>Relatórios de Engajamento | Painel Admin - Fut7Pro</title>
+        <title>Relatórios de Participação | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Visualize métricas detalhadas do engajamento do seu racha: acessos, jogadores, visualizações e tempo médio. Painel profissional do Fut7Pro."
+          content="Visualize participações esportivas e eventos de patrocinadores do seu racha."
         />
         <meta
           name="keywords"
@@ -115,18 +108,20 @@ export default function RelatoriosPage() {
             <div className="flex items-center gap-3">
               <FaChartLine className="text-cyan-400 text-3xl" />
               <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
-                Relatórios de Engajamento
+                Relatórios de Participação
               </h1>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={baixarImagemRelatorio}
+                disabled={isLoading || isError}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-sm shadow transition"
               >
                 <FaCamera /> Baixar Relatório
               </button>
               <button
                 onClick={compartilharRelatorio}
+                disabled={isLoading || isError}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold text-sm shadow transition"
               >
                 <FaShareAlt /> Compartilhar
@@ -136,9 +131,15 @@ export default function RelatoriosPage() {
 
           <div ref={relatorioRef} className="bg-[#181b20] p-4 rounded-2xl shadow-lg">
             <p className="text-gray-300 mb-8">
-              Acompanhe as principais métricas do seu racha: acessos, engajamento, tempo médio e
-              movimentações.
+              Acompanhe participações esportivas e eventos de patrocinadores no período selecionado.
+              Visitas ao site, usuários únicos, interações e tempo de sessão ainda não são medidos
+              aqui.
             </p>
+            {isError && (
+              <p role="alert" className="mb-6 text-red-300">
+                Não foi possível carregar o relatório. Tente novamente.
+              </p>
+            )}
 
             <div className="flex flex-wrap gap-2 mb-8">
               {PERIODOS.map((p) => (
@@ -160,35 +161,37 @@ export default function RelatoriosPage() {
               <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
                 <FaEye className="text-cyan-300 text-2xl mb-1" />
                 <div className="text-2xl font-bold text-white">
-                  {isLoading ? "-" : (summary?.visits ?? 0)}
+                  {isLoading || isError ? "-" : (summary?.participations ?? 0)}
                 </div>
-                <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">Acessos</div>
+                <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
+                  Participações em partidas
+                </div>
               </div>
               <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
                 <FaUsers className="text-yellow-400 text-2xl mb-1" />
                 <div className="text-2xl font-bold text-white">
-                  {isLoading ? "-" : (summary?.uniqueVisitors ?? 0)}
+                  {isLoading || isError ? "-" : (summary?.uniqueAthletes ?? 0)}
                 </div>
                 <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
-                  Jogadores únicos
+                  Atletas participantes
                 </div>
               </div>
               <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
                 <FaUserCheck className="text-green-400 text-2xl mb-1" />
                 <div className="text-2xl font-bold text-white">
-                  {isLoading ? "-" : (summary?.engagements ?? 0)}
+                  {isLoading || isError ? "-" : (summary?.newPlayers ?? 0)}
                 </div>
                 <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
-                  Engajamentos
+                  Novos atletas
                 </div>
               </div>
               <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
                 <FaClock className="text-cyan-200 text-2xl mb-1" />
                 <div className="text-2xl font-bold text-white">
-                  {isLoading ? "-" : formatTempo(summary?.avgSessionSeconds)}
+                  {isLoading || isError ? "-" : (summary?.matchesPublished ?? 0)}
                 </div>
                 <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
-                  Tempo médio
+                  Partidas com placar
                 </div>
               </div>
             </div>
@@ -201,19 +204,19 @@ export default function RelatoriosPage() {
                 <div className="bg-[#181B20] rounded-xl p-4">
                   <div className="text-gray-400 text-xs uppercase tracking-wide">Impressões</div>
                   <div className="text-2xl font-bold text-white">
-                    {isLoading ? "-" : (analytics?.sponsors?.impressions ?? 0)}
+                    {isLoading || isError ? "-" : (analytics?.sponsors?.impressions ?? 0)}
                   </div>
                 </div>
                 <div className="bg-[#181B20] rounded-xl p-4">
                   <div className="text-gray-400 text-xs uppercase tracking-wide">Cliques</div>
                   <div className="text-2xl font-bold text-white">
-                    {isLoading ? "-" : (analytics?.sponsors?.clicks ?? 0)}
+                    {isLoading || isError ? "-" : (analytics?.sponsors?.clicks ?? 0)}
                   </div>
                 </div>
                 <div className="bg-[#181B20] rounded-xl p-4">
                   <div className="text-gray-400 text-xs uppercase tracking-wide">CTR</div>
                   <div className="text-2xl font-bold text-white">
-                    {isLoading
+                    {isLoading || isError
                       ? "-"
                       : analytics?.sponsors
                         ? `${((analytics.sponsors.ctr ?? 0) * 100).toFixed(2)}%`
@@ -222,21 +225,21 @@ export default function RelatoriosPage() {
                 </div>
                 <div className="bg-[#181B20] rounded-xl p-4">
                   <div className="text-gray-400 text-xs uppercase tracking-wide">
-                    Receita (estim.)
+                    Receita recebida
                   </div>
                   <div className="text-2xl font-bold text-white">
-                    {isLoading
+                    {isLoading || isError
                       ? "-"
                       : analytics?.sponsors?.revenue != null
                         ? `R$ ${analytics.sponsors.revenue.toLocaleString("pt-BR", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}`
-                        : "-"}
+                        : "Não medida"}
                   </div>
                   <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
                     ROI:{" "}
-                    {isLoading
+                    {isLoading || isError
                       ? "-"
                       : analytics?.sponsors?.roi != null
                         ? `${((analytics.sponsors.roi ?? 0) * 100).toFixed(1)}%`
@@ -245,20 +248,20 @@ export default function RelatoriosPage() {
                 </div>
                 <div className="bg-[#181B20] rounded-xl p-4">
                   <div className="text-gray-400 text-xs uppercase tracking-wide">
-                    Custo (estim.)
+                    Custo comprovado
                   </div>
                   <div className="text-2xl font-bold text-white">
-                    {isLoading
+                    {isLoading || isError
                       ? "-"
                       : analytics?.sponsors?.cost != null
                         ? `R$ ${analytics.sponsors.cost.toLocaleString("pt-BR", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}`
-                        : "-"}
+                        : "Não medido"}
                   </div>
                   <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest flex items-center gap-1">
-                    <FaDollarSign className="text-green-400" /> CPC/CPM
+                    <FaDollarSign className="text-green-400" /> Sem lançamentos de custo
                   </div>
                 </div>
               </div>
@@ -270,7 +273,11 @@ export default function RelatoriosPage() {
                 <span className="text-white font-bold">Patrocinadores (Impressões x Cliques)</span>
               </div>
               <div className="w-full h-64 text-gray-500 bg-[#181B20] rounded-lg px-2 py-3">
-                {isLoading ? (
+                {isError ? (
+                  <div className="w-full h-full flex items-center justify-center text-lg font-semibold opacity-60">
+                    Falha ao carregar série.
+                  </div>
+                ) : isLoading ? (
                   <div className="w-full h-full flex items-center justify-center text-lg font-semibold opacity-60">
                     Carregando série...
                   </div>
@@ -325,11 +332,15 @@ export default function RelatoriosPage() {
               <div className="flex items-center mb-4">
                 <FaChartLine className="text-cyan-400 mr-2" />
                 <span className="text-white font-bold">
-                  Evolução do Engajamento ({PERIODOS.find((p) => p.value === periodo)?.label})
+                  Participação em partidas ({PERIODOS.find((p) => p.value === periodo)?.label})
                 </span>
               </div>
               <div className="w-full h-64 text-gray-500 bg-[#181B20] rounded-lg px-2 py-3">
-                {isLoading ? (
+                {isError ? (
+                  <div className="w-full h-full flex items-center justify-center text-lg font-semibold opacity-60">
+                    Falha ao carregar série.
+                  </div>
+                ) : isLoading ? (
                   <div className="w-full h-full flex items-center justify-center text-lg font-semibold opacity-60">
                     Carregando série...
                   </div>
@@ -356,16 +367,16 @@ export default function RelatoriosPage() {
                       <Legend />
                       <Area
                         type="monotone"
-                        dataKey="visits"
-                        name="Visitas"
+                        dataKey="participations"
+                        name="Participações"
                         stroke="#22d3ee"
                         fillOpacity={1}
                         fill="url(#colorVisits)"
                       />
                       <Area
                         type="monotone"
-                        dataKey="uniqueVisitors"
-                        name="Jogadores únicos"
+                        dataKey="uniqueAthletes"
+                        name="Atletas participantes"
                         stroke="#facc15"
                         fillOpacity={1}
                         fill="url(#colorUnique)"
