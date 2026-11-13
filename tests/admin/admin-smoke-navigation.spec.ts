@@ -138,13 +138,12 @@ test.describe("Admin Smoke Navigation — fixtures locais", () => {
     await login(page, "futebol@fixture.invalid");
     await expect(page).toHaveURL(/\/admin\/dashboard/);
     const { dialog } = await openRequests(page, "header");
-    await expect(dialog.getByRole("link", { name: /Entrada de jogadores/ })).toContainText(
-      "2 pedidos",
-      { timeout: 30000 }
-    );
+    await expect(dialog.locator('[aria-disabled="true"]')).toHaveCount(2, { timeout: 30000 });
+    await expect(dialog.locator('[aria-disabled="true"]').first()).toContainText("2");
     await expect(dialog.getByRole("link", { name: /Solicitações de mensalista/ })).toHaveCount(0);
-    await expect(dialog.getByText(/Análise indisponível para seu cargo/)).toBeVisible();
-    await expect(dialog.locator('[aria-disabled="true"]')).toContainText("—");
+    await expect(dialog.getByRole("link", { name: /Entrada de jogadores/ })).toHaveCount(0);
+    await expect(dialog.locator('[aria-disabled="true"]').last()).toContainText("1");
+    await expect(dialog.getByText(/Análise indisponível para seu cargo/)).toHaveCount(2);
   });
 
   test("grupo bloqueado não abre dashboard e oferece regularização", async ({ page }) => {

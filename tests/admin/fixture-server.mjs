@@ -104,12 +104,13 @@ const server = http.createServer(async (req, res) => {
       athlete: null,
     });
   }
+  if (account.blocked || !account.group) {
+    return send(res, 403, { message: "Acesso ao grupo bloqueado" });
+  }
   if (url.pathname === "/admin/solicitacoes/count") {
     return send(res, 200, { count: 2 });
   }
   if (url.pathname === "/admin/mensalistas/requests/count") {
-    if (account.role === "DIRETOR_FUTEBOL")
-      return send(res, 403, { message: "Sem permissão financeira" });
     return send(res, 200, { total: 1 });
   }
   if (url.pathname === `/public/${tenant.slug}/tenant`)
