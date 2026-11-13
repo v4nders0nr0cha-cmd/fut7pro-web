@@ -94,7 +94,7 @@ export default function AdminDashboard() {
     enabled: Boolean(tenantId || slug),
   });
   const { jogadores, isLoading: loadingJogadores, error: errorJogadores } = useJogadores(tenantId);
-  const { birthdays: aniversariantes, isLoading: loadingAniversariantes } = useAdminBirthdays({
+  const { birthdays: aniversariantes, isLoading: loadingAniversariantes, error: errorAniversariantes } = useAdminBirthdays({
     rangeDays: 30,
     limit: 3,
   });
@@ -319,10 +319,12 @@ export default function AdminDashboard() {
                 <FaBirthdayCake className="text-blue-400 w-6 h-6" />
                 <span className="text-lg font-bold text-gray-100">Aniversariantes</span>
               </div>
-              {loadingAniversariantes ? (
+              {errorAniversariantes && !loadingAniversariantes ? (
+                <span role="alert" className="text-sm text-gray-400">Não foi possível carregar os aniversariantes. Tente atualizar a página.</span>
+              ) : loadingAniversariantes ? (
                 <div className="flex flex-col gap-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
-                    <div key={idx} className="h-5 bg-neutral-700 rounded w-5/6 animate-pulse" />
+                    <div key={idx} className="h-5 bg-neutral-700 rounded w-5/6 motion-safe:animate-pulse" />
                   ))}
                 </div>
               ) : aniversariantes.length ? (
