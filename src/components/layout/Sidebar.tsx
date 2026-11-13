@@ -34,6 +34,7 @@ export default function Sidebar() {
   const currentYear = new Date().getFullYear();
   const {
     matches,
+    roundStatus,
     isLoading: matchesLoading,
     isError: matchesError,
   } = usePublicMatches({
@@ -81,8 +82,9 @@ export default function Sidebar() {
   });
 
   const dayHighlights = resolveLatestDayHighlights(matches);
-  const artilheiroDia = dayHighlights.artilheiro;
-  const maestroDia = dayHighlights.maestro;
+  const roundIncomplete = roundStatus === "partial" || dayHighlights.roundStatus === "partial";
+  const artilheiroDia = matchesError || roundIncomplete ? null : dayHighlights.artilheiro;
+  const maestroDia = matchesError || roundIncomplete ? null : dayHighlights.maestro;
   const atacanteAno = topAtacante?.[0];
   const meiaAno = topAssist?.[0];
   const zagueiroAno = topZagueiro?.[0];
@@ -100,14 +102,18 @@ export default function Sidebar() {
         ? "Carregando destaque"
         : matchesError
           ? "Destaque indisponível"
-          : "Sem artilheiro no último dia"),
+          : roundIncomplete
+            ? "Aguardando placares da rodada"
+            : "Sem artilheiro no último dia"),
     value: artilheiroDia
       ? `${artilheiroDia.goals} gols`
       : matchesLoading
         ? "Carregando partidas"
         : matchesError
           ? "Falha ao carregar"
-          : "Nenhum gol registrado",
+          : roundIncomplete
+            ? "Rodada incompleta"
+            : "Nenhum gol registrado",
     href: publicHref(
       artilheiroDia?.slug
         ? `/atletas/${artilheiroDia.slug}`
@@ -123,14 +129,18 @@ export default function Sidebar() {
         ? "Carregando destaque"
         : matchesError
           ? "Destaque indisponível"
-          : "Sem maestro no último dia"),
+          : roundIncomplete
+            ? "Aguardando placares da rodada"
+            : "Sem maestro no último dia"),
     value: maestroDia
       ? `${maestroDia.assists} assistências`
       : matchesLoading
         ? "Carregando partidas"
         : matchesError
           ? "Falha ao carregar"
-          : "Nenhuma assistência registrada",
+          : roundIncomplete
+            ? "Rodada incompleta"
+            : "Nenhuma assistência registrada",
     href: publicHref(
       maestroDia?.slug ? `/atletas/${maestroDia.slug}` : "/estatisticas/melhores-por-posicao/meias"
     ),
@@ -503,12 +513,10 @@ function hasValidScore(match: PublicMatch) {
 export function resolveLatestDayHighlights(matches: PublicMatch[]) {
   const datedMatches = matches
     .map((match) => ({ match, date: parseMatchDate(match.date) }))
-    .filter((item): item is { match: PublicMatch; date: Date } =>
-      Boolean(item.date && hasValidScore(item.match))
-    );
+    .filter((item): item is { match: PublicMatch; date: Date } => Boolean(item.date));
 
   if (!datedMatches.length) {
-    return { artilheiro: null, maestro: null };
+    return { artilheiro: null, maestro: null, roundStatus: "none" as const };
   }
 
   const latestDate = datedMatches
@@ -518,10 +526,15 @@ export function resolveLatestDayHighlights(matches: PublicMatch[]) {
     .filter((item) => isSameDay(item.date, latestDate))
     .map((item) => item.match);
 
+  if (matchesDoDia.some((match) => !hasValidScore(match))) {
+    return { artilheiro: null, maestro: null, roundStatus: "partial" as const };
+  }
+
   const stats = buildDayHighlightStats(matchesDoDia);
   return {
     artilheiro: pickDayHighlight(stats, "goals", "assists", 1),
     maestro: pickDayHighlight(stats, "assists", "goals", 1),
+    roundStatus: "complete" as const,
   };
 }
 
