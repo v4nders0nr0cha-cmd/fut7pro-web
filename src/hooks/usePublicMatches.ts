@@ -1,7 +1,7 @@
 import useSWR from "swr";
 import type { PublicMatchesResponse } from "@/types/partida";
 
-type Scope = "today" | "recent" | "upcoming";
+type Scope = "today" | "recent" | "upcoming" | "latest-scored-day";
 
 type PublicMatchesOptions = {
   slug?: string;

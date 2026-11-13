@@ -83,7 +83,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
         {/* Logo e nome */}
         <Link
           href={homeHref}
-          className="flex min-w-0 flex-1 items-center gap-2 pr-1 transition-all hover:opacity-90"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-md pr-1 transition-all hover:opacity-90 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-[#121212]"
           aria-label={`Página inicial ${nome}`}
         >
           <Image
