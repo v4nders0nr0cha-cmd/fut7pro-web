@@ -445,8 +445,8 @@ export default function SugestoesAdminPage() {
       )}
 
       {selected && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl rounded-lg border border-zinc-700 bg-[#171717] p-5">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:p-4">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-2xl border border-zinc-700 bg-[#171717] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-5">
             <div className="mb-3 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-yellow-300">Detalhes da sugestão</h2>
@@ -497,8 +497,8 @@ export default function SugestoesAdminPage() {
       )}
 
       {forwarding && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-lg border border-zinc-700 bg-[#171717] p-5">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:p-4">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-zinc-700 bg-[#171717] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-5">
             <h2 className="text-lg font-semibold text-yellow-300 mb-2">Encaminhar para Fut7Pro</h2>
             <p className="text-sm text-zinc-300 mb-3">
               Opcionalmente, adicione um comentário para contextualizar a sugestão.
@@ -536,8 +536,8 @@ export default function SugestoesAdminPage() {
       )}
 
       {isComposeOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-lg border border-zinc-700 bg-[#171717] p-5">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:p-4">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-zinc-700 bg-[#171717] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-5">
             <h2 className="text-lg font-semibold text-yellow-300 mb-2">
               Enviar sugestão à equipe Fut7Pro
             </h2>

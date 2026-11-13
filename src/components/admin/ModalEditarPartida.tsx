@@ -91,10 +91,10 @@ export default function ModalEditarPartida({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-      <div className="bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl p-7 relative animate-in fade-in">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 px-0 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="relative max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-2xl bg-zinc-900 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl animate-in fade-in sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7">
         <button
-          className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-yellow-400"
+          className="sticky top-0 z-10 float-right rounded-lg border border-white/15 bg-zinc-800 px-3 py-1 text-2xl text-gray-200 hover:text-yellow-400"
           onClick={onClose}
           aria-label="Fechar"
         >
@@ -103,23 +103,23 @@ export default function ModalEditarPartida({
         <h2 className="text-2xl font-bold text-yellow-400 text-center mb-4">
           Resultado - {nomeTimeA} <span className="text-white">x</span> {nomeTimeB}
         </h2>
-        <div className="flex items-center justify-between mb-5">
+        <div className="mb-5 flex items-center justify-between gap-2">
           <div className="w-1/3 text-center">
-            <div className="text-lg font-bold text-white mb-1">{nomeTimeA}</div>
+            <div className="break-words text-sm font-bold text-white sm:text-lg">{nomeTimeA}</div>
             <div className="text-3xl font-black text-yellow-300">{placar.a}</div>
             <button
-              className="mt-2 px-4 py-1 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-lg text-sm transition"
+              className="mt-2 rounded-lg bg-yellow-400 px-2 py-2 text-xs font-bold text-black transition hover:bg-yellow-300 sm:px-4 sm:text-sm"
               onClick={() => abrirAdicionarGol("a")}
             >
               + Adicionar Gol
             </button>
           </div>
-          <div className="text-4xl font-bold text-yellow-300">×</div>
+          <div className="text-2xl font-bold text-yellow-300 sm:text-4xl">×</div>
           <div className="w-1/3 text-center">
-            <div className="text-lg font-bold text-white mb-1">{nomeTimeB}</div>
+            <div className="break-words text-sm font-bold text-white sm:text-lg">{nomeTimeB}</div>
             <div className="text-3xl font-black text-yellow-300">{placar.b}</div>
             <button
-              className="mt-2 px-4 py-1 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-lg text-sm transition"
+              className="mt-2 rounded-lg bg-yellow-400 px-2 py-2 text-xs font-bold text-black transition hover:bg-yellow-300 sm:px-4 sm:text-sm"
               onClick={() => abrirAdicionarGol("b")}
             >
               + Adicionar Gol
@@ -186,8 +186,8 @@ function AdicionarGolAssist({
   const [assist, setAssist] = useState<string>("");
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-80 animate-in fade-in">
-      <div className="bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-md p-6 relative border border-yellow-400">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 px-0 pt-3 animate-in fade-in sm:items-center sm:px-3 sm:py-6">
+      <div className="relative max-h-[calc(100dvh-0.75rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-400 bg-zinc-900 p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <button
           className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-yellow-400"
           onClick={onClose}

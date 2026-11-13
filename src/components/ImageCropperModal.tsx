@@ -53,48 +53,50 @@ export default function ImageCropperModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center px-4">
-      <div className="bg-[#23272e] p-6 rounded-2xl shadow-2xl w-full max-w-xl flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 px-0 pt-3 backdrop-blur-sm sm:items-center sm:px-4 sm:py-6">
+      <div className="flex max-h-[calc(100dvh-0.75rem)] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl bg-[#23272e] shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl">
+        <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
           <h2 className="text-lg font-bold text-white">{title}</h2>
           <button
             type="button"
             onClick={onCancel}
-            className="text-gray-300 hover:text-white text-xl leading-none"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-xl leading-none text-gray-200 hover:border-yellow-300/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-300"
             aria-label="Fechar recorte"
           >
             ×
           </button>
+        </header>
+
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+          <div className="relative h-[min(42dvh,360px)] min-h-44 w-full overflow-hidden rounded-xl bg-gray-900">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={aspect}
+              cropShape={shape}
+              showGrid={false}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={handleCropComplete}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-300">Zoom</label>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.05}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-full accent-yellow-400 cursor-pointer"
+            />
+          </div>
         </div>
 
-        <div className="relative w-full h-[360px] bg-gray-900 rounded-xl overflow-hidden">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={aspect}
-            cropShape={shape}
-            showGrid={false}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={handleCropComplete}
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-300">Zoom</label>
-          <input
-            type="range"
-            min={1}
-            max={3}
-            step={0.05}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full accent-yellow-400 cursor-pointer"
-          />
-        </div>
-
-        <div className="flex justify-end gap-3 pt-2">
+        <footer className="grid shrink-0 grid-cols-2 gap-3 border-t border-white/10 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex sm:justify-end sm:px-6">
           <button
             type="button"
             className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
@@ -111,7 +113,7 @@ export default function ImageCropperModal({
           >
             {saving ? "Aplicando..." : "Aplicar recorte"}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

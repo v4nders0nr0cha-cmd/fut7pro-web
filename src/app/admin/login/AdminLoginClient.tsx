@@ -693,8 +693,13 @@ export default function AdminLoginClient() {
       </div>
 
       {blocked && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl animate-slide-in">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Acesso ao painel bloqueado"
+            className="max-h-[calc(100dvh-1rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-white/10 bg-[#0f1118] p-5 shadow-2xl animate-slide-in sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6"
+          >
             <h2 className="text-xl font-bold text-center text-white">Acesso ao painel bloqueado</h2>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-300">
               Este grupo está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível

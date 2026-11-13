@@ -555,8 +555,8 @@ function GoalModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-4 py-6">
-      <div className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#141414] p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-4 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-800 bg-[#141414] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <div className="flex items-center justify-between gap-3 mb-4">
           <h3 className="text-lg font-semibold text-yellow-400">Adicionar gol - {teamName}</h3>
           <button type="button" onClick={onClose} className="text-sm text-neutral-300">
@@ -1197,9 +1197,9 @@ export function MatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
-      <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-2xl border border-neutral-800 bg-[#141414] p-6 shadow-2xl">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-4 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-6xl overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-800 bg-[#141414] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex flex-col gap-3 border-b border-white/10 bg-[#141414] px-4 py-3 lg:flex-row lg:items-center lg:justify-between sm:-mx-6 sm:-mt-6 sm:px-6">
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-yellow-400">Resultado da partida</h2>
             <p className="text-sm text-neutral-400">
@@ -1426,8 +1426,8 @@ export function MatchModal({
       </div>
 
       {showFinalizeConfirm && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4 py-6">
-          <div className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#141414] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-800 bg-[#141414] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
             <div className="flex items-center gap-3 mb-3">
               <FaCheckCircle className="text-yellow-300 text-xl" />
               <h3 className="text-lg font-semibold text-yellow-300">Finalizar partida</h3>
@@ -2062,8 +2062,8 @@ export default function ResultadosDoDiaAdmin({
       )}
 
       {roundCompletionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
-          <div className="w-full max-w-lg rounded-2xl border border-yellow-500/40 bg-[#151515] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-500/40 bg-[#151515] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
             <div className="flex items-start gap-3">
               <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full border border-yellow-400/40 bg-yellow-400/10">
                 <FaCheckCircle className="text-yellow-300" />
@@ -2119,8 +2119,8 @@ export default function ResultadosDoDiaAdmin({
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-[#151515] p-6">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-800 bg-[#151515] p-4 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
             <div className="flex items-center gap-3 text-yellow-200">
               <div className="h-8 w-8 rounded-full bg-yellow-400/10 flex items-center justify-center">
                 <FaTrash className="text-yellow-300" />

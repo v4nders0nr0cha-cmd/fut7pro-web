@@ -595,11 +595,18 @@ export default function SuperAdminLocationMetricsPage() {
         </div>
 
         {selectedTenant ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-            <div className="w-full max-w-lg rounded-2xl bg-[#191c27] p-6 shadow-2xl">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Corrigir localizacao</h3>
+          <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Corrigir localização"
+              className="max-h-[calc(100dvh-1rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl bg-[#191c27] p-5 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6"
+            >
+              <div className="sticky top-0 z-10 flex items-center justify-between bg-[#191c27] py-2">
+                <h3 className="text-lg font-semibold text-white">Corrigir localização</h3>
                 <button
+                  type="button"
+                  aria-label="Fechar correção de localização"
                   className="text-zinc-400 hover:text-white"
                   onClick={() => setSelectedTenant(null)}
                 >
@@ -682,7 +689,7 @@ export default function SuperAdminLocationMetricsPage() {
                   onClick={handleSalvarLocalizacao}
                   disabled={saving}
                 >
-                  {saving ? "Salvando..." : "Salvar localizacao"}
+                  {saving ? "Salvando..." : "Salvar localização"}
                 </button>
               </div>
             </div>

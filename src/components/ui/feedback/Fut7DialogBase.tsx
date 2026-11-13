@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, type RefObject, useEffect, useId, useRef } from "react";
 import { AlertTriangle, CheckCircle2, Info, ShieldAlert, X } from "lucide-react";
 
 export type Fut7DialogTone = "default" | "warning" | "destructive" | "success";
@@ -11,9 +11,11 @@ export type Fut7DialogBaseProps = {
   description?: ReactNode;
   eyebrow?: string;
   tone?: Fut7DialogTone;
+  size?: "md" | "lg" | "xl";
   icon?: ReactNode;
   children?: ReactNode;
-  footer: ReactNode;
+  footer?: ReactNode;
+  initialFocusRef?: RefObject<HTMLElement>;
   onClose: () => void;
 };
 
@@ -63,28 +65,36 @@ export default function Fut7DialogBase({
   description,
   eyebrow,
   tone = "default",
+  size = "md",
   icon,
   children,
   footer,
+  initialFocusRef,
   onClose,
 }: Fut7DialogBaseProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
   const previousOverflow = useRef<string | null>(null);
   const styles = toneStyles[tone];
 
   useEffect(() => {
     if (!open) return;
 
-    previousActiveElement.current = document.activeElement as HTMLElement | null;
-    const timer = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
-    return () => window.clearTimeout(timer);
-  }, [open]);
-
-  useEffect(() => {
-    if (open) return;
-    previousActiveElement.current?.focus?.();
-  }, [open]);
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const timer = window.setTimeout(() => {
+      const preferred = initialFocusRef?.current;
+      if (preferred?.isConnected && !preferred.matches(":disabled")) {
+        preferred.focus();
+      } else {
+        closeButtonRef.current?.focus();
+      }
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [open, initialFocusRef]);
 
   useEffect(() => {
     if (!open) return;
@@ -92,6 +102,22 @@ export default function Fut7DialogBase({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
+      } else if (event.key === "Tab" && dialogRef.current) {
+        const focusable = Array.from(
+          dialogRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((element) => element.getClientRects().length > 0);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
 
@@ -112,66 +138,64 @@ export default function Fut7DialogBase({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6">
-      <button
-        type="button"
+    <div className="fixed inset-0 z-[110] flex items-end justify-center px-0 pt-4 sm:items-center sm:px-4 sm:py-6">
+      <div
         className="absolute inset-0 cursor-default bg-black/78 backdrop-blur-[3px]"
-        aria-label="Fechar"
-        tabIndex={-1}
+        aria-hidden="true"
         onClick={onClose}
       />
 
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="fut7-dialog-title"
-        className={`relative w-full max-w-lg overflow-hidden rounded-[28px] border ${styles.ring} bg-[#111214] text-white shadow-[0_30px_110px_rgba(0,0,0,0.72)]`}
+        aria-labelledby={titleId}
+        className={`relative flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-t-[24px] border ${styles.ring} bg-[#111214] text-white shadow-[0_30px_110px_rgba(0,0,0,0.72)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[28px] ${size === "xl" ? "sm:max-w-3xl" : size === "lg" ? "sm:max-w-2xl" : "sm:max-w-lg"}`}
       >
         <div
           className={`pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b ${styles.glow}`}
         />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-yellow-200/60 to-transparent" />
 
-        <button
-          ref={closeButtonRef}
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300 transition hover:border-yellow-300/50 hover:text-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
-          aria-label="Fechar modal"
-        >
-          <X size={18} />
-        </button>
-
-        <div className="relative px-5 pb-5 pt-6 sm:px-7 sm:pb-7 sm:pt-8">
-          <div className="flex items-start gap-4 pr-10">
-            <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${styles.iconWrap} shadow-[0_0_30px_rgba(250,204,21,0.12)]`}
-            >
-              {icon ?? styles.icon}
-            </div>
-            <div>
-              {eyebrow ? (
-                <p
-                  className={`text-[11px] font-bold uppercase tracking-[0.22em] ${styles.eyebrow}`}
-                >
-                  {eyebrow}
-                </p>
-              ) : null}
-              <h2 id="fut7-dialog-title" className="mt-1 text-xl font-black leading-tight">
-                {title}
-              </h2>
-              {description ? (
-                <div className="mt-3 text-sm leading-6 text-zinc-300">{description}</div>
-              ) : null}
-            </div>
+        <header className="relative flex shrink-0 items-start gap-3 border-b border-white/10 px-4 py-4 sm:gap-4 sm:px-7 sm:py-6">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${styles.iconWrap} shadow-[0_0_30px_rgba(250,204,21,0.12)] sm:h-12 sm:w-12 sm:rounded-2xl`}
+          >
+            {icon ?? styles.icon}
           </div>
+          <div className="min-w-0 flex-1 pr-1">
+            {eyebrow ? (
+              <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${styles.eyebrow}`}>
+                {eyebrow}
+              </p>
+            ) : null}
+            <h2 id={titleId} className="mt-1 text-lg font-bold leading-snug sm:text-xl">
+              {title}
+            </h2>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-xl border border-white/15 bg-white/5 p-2.5 text-zinc-200 transition hover:border-yellow-300/50 hover:text-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+            aria-label="Fechar modal"
+          >
+            <X size={18} />
+          </button>
+        </header>
 
-          {children ? <div className="mt-5">{children}</div> : null}
+        {(description || children) && (
+          <div className="relative min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 text-sm leading-6 sm:px-7 sm:py-6">
+            {description ? <div className="text-zinc-300">{description}</div> : null}
+            {children}
+          </div>
+        )}
 
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        {footer ? (
+          <footer className="relative grid shrink-0 grid-cols-2 gap-3 border-t border-white/10 bg-[#111214] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] [&>button]:min-w-0 [&>button:only-child]:col-span-2 sm:flex sm:justify-end sm:px-7 sm:py-5">
             {footer}
-          </div>
-        </div>
+          </footer>
+        ) : null}
       </section>
     </div>
   );

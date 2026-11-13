@@ -1240,16 +1240,19 @@ export default function SuperAdminContasPage() {
 
         {selectedUser ? (
           <div
-            className="fixed inset-0 z-30 flex items-center justify-center bg-black/60"
+            className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 sm:items-center sm:p-4"
             onClick={closeRelationshipsModal}
           >
             <div
-              className="w-full max-w-4xl rounded-xl bg-zinc-900 p-6 shadow-xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Vínculos do usuário"
+              className="max-h-[calc(100dvh-1rem)] w-full max-w-4xl overflow-y-auto overscroll-contain rounded-t-2xl bg-zinc-900 p-5 shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="mb-4 flex items-center justify-between">
+              <div className="sticky top-0 z-10 mb-4 flex items-center justify-between bg-zinc-900 py-2">
                 <div>
-                  <h3 className="text-lg font-bold text-white">Vinculos do usuario</h3>
+                  <h3 className="text-lg font-bold text-white">Vínculos do usuário</h3>
                   <p className="text-sm text-gray-400">
                     {selectedUser.nome || selectedUser.name} • {selectedUser.email}
                   </p>
@@ -1297,7 +1300,7 @@ export default function SuperAdminContasPage() {
                 </div>
               ) : null}
 
-              <div className="max-h-[420px] space-y-3 overflow-y-auto">
+              <div className="space-y-3">
                 {relationshipsLoading ? (
                   <div className="text-sm text-gray-400">Carregando vinculos reais...</div>
                 ) : !relationshipsState || (relationshipsState.relationships || []).length === 0 ? (

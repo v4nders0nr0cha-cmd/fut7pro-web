@@ -615,8 +615,8 @@ export default function SuportePage() {
       </section>
 
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-xl rounded-lg border border-zinc-700 bg-[#171717] p-5">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:p-4">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-2xl border border-zinc-700 bg-[#171717] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-5">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold text-yellow-300">Abrir novo chamado</h2>

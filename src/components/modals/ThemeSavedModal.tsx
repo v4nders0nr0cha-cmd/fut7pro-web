@@ -48,7 +48,7 @@ export default function ThemeSavedModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-200 ${
+      className={`fixed inset-0 z-[110] flex items-end justify-center pt-3 transition-opacity duration-200 sm:items-center sm:p-4 ${
         open ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
       aria-hidden={!open}
@@ -60,7 +60,7 @@ export default function ThemeSavedModal({
         aria-modal="true"
         aria-labelledby="theme-saved-title"
         aria-describedby="theme-saved-description"
-        className={`relative mx-4 w-full max-w-md rounded-2xl border border-brand bg-[#13151b] p-6 text-white shadow-xl transition-transform duration-200 ${
+        className={`relative max-h-[calc(100dvh-0.75rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-brand bg-[#13151b] p-5 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-xl transition-transform duration-200 sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6 ${
           open ? "scale-100" : "scale-95"
         }`}
         onClick={(event) => event.stopPropagation()}

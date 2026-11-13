@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { FaTimes, FaDownload } from "react-icons/fa";
+import { FaDownload } from "react-icons/fa";
+import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 import type { PagamentoFinanceiro } from "@/components/financeiro/types"; // CORRIGIDO!
 
 interface ModalDetalhePagamentoProps {
@@ -20,19 +21,22 @@ export default function ModalDetalhePagamento({
   if (!open || !pagamento) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center"
-      aria-modal="true"
-    >
-      <div className="bg-zinc-900 rounded-2xl shadow-xl p-6 w-full max-w-md mx-2 relative animate-fadeIn">
+    <Fut7DialogBase
+      open
+      title="Detalhes do pagamento"
+      onClose={onClose}
+      footer={
         <button
-          className="absolute top-3 right-3 text-zinc-300 hover:text-red-500 transition"
-          onClick={onClose}
-          aria-label="Fechar"
+          type="button"
+          className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-semibold text-black transition hover:bg-yellow-300 disabled:opacity-50"
+          onClick={onDownloadRecibo}
+          disabled={!onDownloadRecibo}
         >
-          <FaTimes size={22} />
+          <FaDownload /> Baixar recibo
         </button>
-        <h3 className="text-lg font-bold text-white mb-4">Detalhes do Pagamento</h3>
+      }
+    >
+      <div className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm">
         <div className="mb-2 text-zinc-100">
           <b>Status:</b> {pagamento.status}
         </div>
@@ -40,7 +44,11 @@ export default function ModalDetalhePagamento({
           <b>Data:</b> {pagamento.data}
         </div>
         <div className="mb-2 text-zinc-100">
-          <b>Valor:</b> R$ {pagamento.valor.toLocaleString("pt-BR")}
+          <b>Valor:</b> R${" "}
+          {pagamento.valor.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </div>
         <div className="mb-2 text-zinc-100">
           <b>Método:</b> {pagamento.metodo}
@@ -51,16 +59,7 @@ export default function ModalDetalhePagamento({
         <div className="mb-2 text-zinc-100">
           <b>Descrição:</b> {pagamento.descricao || "--"}
         </div>
-        <div className="flex justify-end mt-6">
-          <button
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white rounded px-5 py-2 font-semibold transition"
-            onClick={onDownloadRecibo}
-            disabled={!onDownloadRecibo}
-          >
-            <FaDownload /> Baixar Recibo
-          </button>
-        </div>
       </div>
-    </div>
+    </Fut7DialogBase>
   );
 }

@@ -107,8 +107,8 @@ function ModalHistorico({
   if (!open || !atleta) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4">
-      <div className="bg-[#151515] border border-yellow-500/30 rounded-2xl shadow-xl p-6 w-full max-w-lg">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-4 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-500/30 bg-[#151515] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-lg font-bold text-yellow-400">Histórico de alterações</h2>

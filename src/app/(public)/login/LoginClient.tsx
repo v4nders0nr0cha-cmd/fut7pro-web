@@ -1023,7 +1023,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
           >
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
           </Transition.Child>
-          <div className="fixed inset-0 flex items-center justify-center px-4">
+          <div className="fixed inset-0 flex items-end justify-center sm:items-center sm:p-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-200"
@@ -1033,7 +1033,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1118] p-6 text-white shadow-2xl">
+              <Dialog.Panel className="max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-white/10 bg-[#0f1118] p-5 text-white shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6">
                 <Dialog.Title className="text-lg font-semibold text-white">
                   Solicitação pendente
                 </Dialog.Title>
@@ -1079,7 +1079,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
           >
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
           </Transition.Child>
-          <div className="fixed inset-0 flex items-center justify-center px-4">
+          <div className="fixed inset-0 flex items-end justify-center sm:items-center sm:p-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-200"
@@ -1089,7 +1089,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1118] p-6 text-white shadow-2xl">
+              <Dialog.Panel className="max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-white/10 bg-[#0f1118] p-5 text-white shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6">
                 <Dialog.Title className="text-lg font-semibold text-white">
                   Solicitar entrada
                 </Dialog.Title>

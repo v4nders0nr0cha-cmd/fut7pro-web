@@ -79,14 +79,14 @@ export default function PublicMembershipCard({
       </section>
       {variant === "request" && open && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/75 p-4"
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 px-0 pt-3 sm:items-center sm:p-4"
           role="presentation"
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="membership-confirm-title"
-            className="w-full max-w-sm rounded-xl border border-brand/50 bg-zinc-950 p-6 shadow-xl"
+            className="max-h-[calc(100dvh-0.75rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border border-brand/50 bg-zinc-950 p-5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6"
           >
             <h2 id="membership-confirm-title" className="text-lg font-bold text-brand">
               Confirmar solicitação

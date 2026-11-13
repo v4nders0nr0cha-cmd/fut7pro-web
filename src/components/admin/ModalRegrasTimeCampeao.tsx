@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 
 type Props = {
   onClose: () => void;
@@ -7,40 +8,27 @@ type Props = {
 
 export default function ModalRegrasTimeCampeao({ onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center">
-      <div className="bg-zinc-900 rounded-xl shadow-lg p-6 w-full max-w-lg border-2 border-yellow-400 relative">
-        <button
-          className="absolute top-3 right-4 text-yellow-400 text-xl font-bold"
-          onClick={onClose}
-          aria-label="Fechar"
-        >
-          ×
-        </button>
-        <h2 className="text-2xl font-bold text-yellow-400 mb-3 text-center">
-          Regras do Time Campeão
-        </h2>
-        <div className="text-gray-200 text-base leading-relaxed">
-          <p className="mb-3">
-            <strong>Confirmação de Presença:</strong> Aqui você, administrador, confirma se cada
-            jogador realmente compareceu ao racha neste dia.
+    <Fut7DialogBase open title="Regras do Time Campeão" onClose={onClose} size="lg">
+      <div className="space-y-4 text-sm leading-6 text-gray-200">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <h3 className="font-semibold text-white">Confirme quem jogou</h3>
+          <p className="mt-2 text-zinc-300">
+            Marque “Jogador não compareceu ao racha” para quem faltou. Assim, esse atleta não recebe
+            pontos, gols, assistências nem outras estatísticas do dia.
           </p>
-          <p className="mb-3">
-            Caso algum jogador <b>não tenha comparecido</b>, marque a opção "Jogador não compareceu
-            ao racha". Isso impede que esse atleta receba os pontos, gols, assistências e qualquer
-            estatística deste dia.
+        </section>
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <h3 className="font-semibold text-white">Se houve substituição</h3>
+          <p className="mt-2 text-zinc-300">
+            Os gols e as assistências do substituto podem ser lançados no nome do titular ausente
+            para completar o resultado do time. Marque a ausência do titular mesmo assim, para que
+            esses números não entrem nos rankings individuais dele.
           </p>
-          <p className="mb-3">
-            Se um jogador foi substituído por outro, todos os gols ou assistências do substituto
-            podem ser lançados normalmente no nome do titular ausente apenas para completar o
-            resultado coletivo. <b>Mesmo assim, marque a ausência do titular</b> para que nada seja
-            contabilizado para ele nos rankings individuais.
-          </p>
-          <p>
-            <b>Lembre-se:</b> apenas os jogadores realmente titulares devem ter suas estatísticas
-            validadas. Essa checagem é fundamental para a justiça do ranking do racha!
-          </p>
-        </div>
+        </section>
+        <p className="rounded-xl border border-yellow-300/20 bg-yellow-400/[0.06] px-4 py-3 text-zinc-200">
+          Antes de salvar, confira se as estatísticas individuais ficaram apenas com quem jogou.
+        </p>
       </div>
-    </div>
+    </Fut7DialogBase>
   );
 }

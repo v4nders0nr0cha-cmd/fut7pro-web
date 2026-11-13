@@ -19,13 +19,27 @@ export default function DestaquesDoDiaModal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end sm:items-center justify-center">
-      <div className="bg-neutral-900 rounded-t-2xl sm:rounded-2xl w-full max-w-sm mx-auto p-4 pb-6 animate-slideup relative">
-        <button onClick={onClose} className="absolute top-2 right-4 text-brand font-bold text-xl">
-          ×
-        </button>
-        <h2 className="text-xl font-bold text-brand mb-3 text-center">Destaques do Dia</h2>
-        <div className="flex flex-col gap-4">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:p-4">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="destaques-do-dia-title"
+        className="relative flex max-h-[calc(100dvh-0.75rem)] w-full max-w-sm flex-col overflow-hidden rounded-t-2xl bg-neutral-900 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl"
+      >
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
+          <h2 id="destaques-do-dia-title" className="text-xl font-bold text-brand">
+            Destaques do Dia
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar destaques"
+            className="rounded-lg border border-white/15 px-3 py-1 text-xl font-bold text-brand"
+          >
+            ×
+          </button>
+        </header>
+        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {destaques.map((d, i) => (
             <a
               href={d.href}
@@ -47,7 +61,7 @@ export default function DestaquesDoDiaModal({
             </a>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

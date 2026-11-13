@@ -124,7 +124,7 @@ export default function AccessCompensationGrantedModal({
     <AnimatePresence>
       {open && notification ? (
         <motion.div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/75 px-4 backdrop-blur-[3px]"
+          className="fixed inset-0 z-[95] flex items-end justify-center bg-black/75 px-0 pt-3 backdrop-blur-[3px] sm:items-center sm:px-4 sm:py-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -134,7 +134,7 @@ export default function AccessCompensationGrantedModal({
           aria-label="Compensação concedida ao seu grupo"
         >
           <motion.div
-            className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-amber-400/45 bg-[#121212] p-6 text-white shadow-[0_36px_110px_-35px_rgba(251,191,36,0.52)]"
+            className="relative max-h-[calc(100dvh-0.75rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-3xl border border-amber-400/45 bg-[#121212] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-[0_36px_110px_-35px_rgba(251,191,36,0.52)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-3xl sm:p-6"
             initial={{ y: reduceMotion ? 0 : 28, scale: reduceMotion ? 1 : 0.96, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: reduceMotion ? 0 : 10, scale: 0.98, opacity: 0 }}

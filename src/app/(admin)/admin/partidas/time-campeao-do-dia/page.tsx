@@ -587,8 +587,8 @@ export default function TimeCampeaoDoDiaPage() {
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-zinc-900 flex flex-col items-center">
         {publishFeedback && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-            <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-950 p-6 shadow-2xl">
+          <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-4 sm:py-6">
+            <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-zinc-700 bg-zinc-950 p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
               <h2 className="text-xl font-bold text-white">{publishFeedback.title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-zinc-300">{publishFeedback.body}</p>
               <button

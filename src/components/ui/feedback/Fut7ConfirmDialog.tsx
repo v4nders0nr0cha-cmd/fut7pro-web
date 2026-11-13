@@ -14,6 +14,7 @@ export type Fut7ConfirmDialogProps = {
   disabled?: boolean;
   tone?: Fut7DialogTone;
   impactItems?: string[];
+  impactTitle?: string;
   children?: ReactNode;
   onClose: () => void;
   onConfirm: () => void;
@@ -23,13 +24,14 @@ export default function Fut7ConfirmDialog({
   open,
   title,
   description,
-  eyebrow = "Confirmação Fut7Pro",
+  eyebrow,
   confirmLabel = "Confirmar",
   cancelLabel = "Cancelar",
   loading = false,
   disabled = false,
   tone = "default",
   impactItems,
+  impactTitle = "O que acontece depois",
   children,
   onClose,
   onConfirm,
@@ -70,10 +72,8 @@ export default function Fut7ConfirmDialog({
     >
       {children}
       {impactItems?.length ? (
-        <div className="rounded-2xl border border-yellow-300/20 bg-yellow-400/[0.06] p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-yellow-200/80">
-            Impacto da ação
-          </p>
+        <div className="rounded-2xl border border-yellow-300/20 bg-yellow-400/[0.06] p-4 sm:p-5">
+          <p className="text-sm font-semibold text-yellow-100">{impactTitle}</p>
           <ul className="mt-2 space-y-2 text-sm text-zinc-300">
             {impactItems.map((item) => (
               <li key={item} className="flex gap-2">

@@ -142,8 +142,8 @@ function ModalMensalista({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-3">
-      <div className="flex w-full max-w-md flex-col gap-5 rounded-2xl bg-[#1c1e22] p-6 shadow-xl">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="flex max-h-[calc(100dvh-0.75rem)] w-full max-w-md flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl bg-[#1c1e22] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <h2 className="text-lg font-bold text-yellow-400">Cadastrar Jogador Mensalista</h2>
         <input
           type="text"
@@ -241,8 +241,8 @@ function ModalDiasMensalista({
     : "Atualize os dias em que esse atleta paga como mensalista.";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-3">
-      <div className="w-full max-w-lg rounded-2xl border border-yellow-500/35 bg-[#161a22] p-5 shadow-2xl">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-500/35 bg-[#161a22] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-5">
         <h2 className="text-lg font-bold text-yellow-300">{titulo}</h2>
         <p className="mt-1 text-sm text-zinc-300">
           <b className="text-white">{jogadorNome}</b>
@@ -346,8 +346,8 @@ function ModalRemoverMensalista({
   if (!open || !jogador) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-3">
-      <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl bg-[#1c1e22] p-6 shadow-xl">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="flex max-h-[calc(100dvh-0.75rem)] w-full max-w-md flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl bg-[#1c1e22] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <div className="flex items-center gap-3">
           <FaTrash className="text-xl text-red-400" />
           <h2 className="text-lg font-bold text-red-300">Remover Mensalista</h2>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -21,6 +21,7 @@ import {
   Fut7DestructiveDialog,
   Fut7InlineFeedback,
 } from "@/components/ui/feedback";
+import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 import { useAdminRoles } from "@/hooks/useAdminRoles";
 import { useAdminRoleAthletes } from "@/hooks/useAdminRoleAthletes";
 import type { AdminRoleAthlete, AdminRoleKey, AdminRoleSlot } from "@/types/admin-roles";
@@ -111,6 +112,7 @@ export default function AdministradoresClient() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedAthlete, setSelectedAthlete] = useState<AdminRoleAthlete | null>(null);
+  const continueButtonRef = useRef<HTMLButtonElement>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pendingAssign, setPendingAssign] = useState<{
@@ -196,7 +198,7 @@ export default function AdministradoresClient() {
     if (!pendingMonthlyChange) return;
     try {
       await setMonthlyExemption(pendingMonthlyChange.role, pendingMonthlyChange.exempt);
-      setFeedback("Condição da mensalidade atualizada.");
+      setFeedback("Mensalidade do administrador atualizada.");
       setPendingMonthlyChange(null);
     } catch (err) {
       setFeedback(err instanceof Error ? err.message : "Erro ao alterar a mensalidade.");
@@ -331,13 +333,13 @@ export default function AdministradoresClient() {
     const monthlyBlock =
       slot.status === "ACTIVE" ? (
         <div className="rounded-lg border border-zinc-700 bg-zinc-900/60 p-3 text-sm text-zinc-300">
-          <div className="font-semibold text-zinc-100">Condição da mensalidade</div>
+          <div className="font-semibold text-zinc-100">Mensalidade</div>
           <div className="mt-1">
             {slot.monthlyExempt === null || slot.monthlyExempt === undefined
-              ? "Condição indisponível"
+              ? "Informação indisponível"
               : slot.monthlyExempt
-                ? "Mensalista isento de cobrança"
-                : "Mensalista com cobrança normal"}
+                ? "Não paga mensalidade"
+                : "Paga mensalidade normalmente"}
           </div>
           {config.editable && slot.monthlyExempt !== null && slot.monthlyExempt !== undefined && (
             <button
@@ -346,7 +348,7 @@ export default function AdministradoresClient() {
               onClick={() => setPendingMonthlyChange({ role, exempt: !slot.monthlyExempt })}
               className="mt-2 text-xs font-semibold text-yellow-300 hover:underline disabled:opacity-50"
             >
-              Alterar condição
+              Alterar mensalidade
             </button>
           )}
         </div>
@@ -530,8 +532,8 @@ export default function AdministradoresClient() {
           <div>
             <div className="text-sm font-semibold text-yellow-300">Resumo da administração</div>
             <p className="mt-1 text-sm text-zinc-400">
-              Somente o Presidente pode enviar ou cancelar convites. Nenhum acesso é concedido antes
-              do aceite do atleta.
+              Somente o Presidente pode enviar ou cancelar convites. O atleta só terá acesso como
+              administrador depois que aceitar o convite.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-3 text-center text-sm">
@@ -604,141 +606,130 @@ export default function AdministradoresClient() {
         </div>
       </div>
 
-      {modalRole && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-2xl bg-[#1c1f26] rounded-2xl border border-[#2a2d34] shadow-xl">
-            <div className="flex items-center justify-between border-b border-[#2a2d34] px-5 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-yellow-300">Selecionar atleta</h2>
-                <p className="text-xs text-zinc-400">
-                  Convide um atleta para assumir o cargo de {ROLE_CONFIG[modalRole].label}.
-                </p>
-              </div>
+      {modalRole && !pendingAssign && (
+        <Fut7DialogBase
+          open
+          title="Selecionar atleta"
+          description={`Escolha quem receberá o convite para ${ROLE_CONFIG[modalRole].label}.`}
+          size="lg"
+          initialFocusRef={continueButtonRef}
+          onClose={closeModal}
+          footer={
+            <>
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-zinc-400 hover:text-zinc-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="px-5 py-4">
-              <input
-                type="text"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar atleta por nome, apelido ou e-mail"
-                className="w-full rounded-lg bg-[#14161a] border border-[#2a2d34] px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
-            </div>
-
-            <div className="px-5 pb-4 max-h-[380px] overflow-y-auto custom-scrollbar">
-              {loadingAthletes ? (
-                <div className="text-center text-zinc-400 py-6">Carregando atletas...</div>
-              ) : athletesError ? (
-                <div className="text-center text-red-400 py-6">
-                  Erro ao carregar atletas. Tente novamente.
-                </div>
-              ) : athletes.length === 0 ? (
-                <div className="text-center text-zinc-400 py-6">Nenhum atleta encontrado.</div>
-              ) : (
-                <div className="space-y-2">
-                  {athletes.map((athlete) => {
-                    const disabled = Boolean(athlete.isAdmin);
-                    const selected = selectedAthlete?.id === athlete.id;
-                    return (
-                      <button
-                        key={athlete.id}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => setSelectedAthlete(athlete)}
-                        className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
-                          selected
-                            ? "border-yellow-500 bg-yellow-500/10"
-                            : "border-[#2a2d34] hover:border-yellow-500/50"
-                        } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
-                      >
-                        <img
-                          src={athlete.avatarUrl || "/images/jogadores/jogador_padrao_02.jpg"}
-                          alt={athlete.nome}
-                          className="w-10 h-10 rounded-full border border-[#2a2d34] object-cover"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-white">
-                            {athlete.nome}
-                            {athlete.apelido ? ` (${athlete.apelido})` : ""}
-                          </div>
-                          <div className="text-xs text-zinc-400">
-                            {athlete.email || "Sem e-mail"}
-                          </div>
-                          <div className="text-xs text-zinc-500">
-                            {athlete.posicao || "Posição não informada"} ·{" "}
-                            {athlete.status || "Status indefinido"}
-                          </div>
-                        </div>
-                        {athlete.isAdmin && (
-                          <span className="text-[10px] font-semibold text-orange-300 bg-orange-500/20 px-2 py-1 rounded">
-                            Já é administrador
-                          </span>
-                        )}
-                        {!athlete.hasUserAccount && (
-                          <span className="text-[10px] font-semibold text-blue-300 bg-blue-500/20 px-2 py-1 rounded">
-                            Sem conta
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {modalError && (
-              <div className="px-5 pb-2">
-                <Fut7InlineFeedback
-                  tone="error"
-                  message={modalError}
-                  onDismiss={() => setModalError(null)}
-                />
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-3 border-t border-[#2a2d34] px-5 py-4">
-              <button
-                type="button"
-                onClick={closeModal}
-                className="px-4 py-2 rounded-lg border border-zinc-600 text-zinc-300 text-sm hover:bg-zinc-700/40"
+                className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
               >
                 Cancelar
               </button>
               <button
+                ref={continueButtonRef}
                 type="button"
                 onClick={requestAssignConfirmation}
                 disabled={!selectedAthlete || isSaving}
-                className="px-4 py-2 rounded-lg bg-yellow-400 text-black text-sm font-semibold hover:bg-yellow-300 disabled:opacity-60"
+                className="rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-black hover:bg-yellow-300 disabled:opacity-60"
               >
-                Enviar convite
+                Continuar
               </button>
-            </div>
+            </>
+          }
+        >
+          <div>
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar atleta por nome, apelido ou e-mail"
+              aria-label="Buscar atleta"
+              className="w-full rounded-xl border border-white/15 bg-[#14161a] px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
           </div>
-        </div>
+
+          <div>
+            {loadingAthletes ? (
+              <div className="text-center text-zinc-400 py-6">Carregando atletas...</div>
+            ) : athletesError ? (
+              <div className="text-center text-red-400 py-6">
+                Erro ao carregar atletas. Tente novamente.
+              </div>
+            ) : athletes.length === 0 ? (
+              <div className="text-center text-zinc-400 py-6">Nenhum atleta encontrado.</div>
+            ) : (
+              <div className="space-y-2">
+                {athletes.map((athlete) => {
+                  const disabled = Boolean(athlete.isAdmin);
+                  const selected = selectedAthlete?.id === athlete.id;
+                  return (
+                    <button
+                      key={athlete.id}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setSelectedAthlete(athlete)}
+                      className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
+                        selected
+                          ? "border-yellow-500 bg-yellow-500/10"
+                          : "border-[#2a2d34] hover:border-yellow-500/50"
+                      } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+                    >
+                      <img
+                        src={athlete.avatarUrl || "/images/jogadores/jogador_padrao_02.jpg"}
+                        alt={athlete.nome}
+                        className="w-10 h-10 rounded-full border border-[#2a2d34] object-cover"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-white">
+                          {athlete.nome}
+                          {athlete.apelido ? ` (${athlete.apelido})` : ""}
+                        </div>
+                        <div className="text-xs text-zinc-400">{athlete.email || "Sem e-mail"}</div>
+                        <div className="text-xs text-zinc-500">
+                          {athlete.posicao || "Posição não informada"} ·{" "}
+                          {athlete.status || "Status indefinido"}
+                        </div>
+                      </div>
+                      {athlete.isAdmin && (
+                        <span className="text-[10px] font-semibold text-orange-300 bg-orange-500/20 px-2 py-1 rounded">
+                          Já é administrador
+                        </span>
+                      )}
+                      {!athlete.hasUserAccount && (
+                        <span className="text-[10px] font-semibold text-blue-300 bg-blue-500/20 px-2 py-1 rounded">
+                          Sem conta
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {modalError && (
+            <div>
+              <Fut7InlineFeedback
+                tone="error"
+                message={modalError}
+                onDismiss={() => setModalError(null)}
+              />
+            </div>
+          )}
+        </Fut7DialogBase>
       )}
 
       <Fut7ConfirmDialog
         open={Boolean(pendingAssign)}
         title={
           pendingAssign
-            ? `Convidar ${pendingAssign.athlete.nome} para ${ROLE_CONFIG[pendingAssign.role].label}?`
-            : "Confirmar convite administrativo"
+            ? `Convidar para ${ROLE_CONFIG[pendingAssign.role].label}?`
+            : "Enviar convite"
         }
-        eyebrow="Convite administrativo"
         description={
           pendingAssign ? (
             <>
-              O atleta receberá um convite para atuar como{" "}
-              <strong className="text-yellow-200">{ROLE_CONFIG[pendingAssign.role].label}</strong>.
-              O acesso administrativo só será concedido depois que ele aceitar.
+              Ao enviar este convite, {pendingAssign.athlete.nome} poderá se tornar{" "}
+              <strong className="text-yellow-200">{ROLE_CONFIG[pendingAssign.role].label}</strong>{" "}
+              do grupo. Ele só terá acesso como administrador depois que aceitar o convite.
             </>
           ) : null
         }
@@ -747,61 +738,63 @@ export default function AdministradoresClient() {
         loading={isSaving}
         disabled={inviteMonthlyExempt === null}
         impactItems={[
-          "O convite aparecerá nas notificações individuais do atleta.",
-          "Nenhuma permissão será concedida antes do aceite.",
-          "Se já houver responsável, ele permanecerá no cargo até o aceite.",
+          "O convite aparecerá nas notificações do atleta.",
+          "Ele só virará administrador quando aceitar.",
+          "Se o cargo já tiver um responsável, a troca só acontecerá depois do aceite.",
         ]}
         onClose={() => setPendingAssign(null)}
         onConfirm={confirmAssignRole}
       >
-        <fieldset className="space-y-2">
-          <legend className="mb-2 text-sm font-semibold text-white">Condição da mensalidade</legend>
+        <fieldset className="space-y-3">
+          <legend className="mb-1 text-sm font-semibold text-white">
+            Como ficará a mensalidade dele?
+          </legend>
           {(
             [
               {
                 value: true,
-                title: "Mensalista isento de cobrança",
+                title: "Administrador sem pagar mensalidade",
                 description:
-                  "Este administrador não terá cobrança de mensalidade enquanto a isenção estiver válida.",
+                  "Ele não pagará mensalidade enquanto essa opção estiver ativa. O presidente poderá mudar essa escolha depois.",
               },
               {
                 value: false,
-                title: "Mensalista com cobrança normal",
+                title: "Administrador pagando normalmente",
                 description:
-                  "Este administrador continuará sujeito às condições financeiras estabelecidas pelo grupo.",
+                  "Mesmo sendo administrador, ele continuará pagando mensalidade normalmente.",
               },
             ] as const
           ).map((option) => (
             <label
               key={String(option.value)}
-              className="flex cursor-pointer gap-3 rounded-xl border border-zinc-700 p-3 text-sm text-zinc-200"
+              className={`flex cursor-pointer gap-3 rounded-2xl border p-4 text-sm leading-5 transition ${inviteMonthlyExempt === option.value ? "border-yellow-300/70 bg-yellow-400/10 text-zinc-100" : "border-white/15 bg-white/[0.03] text-zinc-300 hover:border-white/30"}`}
             >
               <input
                 type="radio"
                 name="invite-monthly-exempt"
                 checked={inviteMonthlyExempt === option.value}
                 onChange={() => setInviteMonthlyExempt(option.value)}
-                className="mt-1 accent-yellow-400"
+                className="mt-1 h-4 w-4 shrink-0 accent-yellow-400"
               />
               <span>
-                <strong className="block text-white">{option.title}</strong>
-                {option.description}
+                <strong className="mb-1 block text-white">{option.title}</strong>
+                <span>{option.description}</span>
               </span>
             </label>
           ))}
-          <p className="pt-2 text-xs leading-5 text-zinc-400">
-            O atleta se tornará mensalista e assumirá o cargo administrativo somente após aceitar o
-            convite. A escolha de isenção não altera suas estatísticas ou conquistas.
+          <p className="rounded-xl bg-white/[0.04] px-4 py-3 text-sm leading-5 text-zinc-300">
+            Depois que aceitar o convite, ele passará a ser mensalista e assumirá o cargo de
+            administrador. Isso não altera suas estatísticas nem suas conquistas.
           </p>
         </fieldset>
       </Fut7ConfirmDialog>
 
       <Fut7ConfirmDialog
         open={Boolean(pendingMonthlyChange)}
-        title="Alterar condição da mensalidade?"
+        title="Alterar mensalidade?"
         description={
           pendingMonthlyChange
-            ? `O administrador passará a ser mensalista ${pendingMonthlyChange.exempt ? "isento de cobrança" : "com cobrança normal"}. A alteração vale a partir da competência atual e não altera pagamentos anteriores.`
+            ? `O administrador ${pendingMonthlyChange.exempt ? "não pagará mensalidade" : "pagará mensalidade normalmente"}. A mudança vale para o período atual e não altera os pagamentos anteriores.`
             : null
         }
         confirmLabel="Confirmar alteração"

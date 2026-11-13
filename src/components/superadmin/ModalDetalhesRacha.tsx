@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { FaInfoCircle, FaLock, FaHistory } from "react-icons/fa";
+import { FaLock, FaHistory } from "react-icons/fa";
 import { format } from "date-fns";
 import { getRachaTheme } from "@/config/rachaThemes";
 import { showFut7Toast } from "@/components/ui/feedback";
+import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 
 interface RachaDetalhes {
   id: string;
@@ -88,87 +89,81 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
   }
 
   return (
-    <div
-      className="fixed inset-0 z-30 flex items-center justify-center bg-black bg-opacity-60"
-      onClick={onClose}
+    <Fut7DialogBase
+      open
+      title={racha.nome}
+      onClose={onClose}
+      footer={
+        <button
+          type="button"
+          onClick={onClose}
+          className="col-span-2 rounded-xl border border-white/15 px-5 py-2.5 font-semibold text-white hover:bg-white/10"
+        >
+          Fechar
+        </button>
+      }
     >
-      <div
-        className="bg-zinc-900 rounded-xl shadow-xl p-6 w-full max-w-lg mx-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-          <FaInfoCircle className="text-yellow-400" /> {racha.nome}
-        </h3>
-        <div className="flex flex-col gap-1 mb-2 text-zinc-200">
-          <span>
-            <b>Presidente:</b> {racha.presidente || "N/A"}
+      <div className="flex flex-col gap-1 mb-2 text-zinc-200">
+        <span>
+          <b>Presidente:</b> {racha.presidente || "N/A"}
+        </span>
+        <span>
+          <b>Plano:</b> {plano}
+        </span>
+        <span>
+          <b>Status:</b>{" "}
+          <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusClass}`}>
+            {racha.status}
           </span>
-          <span>
-            <b>Plano:</b> {plano}
+        </span>
+        <span>
+          <b>Ativo:</b> {ativo ? "Sim" : "Não"}
+        </span>
+        <span>
+          <b>Tema:</b> {themeLabel}
+        </span>
+        <span>
+          <b>Criado em:</b> {criadoEm}
+        </span>
+      </div>
+      {racha.status === "BLOQUEADO" && (
+        <div className="bg-red-900 bg-opacity-50 p-2 rounded mt-2 flex flex-col">
+          <span className="font-bold text-red-300 mb-1 flex items-center gap-1">
+            <FaLock /> Motivo do Bloqueio:
           </span>
-          <span>
-            <b>Status:</b>{" "}
-            <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusClass}`}>
-              {racha.status}
-            </span>
+          <span className="text-red-100 text-sm">
+            {racha?.ultimoLogBloqueio?.detalhes || "Pagamento em atraso"}
           </span>
-          <span>
-            <b>Ativo:</b> {ativo ? "Sim" : "Não"}
+          <span className="text-xs text-zinc-300 mt-1">
+            Desde:{" "}
+            {racha?.ultimoLogBloqueio?.criadoEm
+              ? format(new Date(racha.ultimoLogBloqueio.criadoEm), "dd/MM/yyyy HH:mm")
+              : "--"}
           </span>
-          <span>
-            <b>Tema:</b> {themeLabel}
-          </span>
-          <span>
-            <b>Criado em:</b> {criadoEm}
-          </span>
-        </div>
-        {racha.status === "BLOQUEADO" && (
-          <div className="bg-red-900 bg-opacity-50 p-2 rounded mt-2 flex flex-col">
-            <span className="font-bold text-red-300 mb-1 flex items-center gap-1">
-              <FaLock /> Motivo do Bloqueio:
-            </span>
-            <span className="text-red-100 text-sm">
-              {racha?.ultimoLogBloqueio?.detalhes || "Pagamento em atraso"}
-            </span>
-            <span className="text-xs text-zinc-300 mt-1">
-              Desde:{" "}
-              {racha?.ultimoLogBloqueio?.criadoEm
-                ? format(new Date(racha.ultimoLogBloqueio.criadoEm), "dd/MM/yyyy HH:mm")
-                : "--"}
-            </span>
-            <button
-              className="mt-2 bg-green-700 text-white px-4 py-1 rounded hover:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
-              onClick={handleUnblock}
-              disabled={isUnblocking}
-            >
-              {isUnblocking ? "Desbloqueando..." : "Desbloquear manualmente"}
-            </button>
-          </div>
-        )}
-        <div className="mb-3 mt-2">
-          <h4 className="font-bold text-zinc-300 mb-1 flex items-center gap-1">
-            <FaHistory /> Histórico resumido:
-          </h4>
-          <ul className="text-xs text-zinc-400 space-y-1">
-            {racha.historico?.map((h, i: number) => (
-              <li key={i}>
-                • {h.acao}{" "}
-                <span className="text-zinc-600">
-                  {h.criadoEm ? `(${format(new Date(h.criadoEm), "dd/MM/yyyy HH:mm")})` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="mt-3 flex gap-2 flex-wrap">
           <button
-            className="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-900 flex-1"
-            onClick={onClose}
+            className="mt-2 bg-green-700 text-white px-4 py-1 rounded hover:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={handleUnblock}
+            disabled={isUnblocking}
           >
-            Fechar
+            {isUnblocking ? "Desbloqueando..." : "Desbloquear manualmente"}
           </button>
         </div>
+      )}
+      <div className="mb-3 mt-2">
+        <h4 className="font-bold text-zinc-300 mb-1 flex items-center gap-1">
+          <FaHistory /> Histórico resumido:
+        </h4>
+        <ul className="text-xs text-zinc-400 space-y-1">
+          {racha.historico?.map((h, i: number) => (
+            <li key={i}>
+              • {h.acao}{" "}
+              <span className="text-zinc-600">
+                {h.criadoEm ? `(${format(new Date(h.criadoEm), "dd/MM/yyyy HH:mm")})` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
-    </div>
+    </Fut7DialogBase>
   );
 }

@@ -155,8 +155,8 @@ export default function SponsorLogoCropperModal({
   const previewImage = previewUrl || imageSrc;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center px-3 py-4">
-      <div className="bg-[#1a1a1a] rounded-2xl w-full max-w-5xl shadow-2xl border border-[#2b2b2b] flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 px-0 pt-3 backdrop-blur-sm sm:items-center sm:px-3 sm:py-4">
+      <div className="flex max-h-[calc(100dvh-0.75rem)] w-full max-w-5xl flex-col rounded-t-2xl border border-[#2b2b2b] bg-[#1a1a1a] shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#2b2b2b]">
           <div>
             <h2 className="text-lg font-bold text-yellow-300">Ajustar logo do patrocinador</h2>

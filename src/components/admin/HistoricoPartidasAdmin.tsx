@@ -628,9 +628,9 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
-      <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-neutral-800 bg-[#141414] p-6 shadow-2xl">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-4 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-5xl overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-800 bg-[#141414] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex flex-col gap-3 border-b border-white/10 bg-[#141414] px-4 py-3 md:flex-row md:items-center md:justify-between sm:-mx-6 sm:-mt-6 sm:px-6">
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-yellow-400">Resultado da partida</h2>
             <p className="text-sm text-neutral-400">

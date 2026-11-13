@@ -26,12 +26,13 @@ export default function ModalEditarCampeao({
   // Aqui você implementaria a lógica de salvar resultados, gols, passes etc.
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-      <div className="bg-[#22252c] rounded-2xl shadow-2xl p-8 w-full max-w-xl relative flex flex-col gap-4">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 px-0 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="relative flex max-h-[calc(100dvh-0.75rem)] w-full max-w-xl flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl bg-[#22252c] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-8">
         <button
           type="button"
-          className="absolute top-2 right-3 text-gray-300 hover:text-yellow-400 text-xl"
+          className="sticky top-0 z-10 ml-auto rounded-lg border border-white/15 bg-[#22252c] px-3 py-1 text-xl text-gray-200 hover:text-yellow-400"
           onClick={onClose}
+          aria-label="Fechar edição do campeão"
         >
           <FaTimes />
         </button>
