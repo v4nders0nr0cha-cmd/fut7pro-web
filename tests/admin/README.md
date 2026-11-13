@@ -1,0 +1,7 @@
+# Admin Smoke Navigation
+
+Este smoke inicia o frontend Next.js e uma API de fixtures na própria execução do GitHub Actions. As contas, tokens e grupos usam apenas valores sintéticos. O navegador e o processo Node bloqueiam chamadas para `api.fut7pro.com.br`; as variáveis de API são verificadas antes da execução.
+
+Os cenários cobrem a navegação por controles reais, os fragmentos das duas opções de Solicitações, contagens, estado acessível do menu, permissões exibidas por papel, bloqueio de assinatura e ausência de grupo. Um link ausente ou um clique que não chega ao destino reprova o check. Não há fallback por `page.goto` após clique nem cenários ignorados.
+
+A API de fixtures só implementa o contrato necessário a esses cenários. Esse smoke não valida login, Turnstile, autorização nem dados do backend de produção. Essas garantias exigem testes de integração separados no backend e verificações autenticadas de produção, com credenciais e controles próprios. Uma resposta `404 Fixture sem contrato` indica dependência nova que deve ser modelada explicitamente, sem recorrer à API real.
