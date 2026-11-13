@@ -28,7 +28,10 @@ type Props = {
 
 function Count({ value, loading }: { value: number | null; loading: boolean }) {
   return (
-    <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">
+    <span
+      aria-live="polite"
+      className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-white"
+    >
       {loading ? "…" : (value ?? "—")}
     </span>
   );
@@ -180,11 +183,13 @@ export default function AdminRequestsMenu({
         <RequestOption
           title="Entrada de jogadores"
           description={
-            entryPending === null
-              ? "Contagem indisponível"
-              : entryPending === 0
-                ? "Nenhum pedido pendente"
-                : `${entryPending} pedido${entryPending === 1 ? "" : "s"} aguardando análise`
+            entryLoading
+              ? "Consultando pendências..."
+              : entryPending === null
+                ? "Contagem indisponível"
+                : entryPending === 0
+                  ? "Nenhum pedido pendente"
+                  : `${entryPending} pedido${entryPending === 1 ? "" : "s"} aguardando análise`
           }
           href="/admin/jogadores/listar-cadastrar#solicitacoes"
           count={entryPending}
@@ -196,11 +201,13 @@ export default function AdminRequestsMenu({
         <RequestOption
           title="Solicitações de mensalista"
           description={
-            monthlyPending === null
-              ? "Contagem indisponível"
-              : monthlyPending === 0
-                ? "Nenhum pedido pendente"
-                : `${monthlyPending} pedido${monthlyPending === 1 ? "" : "s"} aguardando análise`
+            monthlyLoading
+              ? "Consultando pendências..."
+              : monthlyPending === null
+                ? "Contagem indisponível"
+                : monthlyPending === 0
+                  ? "Nenhum pedido pendente"
+                  : `${monthlyPending} pedido${monthlyPending === 1 ? "" : "s"} aguardando análise`
           }
           href="/admin/jogadores/mensalistas#solicitacoes-mensalista"
           count={monthlyPending}
