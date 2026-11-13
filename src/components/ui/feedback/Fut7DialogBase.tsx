@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useId, useRef } from "react";
+import { type ReactNode, type RefObject, useEffect, useId, useRef } from "react";
 import { AlertTriangle, CheckCircle2, Info, ShieldAlert, X } from "lucide-react";
 
 export type Fut7DialogTone = "default" | "warning" | "destructive" | "success";
@@ -15,6 +15,7 @@ export type Fut7DialogBaseProps = {
   icon?: ReactNode;
   children?: ReactNode;
   footer?: ReactNode;
+  initialFocusRef?: RefObject<HTMLElement>;
   onClose: () => void;
 };
 
@@ -68,27 +69,32 @@ export default function Fut7DialogBase({
   icon,
   children,
   footer,
+  initialFocusRef,
   onClose,
 }: Fut7DialogBaseProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
-  const previousActiveElement = useRef<HTMLElement | null>(null);
   const previousOverflow = useRef<string | null>(null);
   const styles = toneStyles[tone];
 
   useEffect(() => {
     if (!open) return;
 
-    previousActiveElement.current = document.activeElement as HTMLElement | null;
-    const timer = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
-    return () => window.clearTimeout(timer);
-  }, [open]);
-
-  useEffect(() => {
-    if (open) return;
-    previousActiveElement.current?.focus?.();
-  }, [open]);
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const timer = window.setTimeout(() => {
+      const preferred = initialFocusRef?.current;
+      if (preferred?.isConnected && !preferred.matches(":disabled")) {
+        preferred.focus();
+      } else {
+        closeButtonRef.current?.focus();
+      }
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [open, initialFocusRef]);
 
   useEffect(() => {
     if (!open) return;

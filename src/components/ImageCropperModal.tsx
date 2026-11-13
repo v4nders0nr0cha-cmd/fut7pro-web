@@ -60,7 +60,7 @@ export default function ImageCropperModal({
           <button
             type="button"
             onClick={onCancel}
-            className="text-gray-300 hover:text-white text-xl leading-none"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-xl leading-none text-gray-200 hover:border-yellow-300/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-300"
             aria-label="Fechar recorte"
           >
             ×

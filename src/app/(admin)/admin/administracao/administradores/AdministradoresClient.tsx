@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -112,6 +112,7 @@ export default function AdministradoresClient() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedAthlete, setSelectedAthlete] = useState<AdminRoleAthlete | null>(null);
+  const continueButtonRef = useRef<HTMLButtonElement>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pendingAssign, setPendingAssign] = useState<{
@@ -611,6 +612,7 @@ export default function AdministradoresClient() {
           title="Selecionar atleta"
           description={`Escolha quem receberá o convite para ${ROLE_CONFIG[modalRole].label}.`}
           size="lg"
+          initialFocusRef={continueButtonRef}
           onClose={closeModal}
           footer={
             <>
@@ -622,6 +624,7 @@ export default function AdministradoresClient() {
                 Cancelar
               </button>
               <button
+                ref={continueButtonRef}
                 type="button"
                 onClick={requestAssignConfirmation}
                 disabled={!selectedAthlete || isSaving}
@@ -751,7 +754,8 @@ export default function AdministradoresClient() {
               {
                 value: true,
                 title: "Administrador sem pagar mensalidade",
-                description: "Enquanto for administrador do grupo, ele não pagará mensalidade.",
+                description:
+                  "Ele não pagará mensalidade enquanto essa opção estiver ativa. O presidente poderá mudar essa escolha depois.",
               },
               {
                 value: false,

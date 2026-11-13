@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { useState } from "react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import Fut7DialogBase from "../Fut7DialogBase";
 
 describe("Fut7DialogBase", () => {
@@ -29,5 +30,32 @@ describe("Fut7DialogBase", () => {
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["desmontado", true],
+    ["fechado por open=false", false],
+  ])("devolve o foco ao botão de origem quando é %s", async (_label, unmountOnClose) => {
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            Abrir diálogo
+          </button>
+          {(open || !unmountOnClose) && (
+            <Fut7DialogBase open={open} title="Diálogo" onClose={() => setOpen(false)} />
+          )}
+        </>
+      );
+    }
+
+    render(<Harness />);
+    const opener = screen.getByRole("button", { name: "Abrir diálogo" });
+    opener.focus();
+    fireEvent.click(opener);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Fechar modal" })).toHaveFocus());
+    fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 });

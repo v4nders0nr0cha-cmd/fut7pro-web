@@ -40,12 +40,19 @@ Foram revisados os componentes com nomes `Modal`, `Dialog`, `Drawer` e `Sheet`, 
 - “Condição da mensalidade” → “Mensalidade” ou “Como ficará a mensalidade dele?”
 - “Mensalista isento de cobrança” → “Administrador sem pagar mensalidade”
 - “Mensalista com cobrança normal” → “Administrador pagando normalmente”
+- A opção sem mensalidade esclarece que a escolha vale enquanto estiver ativa e pode ser alterada depois pelo presidente.
 - Explicações sobre isenção, cobrança e concessão de permissões foram reescritas com o evento concreto: aceitar o convite.
 - “Impacto da ação” → “O que acontece depois”.
 - No PIX, as instruções foram reduzidas ao ato de escanear ou copiar o código; total, período e validade ganharam rótulos separados.
 
+## Revisão complementar
+
+- O diálogo compartilhado devolve o foco ao controle que o abriu mesmo quando é removido da árvore. Ao voltar da confirmação do convite, o foco vai para “Continuar” na seleção; ao cancelar a seleção, volta ao botão que a abriu.
+- Uma prévia local temporária permitiu inspecionar no celular os modais de dias do mensalista, regras do Time Campeão, detalhes de pagamento, detalhes de administrador no SuperAdmin e recorte de foto no cadastro. A prévia foi removida após a inspeção e não faz parte do produto.
+- Nessa amostragem, as regras da partida foram divididas em etapas curtas, o valor do pagamento passou a exibir centavos e o botão de fechar o recorte ganhou área de toque maior.
+
 ## Limites da cobertura
 
-O roteiro `tests/modal-ux-viewport.fixture.spec.ts` abriu o convite e o PIX com fixtures locais e verificou geometria, rolagem interna, bloqueio da página ao fundo, Escape e ausência de botões cobertos em 1280×800, 768×1024, 390×844, 320×640 e 640×320. As capturas de celular e desktop foram inspecionadas visualmente. Os demais fluxos receberam revisão estrutural e testes direcionados onde já havia suíte, mas não foram abertos individualmente em todos os navegadores e tamanhos; essa validação ainda é recomendada antes do merge.
+O roteiro `tests/modal-ux-viewport.fixture.spec.ts` abriu o convite e o PIX com fixtures locais e verificou geometria, rolagem interna, bloqueio da página ao fundo, Escape, retorno de foco e ausência de botões cobertos em 1280×800, 768×1024, 390×844, 320×640 e 640×320. As capturas de celular e desktop foram inspecionadas visualmente. Outros cinco fluxos receberam amostragem visual em 390×844. Os demais fluxos não foram abertos individualmente em todos os navegadores e tamanhos; essa validação ainda é recomendada antes do merge.
 
 Esta mudança é de interface. Não altera cálculo, cobrança, Mercado Pago, permissões, API nem banco. O fluxo PIX usa cobrança sintética no roteiro visual; os testes de interface não comprovam o processamento financeiro nem substituem a validação de uma cobrança de teste controlada.

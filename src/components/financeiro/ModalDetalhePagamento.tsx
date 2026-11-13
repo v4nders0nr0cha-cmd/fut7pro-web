@@ -44,7 +44,11 @@ export default function ModalDetalhePagamento({
           <b>Data:</b> {pagamento.data}
         </div>
         <div className="mb-2 text-zinc-100">
-          <b>Valor:</b> R$ {pagamento.valor.toLocaleString("pt-BR")}
+          <b>Valor:</b> R${" "}
+          {pagamento.valor.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </div>
         <div className="mb-2 text-zinc-100">
           <b>Método:</b> {pagamento.metodo}

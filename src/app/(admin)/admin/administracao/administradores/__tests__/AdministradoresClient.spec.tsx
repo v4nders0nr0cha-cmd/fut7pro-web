@@ -85,6 +85,11 @@ describe("AdministradoresClient pending invites", () => {
     expect(within(dialog).getByText(/Ela só terá acesso|Ele só terá acesso/)).toBeInTheDocument();
     expect(within(dialog).getByText("Como ficará a mensalidade dele?")).toBeInTheDocument();
     expect(within(dialog).getByText("Administrador sem pagar mensalidade")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        "Ele não pagará mensalidade enquanto essa opção estiver ativa. O presidente poderá mudar essa escolha depois."
+      )
+    ).toBeInTheDocument();
     expect(within(dialog).getByText("Administrador pagando normalmente")).toBeInTheDocument();
     expect(within(dialog).getByText("O que acontece depois")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Enviar convite" })).toBeDisabled();
@@ -92,5 +97,24 @@ describe("AdministradoresClient pending invites", () => {
       within(dialog).getByRole("radio", { name: /Administrador sem pagar mensalidade/ })
     );
     expect(within(dialog).getByRole("button", { name: "Enviar convite" })).toBeEnabled();
+  });
+
+  it("devolve o foco a Continuar ao voltar e ao botão de origem ao cancelar", async () => {
+    render(<AdministradoresClient />);
+    const opener = screen.getByRole("button", { name: "Alterar indicação" });
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(screen.getByRole("button", { name: /Maria/ }));
+    const continueButton = screen.getByRole("button", { name: "Continuar" });
+    continueButton.focus();
+    fireEvent.click(continueButton);
+
+    const confirmation = screen.getByRole("dialog", { name: "Convidar para Vice-Presidente?" });
+    fireEvent.click(within(confirmation).getByRole("button", { name: "Voltar" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Continuar" })).toHaveFocus());
+
+    const selection = screen.getByRole("dialog", { name: "Selecionar atleta" });
+    fireEvent.click(within(selection).getByRole("button", { name: "Cancelar" }));
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 });

@@ -83,7 +83,8 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
   );
   await login(page);
   await page.goto("/admin/administracao/administradores");
-  await page.getByRole("button", { name: "Selecionar atleta" }).first().click();
+  const opener = page.getByRole("button", { name: "Selecionar atleta" }).first();
+  await opener.click();
   await page
     .getByRole("dialog", { name: "Selecionar atleta" })
     .getByRole("button", { name: /Atleta de Teste/ })
@@ -104,6 +105,10 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
   await dialog.screenshot({ path: testInfo.outputPath("convite-desktop.png") });
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
+  const selection = page.getByRole("dialog", { name: "Selecionar atleta" });
+  await expect(selection.getByRole("button", { name: "Continuar" })).toBeFocused();
+  await selection.getByRole("button", { name: "Cancelar" }).click();
+  await expect(opener).toBeFocused();
 });
 
 test("PIX sintético cabe em cinco formatos de tela", async ({ page }, testInfo) => {
