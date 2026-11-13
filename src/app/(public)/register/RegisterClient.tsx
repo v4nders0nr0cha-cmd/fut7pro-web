@@ -1021,7 +1021,7 @@ export default function RegisterClient() {
             <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
           </Transition.Child>
 
-          <div className="fixed inset-0 flex items-center justify-center px-3 py-6">
+          <div className="fixed inset-0 flex items-end justify-center sm:items-center sm:p-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-200"
@@ -1031,7 +1031,7 @@ export default function RegisterClient() {
               leaveFrom="opacity-100 translate-y-0"
               leaveTo="opacity-0 translate-y-6"
             >
-              <Dialog.Panel className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#111827] px-6 pb-6 pt-6 text-white shadow-2xl">
+              <Dialog.Panel className="relative max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-red-500/30 bg-[#111827] p-5 text-white shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6">
                 <Dialog.Title className="text-lg font-semibold text-yellow-300">
                   Conta Fut7Pro existente
                 </Dialog.Title>

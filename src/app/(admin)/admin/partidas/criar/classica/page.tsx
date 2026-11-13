@@ -1570,8 +1570,8 @@ function PartidaClassicaClient() {
       </main>
 
       {showFinalizeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#141414] p-6">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-800 bg-[#141414] p-4 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
             <div className="flex items-center gap-3 mb-3">
               <FaCheckCircle className="text-yellow-300 text-xl" />
               <h3 className="text-lg font-semibold text-yellow-300">Finalizar sessão</h3>

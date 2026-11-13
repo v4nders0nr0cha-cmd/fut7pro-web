@@ -35,7 +35,13 @@ jest.mock("@/hooks/useAdminRoles", () => ({
 }));
 
 jest.mock("@/hooks/useAdminRoleAthletes", () => ({
-  useAdminRoleAthletes: () => ({ athletes: [], isLoading: false, isError: false }),
+  useAdminRoleAthletes: () => ({
+    athletes: [
+      { id: "athlete-3", nome: "Maria", email: "maria@fixture.invalid", hasUserAccount: true },
+    ],
+    isLoading: false,
+    isError: false,
+  }),
 }));
 
 describe("AdministradoresClient pending invites", () => {
@@ -64,5 +70,27 @@ describe("AdministradoresClient pending invites", () => {
     expect(
       await screen.findByText("O convite para Vice-Presidente foi cancelado.")
     ).toBeInTheDocument();
+  });
+
+  it("explica o convite e a mensalidade em linguagem simples", () => {
+    render(<AdministradoresClient />);
+    fireEvent.click(screen.getByRole("button", { name: "Alterar indicação" }));
+    fireEvent.click(screen.getByRole("button", { name: /Maria/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByRole("heading", { name: "Convidar para Vice-Presidente?" })
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText(/Ela só terá acesso|Ele só terá acesso/)).toBeInTheDocument();
+    expect(within(dialog).getByText("Como ficará a mensalidade dele?")).toBeInTheDocument();
+    expect(within(dialog).getByText("Administrador sem pagar mensalidade")).toBeInTheDocument();
+    expect(within(dialog).getByText("Administrador pagando normalmente")).toBeInTheDocument();
+    expect(within(dialog).getByText("O que acontece depois")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Enviar convite" })).toBeDisabled();
+    fireEvent.click(
+      within(dialog).getByRole("radio", { name: /Administrador sem pagar mensalidade/ })
+    );
+    expect(within(dialog).getByRole("button", { name: "Enviar convite" })).toBeEnabled();
   });
 });

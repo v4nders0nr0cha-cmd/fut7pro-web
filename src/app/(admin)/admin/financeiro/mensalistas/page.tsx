@@ -16,6 +16,8 @@ import {
 } from "@/lib/financeiro/mensalistas";
 import type { LancamentoFinanceiro } from "@/types/financeiro";
 import type { Jogador } from "@/types/jogador";
+import Fut7ConfirmDialog from "@/components/ui/feedback/Fut7ConfirmDialog";
+import Fut7SuccessDialog from "@/components/ui/feedback/Fut7SuccessDialog";
 import TabelaMensalistas, { type MensalistaResumo } from "./components/TabelaMensalistas";
 
 const DIAS_SEMANA_LABEL = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -160,42 +162,20 @@ function ConfirmacaoModal({
   onConfirm,
   children,
 }: ConfirmacaoModalProps) {
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3">
-      <div className="w-full max-w-lg rounded-2xl border border-neutral-700 bg-neutral-900 p-5 shadow-2xl">
-        <h2 className="text-lg font-bold text-yellow-400">{title}</h2>
-        <p className="mt-2 text-sm text-gray-300">{description}</p>
-        {children ? (
-          <div className="mt-4 rounded-xl border border-neutral-700 bg-neutral-800/70 p-3">
-            {children}
-          </div>
-        ) : null}
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-neutral-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-neutral-800"
-            disabled={isLoading}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={`rounded-md px-4 py-2 text-sm font-bold text-black disabled:opacity-60 ${
-              confirmVariant === "danger"
-                ? "bg-red-400 hover:bg-red-300"
-                : "bg-yellow-400 hover:bg-yellow-300"
-            }`}
-            disabled={isLoading}
-          >
-            {isLoading ? "Processando..." : confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+    <Fut7ConfirmDialog
+      open={open}
+      title={title}
+      description={description}
+      confirmLabel={confirmLabel}
+      cancelLabel={cancelLabel}
+      loading={isLoading}
+      tone={confirmVariant === "danger" ? "destructive" : "default"}
+      onClose={onClose}
+      onConfirm={onConfirm}
+    >
+      {children}
+    </Fut7ConfirmDialog>
   );
 }
 
@@ -208,32 +188,17 @@ type SucessoModalProps = {
 };
 
 function SucessoModal({ open, title, description, onClose, onVerLancamento }: SucessoModalProps) {
-  if (!open) return null;
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3">
-      <div className="pointer-events-auto w-full max-w-md rounded-2xl border border-emerald-500/30 bg-neutral-900 p-5 shadow-2xl">
-        <h2 className="text-lg font-bold text-emerald-300">{title}</h2>
-        <p className="mt-2 text-sm text-gray-200">{description}</p>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-neutral-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-neutral-800"
-          >
-            Fechar
-          </button>
-          {onVerLancamento && (
-            <button
-              type="button"
-              onClick={onVerLancamento}
-              className="rounded-md bg-emerald-400 px-4 py-2 text-sm font-bold text-black hover:bg-emerald-300"
-            >
-              Ver lançamento
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    <Fut7SuccessDialog
+      open={open}
+      title={title}
+      description={description}
+      primaryLabel={onVerLancamento ? "Ver lançamento" : "Fechar"}
+      onPrimary={onVerLancamento ?? onClose}
+      secondaryLabel={onVerLancamento ? "Fechar" : undefined}
+      onSecondary={onClose}
+      onClose={onClose}
+    />
   );
 }
 

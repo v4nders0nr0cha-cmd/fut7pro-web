@@ -695,10 +695,17 @@ export default function IntegracoesSuperAdminPage() {
         {modal &&
           (camposIntegracoes[modal.id] ||
             integracoesApi?.find((i) => (i.slug || i.id) === modal.id)?.campos) && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-2">
-              <div className="relative w-full max-w-lg bg-zinc-900 rounded-2xl shadow-2xl p-6">
+            <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Configurar integração"
+                className="relative max-h-[calc(100dvh-1rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl bg-zinc-900 p-5 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:p-6"
+              >
                 <button
-                  className="absolute top-2 right-2 text-zinc-400 hover:text-red-500"
+                  type="button"
+                  aria-label="Fechar configuração"
+                  className="sticky top-0 z-10 ml-auto flex rounded-lg bg-zinc-800 p-2 text-zinc-300 hover:text-white"
                   onClick={handleFecharModal}
                 >
                   <FaTimes size={24} />

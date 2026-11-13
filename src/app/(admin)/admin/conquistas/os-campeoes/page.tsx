@@ -467,7 +467,7 @@ export default function OsCampeoesAdminPage() {
             <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
           </Transition.Child>
 
-          <div className="fixed inset-0 flex items-center justify-center px-4 py-6 overflow-y-auto">
+          <div className="fixed inset-0 flex items-end justify-center pt-3 sm:items-center sm:px-4 sm:py-6">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-200"
@@ -477,7 +477,7 @@ export default function OsCampeoesAdminPage() {
               leaveFrom="opacity-100 translate-y-0"
               leaveTo="opacity-0 translate-y-6"
             >
-              <Dialog.Panel className="relative w-full max-w-3xl mx-auto bg-[#191919] rounded-2xl shadow-xl px-6 pb-6 pt-8 border border-yellow-400/10 max-h-[85vh] overflow-y-auto">
+              <Dialog.Panel className="relative max-h-[calc(100dvh-0.75rem)] w-full max-w-3xl overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-400/10 bg-[#191919] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:px-6 sm:pb-6 sm:pt-8">
                 <Dialog.Title className="text-2xl font-bold text-yellow-400 mb-4 text-center">
                   Finalizar Temporada
                 </Dialog.Title>
@@ -559,7 +559,7 @@ export default function OsCampeoesAdminPage() {
             <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
           </Transition.Child>
 
-          <div className="fixed inset-0 flex items-center justify-center px-4 py-6 overflow-y-auto">
+          <div className="fixed inset-0 flex items-end justify-center pt-3 sm:items-center sm:px-4 sm:py-6">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-200"
@@ -569,7 +569,7 @@ export default function OsCampeoesAdminPage() {
               leaveFrom="opacity-100 translate-y-0"
               leaveTo="opacity-0 translate-y-6"
             >
-              <Dialog.Panel className="relative w-full max-w-3xl mx-auto bg-[#191919] rounded-2xl shadow-xl px-6 pb-6 pt-8 border border-yellow-400/10 max-h-[85vh] overflow-y-auto">
+              <Dialog.Panel className="relative max-h-[calc(100dvh-0.75rem)] w-full max-w-3xl overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-400/10 bg-[#191919] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:px-6 sm:pb-6 sm:pt-8">
                 <div className="flex flex-col items-center gap-3 mb-4 text-center">
                   <motion.div
                     initial={{ opacity: 0, y: 18, scale: 0.85 }}

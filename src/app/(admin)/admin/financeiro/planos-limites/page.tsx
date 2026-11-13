@@ -1205,7 +1205,17 @@ export default function PlanosLimitesPage() {
       {showPaymentModal && subscription && (
         <Modal onClose={() => setShowPaymentModal(false)}>
           <div className="w-full max-w-2xl bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-2">Como deseja pagar?</h3>
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-[#1b1f27] px-6 py-4">
+              <h3 className="text-xl font-bold text-white">Como deseja pagar?</h3>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                aria-label="Fechar formas de pagamento"
+                className="shrink-0 rounded-lg border border-white/15 p-2 text-gray-200 hover:text-white"
+              >
+                <FaTimes />
+              </button>
+            </div>
             <p className="text-sm text-gray-300 mb-5">
               Escolha a forma de pagamento para liberar o painel do seu grupo.
             </p>
@@ -1343,133 +1353,176 @@ export default function PlanosLimitesPage() {
       )}
 
       {showPixModal && pixCharge && (
-        <Modal onClose={() => setShowPixModal(false)}>
-          <div className="w-full max-w-lg rounded-2xl border border-[#2b2b2b] bg-[#1b1f27] p-6 shadow-xl">
-            <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-3 rounded-t-2xl border-b border-[#2b2b2b] bg-[#1b1f27] px-6 py-4">
-              <h3 className="text-xl font-bold text-white">Pagamento via PIX</h3>
+        <Modal onClose={() => setShowPixModal(false)} contained>
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pix-payment-title"
+            className="mx-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#191d25] text-white shadow-[0_32px_90px_rgba(0,0,0,0.65)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-3xl"
+          >
+            <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 bg-[#1c222b] px-4 py-4 sm:px-6 sm:py-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-yellow-300">
+                  Pagamento
+                </p>
+                <h3 id="pix-payment-title" className="mt-1 text-xl font-bold">
+                  Pague com PIX
+                </h3>
+                <p className="mt-1 text-sm text-gray-300">
+                  Escaneie o QR Code ou copie o código para pagar no seu banco.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowPixModal(false)}
                 aria-label="Fechar pagamento via PIX"
-                className="shrink-0 rounded-lg border border-[#384152] p-2 text-gray-200 hover:border-yellow-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-400"
+                className="shrink-0 rounded-xl border border-white/15 bg-white/5 p-2.5 text-gray-100 hover:border-yellow-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-400"
               >
                 <FaTimes aria-hidden="true" />
               </button>
-            </div>
-            <p className="text-sm text-gray-300 mb-4">
-              Escaneie o QR Code ou copie o código. A liberação do painel ocorre após a confirmação
-              do pagamento.
-            </p>
+            </header>
 
-            <div className="bg-[#111418] rounded-xl border border-[#2b2b2b] p-4 flex flex-col items-center gap-3">
-              {pixCharge.pix.qrCodeBase64 ? (
-                <img
-                  src={`data:image/png;base64,${pixCharge.pix.qrCodeBase64}`}
-                  alt="QR Code PIX"
-                  className="w-52 h-52 rounded-lg bg-white p-2"
-                />
-              ) : (
-                <div className="text-xs text-gray-400">QR Code indisponível.</div>
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-5 sm:space-y-5 sm:px-6 sm:py-6">
+              {pixPricing && (
+                <div className="rounded-2xl border border-yellow-300/20 bg-yellow-400/[0.07] px-4 py-3 sm:px-5">
+                  <p className="text-xs font-medium text-gray-300">Total desta cobrança</p>
+                  <p className="mt-1 text-2xl font-bold text-yellow-300">
+                    {formatCurrencyFromCents(pixPricing.totalCents)}
+                  </p>
+                </div>
               )}
-              {pixCharge.pix.qrCode && (
-                <div className="w-full">
-                  <div className="text-[11px] text-gray-400 mb-1">Código PIX</div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={pixCharge.pix.qrCode}
-                      className="flex-1 rounded-lg bg-[#0f1318] border border-[#2b2b2b] px-3 py-2 text-xs text-gray-200"
+
+              <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#11161d] p-4 sm:grid-cols-[220px_minmax(0,1fr)] sm:items-center sm:gap-5 sm:p-5">
+                <div className="flex justify-center">
+                  {pixCharge.pix.qrCodeBase64 ? (
+                    <img
+                      src={`data:image/png;base64,${pixCharge.pix.qrCodeBase64}`}
+                      alt="QR Code para pagamento via PIX"
+                      className="aspect-square w-44 max-w-full rounded-xl bg-white p-2 sm:w-52"
                     />
-                    <button
-                      type="button"
-                      onClick={handleCopyPix}
-                      className="px-3 py-2 rounded-lg bg-yellow-400 text-black text-xs font-semibold hover:bg-yellow-300"
+                  ) : (
+                    <div className="flex aspect-square w-44 items-center justify-center rounded-xl border border-white/10 text-center text-sm text-gray-400">
+                      QR Code indisponível
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 space-y-3">
+                  <div>
+                    <h4 className="text-base font-semibold">Código PIX</h4>
+                    <p className="mt-1 text-sm text-gray-400">
+                      Copie e cole no aplicativo do seu banco.
+                    </p>
+                  </div>
+                  {pixCharge.pix.qrCode && (
+                    <div className="grid min-w-0 gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={pixCharge.pix.qrCode}
+                        aria-label="Código PIX completo"
+                        onFocus={(event) => event.currentTarget.select()}
+                        className="min-w-0 w-full rounded-xl border border-white/15 bg-[#0b1016] px-3 py-3 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCopyPix}
+                        className="rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-bold text-black hover:bg-yellow-300"
+                      >
+                        {pixCopied ? "Código copiado" : "Copiar código PIX"}
+                      </button>
+                    </div>
+                  )}
+                  {pixCharge.pix.ticketUrl && (
+                    <a
+                      href={pixCharge.pix.ticketUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-10 items-center text-sm font-semibold text-yellow-300 underline underline-offset-4 hover:text-yellow-200"
                     >
-                      {pixCopied ? "Copiado" : "Copiar"}
-                    </button>
+                      Abrir página de pagamento
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {pixPricing && (
+                <div className="rounded-2xl border border-white/10 bg-[#11161d] p-4 text-sm text-gray-300 sm:p-5">
+                  <h4 className="mb-3 font-semibold text-white">Resumo do pagamento</h4>
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Plano</span>
+                    <span>{formatCurrencyFromCents(pixPricing.baseAmountCents)}</span>
                   </div>
+                  {pixPricing.firstPaymentDiscountApplied && (
+                    <div className="mt-2 flex items-center justify-between gap-3 text-emerald-300">
+                      <span>Desconto Cupom Creator ({formatPercent(pixPricing.discountPct)})</span>
+                      <span>-{formatCurrencyFromCents(pixPricing.discountCents)}</span>
+                    </div>
+                  )}
+                  {pixHasRecurringCoupon && (
+                    <div className="mt-2 flex items-center justify-between gap-3 text-emerald-300">
+                      <span>Desconto recorrente Cupom Creator</span>
+                      <span>-{formatCurrencyFromCents(pixRecurringDiscountCents)}</span>
+                    </div>
+                  )}
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3 font-semibold text-white">
+                    <span>
+                      {pixHasRecurringCoupon
+                        ? "Total com cupom"
+                        : pixPricing.firstPaymentDiscountApplied
+                          ? "Total do primeiro pagamento"
+                          : "Total desta cobrança"}
+                    </span>
+                    <span>{formatCurrencyFromCents(pixPricing.totalCents)}</span>
+                  </div>
+                  {pixHasRecurringCoupon && pixRecurringAmountCents !== pixPricing.totalCents && (
+                    <p className="mt-3 text-xs leading-5 text-gray-400">
+                      Valor recorrente do plano com cupom:{" "}
+                      <strong className="text-gray-200">
+                        {formatCurrencyFromCents(pixRecurringAmountCents)}/
+                        {subscription.interval === "year" ? "ano" : "mês"}
+                      </strong>
+                      .
+                    </p>
+                  )}
+                  {pixPricing.firstPaymentDiscountApplied && !pixHasRecurringCoupon && (
+                    <p className="mt-3 text-xs leading-5 text-gray-400">
+                      Desconto válido somente na primeira cobrança.
+                    </p>
+                  )}
                 </div>
               )}
-              {pixCharge.pix.ticketUrl && (
-                <a
-                  href={pixCharge.pix.ticketUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-yellow-300 underline"
-                >
-                  Abrir link do PIX
-                </a>
-              )}
-            </div>
-
-            <div className="mt-4 text-xs text-gray-400">
-              Período:{" "}
-              <b className="text-gray-200">
-                {formatDate(pixCharge.invoice.periodStart)} -{" "}
-                {formatDate(pixCharge.invoice.periodEnd)}
-              </b>
-            </div>
-            {pixPricing && (
-              <div className="mt-3 rounded-xl border border-[#2b2b2b] bg-[#111418] p-3 text-xs text-gray-300">
-                <p className="mb-2 font-semibold text-white">Resumo do PIX</p>
-                <div className="flex items-center justify-between">
-                  <span>Plano</span>
-                  <span>{formatCurrencyFromCents(pixPricing.baseAmountCents)}</span>
+              <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm sm:grid-cols-2 sm:p-5">
+                <div>
+                  <p className="text-xs text-gray-400">Período da cobrança</p>
+                  <p className="mt-1 font-medium text-gray-100">
+                    {formatDate(pixCharge.invoice.periodStart)} –{" "}
+                    {formatDate(pixCharge.invoice.periodEnd)}
+                  </p>
                 </div>
-                {pixPricing.firstPaymentDiscountApplied && (
-                  <div className="mt-1 flex items-center justify-between text-emerald-300">
-                    <span>Desconto Cupom Creator ({formatPercent(pixPricing.discountPct)})</span>
-                    <span>-{formatCurrencyFromCents(pixPricing.discountCents)}</span>
+                {pixCharge.pix.expiresAt && (
+                  <div>
+                    <p className="text-xs text-gray-400">Código válido até</p>
+                    <p className="mt-1 font-medium text-gray-100">
+                      {formatDate(pixCharge.pix.expiresAt)}
+                    </p>
                   </div>
                 )}
-                {pixHasRecurringCoupon && (
-                  <div className="mt-1 flex items-center justify-between text-emerald-300">
-                    <span>Desconto recorrente Cupom Creator</span>
-                    <span>-{formatCurrencyFromCents(pixRecurringDiscountCents)}</span>
-                  </div>
-                )}
-                <div className="mt-2 flex items-center justify-between border-t border-[#2b2b2b] pt-2 font-semibold text-white">
-                  <span>
-                    {pixHasRecurringCoupon
-                      ? "Total com cupom"
-                      : pixPricing.firstPaymentDiscountApplied
-                        ? "Total do primeiro pagamento"
-                        : "Total desta cobrança"}
-                  </span>
-                  <span>{formatCurrencyFromCents(pixPricing.totalCents)}</span>
-                </div>
-                {pixHasRecurringCoupon && pixRecurringAmountCents !== pixPricing.totalCents && (
-                  <p className="mt-2 text-[11px] text-gray-400">
-                    Valor recorrente do plano com cupom:{" "}
-                    <strong className="text-gray-200">
-                      {formatCurrencyFromCents(pixRecurringAmountCents)}/
-                      {subscription.interval === "year" ? "ano" : "mês"}
-                    </strong>
-                    .
-                  </p>
-                )}
-                {pixPricing.firstPaymentDiscountApplied && !pixHasRecurringCoupon && (
-                  <p className="mt-2 text-[11px] text-gray-400">
-                    Desconto válido somente na primeira cobrança.
-                  </p>
-                )}
               </div>
-            )}
-            {pixCharge.pix.expiresAt && (
-              <div className="mt-2 text-xs text-gray-400">
-                Válido até: <b className="text-gray-200">{formatDate(pixCharge.pix.expiresAt)}</b>
-              </div>
-            )}
+              <p className="text-xs leading-5 text-gray-400">
+                O acesso ao painel é liberado após a confirmação do pagamento.
+              </p>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setShowPixModal(false)}
-              className="mt-5 w-full px-4 py-2 rounded-lg bg-[#2b2b2b] text-gray-200 hover:bg-[#3a3a3a]"
-            >
-              Fechar
-            </button>
-          </div>
+            <footer className="shrink-0 border-t border-white/10 bg-[#191d25] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
+              <button
+                type="button"
+                onClick={() => setShowPixModal(false)}
+                className="w-full rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-gray-100 hover:bg-white/5 sm:ml-auto sm:block sm:w-auto sm:min-w-28"
+              >
+                Fechar
+              </button>
+            </footer>
+          </section>
         </Modal>
       )}
 
@@ -1579,9 +1632,19 @@ export default function PlanosLimitesPage() {
       {showSwitchModal && selectedPlan && (
         <Modal onClose={() => setShowSwitchModal(false)}>
           <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-2">Confirmar troca de plano</h3>
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-[#1b1f27] px-6 py-4">
+              <h3 className="text-xl font-bold text-white">Confirmar troca de plano</h3>
+              <button
+                type="button"
+                onClick={() => setShowSwitchModal(false)}
+                aria-label="Fechar troca de plano"
+                className="shrink-0 rounded-lg border border-white/15 p-2 text-gray-200 hover:text-white"
+              >
+                <FaTimes />
+              </button>
+            </div>
             <p className="text-sm text-gray-300 mb-4">
-              Voce esta trocando de <b>{planLabel}</b> para <b>{selectedPlan.label}</b>.
+              Você está trocando de <b>{planLabel}</b> para <b>{selectedPlan.label}</b>.
             </p>
             <div className="text-sm text-gray-300 bg-[#111418] rounded-lg p-3 border border-[#2b2b2b]">
               {subscription?.status === "trialing" ? (
@@ -1624,9 +1687,19 @@ export default function PlanosLimitesPage() {
       {showEnterpriseModal && selectedPlan && (
         <Modal onClose={() => setShowEnterpriseModal(false)}>
           <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-2">Solicitar Enterprise</h3>
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-[#1b1f27] px-6 py-4">
+              <h3 className="text-xl font-bold text-white">Solicitar Enterprise</h3>
+              <button
+                type="button"
+                onClick={() => setShowEnterpriseModal(false)}
+                aria-label="Fechar plano Enterprise"
+                className="shrink-0 rounded-lg border border-white/15 p-2 text-gray-200 hover:text-white"
+              >
+                <FaTimes />
+              </button>
+            </div>
             <p className="text-sm text-gray-300 mb-4">
-              Esse plano e liberado mediante contato com nosso time. Fale pelo WhatsApp ou envie um
+              Esse plano é liberado mediante contato com nosso time. Fale pelo WhatsApp ou envie um
               e-mail para iniciar a conversa.
             </p>
             <div className="text-sm text-gray-200 bg-[#111418] rounded-lg p-3 border border-[#2b2b2b] mb-4">
@@ -1670,14 +1743,24 @@ export default function PlanosLimitesPage() {
       {showInvoicesModal && (
         <Modal onClose={() => setShowInvoicesModal(false)}>
           <div className="w-full max-w-2xl bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-2">Faturas do grupo</h3>
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-[#1b1f27] px-6 py-4">
+              <h3 className="text-xl font-bold text-white">Faturas do grupo</h3>
+              <button
+                type="button"
+                onClick={() => setShowInvoicesModal(false)}
+                aria-label="Fechar faturas"
+                className="shrink-0 rounded-lg border border-white/15 p-2 text-gray-200 hover:text-white"
+              >
+                <FaTimes />
+              </button>
+            </div>
             <p className="text-sm text-gray-300 mb-4">
               Histórico recente das suas cobranças e pagamentos.
             </p>
-            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            <div className="space-y-3">
               {invoices.length === 0 && (
                 <div className="text-sm text-gray-400">
-                  Nenhuma fatura encontrada ate o momento.
+                  Nenhuma fatura encontrada até o momento.
                 </div>
               )}
               {invoices.map((invoice) => (
@@ -1713,11 +1796,33 @@ export default function PlanosLimitesPage() {
   );
 }
 
-function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Modal({
+  children,
+  onClose,
+  contained = false,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  contained?: boolean;
+}) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-3 py-3 sm:py-6">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 px-0 pt-3 sm:items-center sm:px-3 sm:py-6">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-3xl max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain sm:max-h-[calc(100dvh-3rem)]">
+      <div
+        className={`relative z-10 w-full max-w-3xl max-h-[calc(100dvh-1rem)] overscroll-contain sm:max-h-[calc(100dvh-3rem)] ${contained ? "overflow-hidden" : "overflow-y-auto"}`}
+      >
         {children}
       </div>
     </div>

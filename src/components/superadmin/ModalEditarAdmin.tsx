@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { FaSave, FaTimes } from "react-icons/fa";
+import { FaSave } from "react-icons/fa";
 import { Role } from "@/common/enums";
+import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 
 type RachaOption = {
   id: string;
@@ -104,104 +105,90 @@ export default function ModalEditarAdmin({
   if (!open || !admin) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-30 flex items-center justify-center bg-black bg-opacity-60"
-      onClick={onClose}
-    >
-      <div
-        className="bg-zinc-900 rounded-xl shadow-xl p-6 w-full max-w-xl mx-auto"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-white">Editar administrador</h3>
+    <Fut7DialogBase
+      open
+      title="Editar administrador"
+      onClose={onClose}
+      size="lg"
+      footer={
+        <>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
           >
-            <FaTimes className="h-4 w-4" />
+            Cancelar
           </button>
+          <button
+            type="submit"
+            form="edit-superadmin-form"
+            disabled={saving}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-black hover:bg-yellow-300 disabled:opacity-60"
+          >
+            <FaSave className="h-4 w-4" />
+            {saving ? "Salvando..." : "Salvar"}
+          </button>
+        </>
+      }
+    >
+      <form id="edit-superadmin-form" onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Nome *</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className="w-full rounded-lg bg-gray-800 border border-gray-600 px-3 py-2 text-white"
+            placeholder="Nome do administrador"
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="w-full rounded-lg bg-gray-800 border border-gray-600 px-3 py-2 text-white"
+            placeholder="email@exemplo.com"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Nome *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+            <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
+            <select
+              value={role}
+              onChange={(event) => setRole(event.target.value as Role)}
               className="w-full rounded-lg bg-gray-800 border border-gray-600 px-3 py-2 text-white"
-              placeholder="Nome do administrador"
-            />
+            >
+              {ROLE_OPTIONS.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+            <label className="block text-sm font-medium text-gray-300 mb-2">Vinculo de racha</label>
+            <select
+              value={tenantId}
+              onChange={(event) => setTenantId(event.target.value)}
               className="w-full rounded-lg bg-gray-800 border border-gray-600 px-3 py-2 text-white"
-              placeholder="email@exemplo.com"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
-              <select
-                value={role}
-                onChange={(event) => setRole(event.target.value as Role)}
-                className="w-full rounded-lg bg-gray-800 border border-gray-600 px-3 py-2 text-white"
-              >
-                {ROLE_OPTIONS.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Vinculo de racha
-              </label>
-              <select
-                value={tenantId}
-                onChange={(event) => setTenantId(event.target.value)}
-                className="w-full rounded-lg bg-gray-800 border border-gray-600 px-3 py-2 text-white"
-              >
-                <option value="">Sem racha</option>
-                {sortedRachas.map((racha) => (
-                  <option key={racha.id} value={racha.id}>
-                    {racha.nome} ({racha.slug})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {error && <div className="text-sm text-red-400">{error}</div>}
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-gray-700">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-yellow-400 text-gray-900 font-medium rounded-lg hover:bg-yellow-300 transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <FaSave className="h-4 w-4" />
-              <span>{saving ? "Salvando..." : "Salvar"}</span>
-            </button>
+              <option value="">Sem racha</option>
+              {sortedRachas.map((racha) => (
+                <option key={racha.id} value={racha.id}>
+                  {racha.nome} ({racha.slug})
+                </option>
+              ))}
+            </select>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        {error && <div className="text-sm text-red-400">{error}</div>}
+      </form>
+    </Fut7DialogBase>
   );
 }

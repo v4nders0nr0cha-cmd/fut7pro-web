@@ -446,8 +446,8 @@ export default function ComunicadosClient() {
                 </div>
 
                 {confirmArchiveId === item.id && (
-                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70 px-4">
-                    <div className="bg-[#232323] p-6 rounded-lg shadow-xl w-full max-w-md flex flex-col gap-4">
+                  <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 pt-3 sm:items-center sm:px-4 sm:py-6">
+                    <div className="flex max-h-[calc(100dvh-0.75rem)] w-full max-w-md flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl bg-[#232323] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
                       <div className="text-lg font-bold text-yellow-300">Arquivar comunicado?</div>
                       <div className="text-gray-400 text-sm">
                         Ao arquivar, o comunicado deixa de aparecer no login dos atletas.

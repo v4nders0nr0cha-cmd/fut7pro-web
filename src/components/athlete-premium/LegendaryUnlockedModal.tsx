@@ -31,18 +31,18 @@ export default function LegendaryUnlockedModal({
 }: LegendaryUnlockedModalProps) {
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/78 px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/78 px-0 pt-3 backdrop-blur-sm sm:items-center sm:px-4 sm:py-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="legendary-unlocked-title"
     >
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#f8c64a]/65 bg-[#050505] p-5 text-white shadow-[0_24px_80px_rgba(0,0,0,0.72),0_0_60px_rgba(248,198,74,0.20)] sm:p-7">
+      <div className="relative max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f8c64a]/65 bg-[#050505] p-5 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-[0_24px_80px_rgba(0,0,0,0.72),0_0_60px_rgba(248,198,74,0.20)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(248,198,74,0.24),transparent_34%),linear-gradient(145deg,rgba(255,240,168,0.10),transparent_35%,rgba(248,198,74,0.08))]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#fff0a8] to-transparent" />
 
         <button
           type="button"
-          className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/45 text-zinc-300 transition hover:border-[#f8c64a]/60 hover:text-[#f8c64a]"
+          className="sticky top-1 z-10 ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/75 text-zinc-200 transition hover:border-[#f8c64a]/60 hover:text-[#f8c64a]"
           onClick={onClose}
           disabled={isSubmitting}
           aria-label="Fechar modal"
@@ -50,7 +50,7 @@ export default function LegendaryUnlockedModal({
           <FaTimes />
         </button>
 
-        <div className="relative z-10 flex flex-col items-center text-center">
+        <div className="relative z-10 -mt-2 flex flex-col items-center text-center">
           <div className="relative mb-4 flex h-28 w-28 items-center justify-center sm:h-32 sm:w-32">
             <div className="absolute inset-1 rounded-full bg-[#f8c64a]/25 blur-2xl motion-safe:animate-pulse" />
             {medalAsset ? (

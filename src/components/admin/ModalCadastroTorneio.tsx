@@ -393,17 +393,18 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/85 px-0 pt-3 sm:items-center sm:px-3 sm:py-6">
       <form
-        className="bg-[#191b1f] rounded-2xl p-6 max-w-2xl w-full shadow-2xl overflow-y-auto max-h-[98vh]"
+        className="max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-2xl bg-[#191b1f] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6"
         onSubmit={handleSubmit}
       >
-        <div className="flex justify-between items-center mb-3">
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-[#191b1f] px-4 py-4 sm:-mx-6 sm:-mt-6 sm:px-6">
           <h2 className="text-xl font-bold text-yellow-400">+ Novo Grande Torneio</h2>
           <button
             type="button"
-            className="text-gray-300 hover:text-yellow-400 text-xl"
+            className="shrink-0 rounded-lg border border-white/15 p-2 text-xl text-gray-200 hover:text-yellow-400"
             onClick={onClose}
+            aria-label="Fechar torneio"
           >
             <FaTimes />
           </button>
@@ -642,7 +643,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
         {erro && <div className="text-red-400 font-bold text-sm mt-4 text-center">{erro}</div>}
 
         {/* Acoes */}
-        <div className="flex justify-end gap-2 mt-6">
+        <div className="sticky bottom-0 z-10 -mx-4 -mb-4 mt-6 flex flex-wrap justify-end gap-2 border-t border-white/10 bg-[#191b1f] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:-mb-6 sm:px-6">
           {isEdicao && torneio?.id && onDelete && (
             <button
               type="button"
@@ -676,7 +677,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
         {/* Selecionar campeao */}
         {vagaEmSelecao !== null && (
-          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+          <div className="fixed inset-0 z-[110] bg-black/80 flex items-center justify-center">
             <div className="bg-[#1c1e22] rounded-xl p-5 shadow-2xl max-w-md w-full">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-bold text-yellow-400">Selecione o campeão</h3>
@@ -736,7 +737,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
         {/* Modal de crop */}
         {cropping && (
-          <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
+          <div className="fixed inset-0 z-[110] bg-black/90 flex items-center justify-center">
             <div className="bg-[#1c1e22] rounded-xl p-6 shadow-2xl max-w-3xl w-full">
               <h3 className="text-lg text-yellow-400 font-bold mb-2">
                 Ajuste o Banner (proporção 3:1)

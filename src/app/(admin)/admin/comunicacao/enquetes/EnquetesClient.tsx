@@ -611,9 +611,9 @@ export default function EnquetesClient() {
       </div>
 
       {formOpen && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4 py-10">
-          <div className="bg-[#1f1f23] border border-yellow-400 rounded-2xl shadow-xl w-full max-w-4xl p-6 overflow-y-auto max-h-full">
-            <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-4xl overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-400 bg-[#1f1f23] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
+            <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-center justify-between gap-3 border-b border-yellow-400/20 bg-[#1f1f23] px-4 py-3 sm:-mx-6 sm:-mt-6 sm:px-6">
               <div>
                 <h2 className="text-xl font-bold text-yellow-300">
                   {editingId ? "Editar Enquete" : "Criar Nova Enquete"}
@@ -939,8 +939,8 @@ export default function EnquetesClient() {
       )}
 
       {resultsPollId && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4 py-10">
-          <div className="bg-[#1f1f23] border border-yellow-400 rounded-2xl shadow-xl w-full max-w-2xl p-6">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-400 bg-[#1f1f23] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-yellow-300 flex items-center gap-2">
                 <FaChartBar /> Resultados
@@ -1000,8 +1000,8 @@ export default function EnquetesClient() {
       )}
 
       {confirmCloseId && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4">
-          <div className="bg-[#1f1f23] border border-red-500 rounded-xl p-6 max-w-sm w-full">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border border-red-500 bg-[#1f1f23] p-4 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
             <h3 className="text-lg font-bold text-red-300 mb-2">Encerrar enquete</h3>
             <p className="text-sm text-gray-300">
               Tem certeza que deseja encerrar esta enquete? Os votos ficarão bloqueados.

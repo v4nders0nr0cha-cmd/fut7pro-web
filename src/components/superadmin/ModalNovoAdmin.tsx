@@ -251,9 +251,9 @@ export default function ModalNovoAdmin({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 px-0 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-3xl overflow-y-auto overscroll-contain rounded-t-2xl bg-gray-900 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-700 bg-gray-900 p-4 sm:p-6">
           <div className="flex items-center space-x-3">
             <FaUserShield className="h-6 w-6 text-yellow-400" />
             <div>
@@ -263,12 +263,17 @@ export default function ModalNovoAdmin({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar cadastro de presidente"
+            className="shrink-0 rounded-lg border border-white/15 p-2 text-gray-200 hover:text-white"
+          >
             <FaTimes className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 p-4 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               type="button"
@@ -486,12 +491,12 @@ export default function ModalNovoAdmin({
                   <div className="text-xs text-green-100">
                     Senha temporária para {result.adminEmail || "presidente"}:
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <input
                       type="text"
                       readOnly
                       value={result.temporaryPassword}
-                      className="flex-1 rounded-lg bg-gray-900 border border-green-600/40 px-3 py-2 text-green-100"
+                      className="min-w-0 w-full rounded-lg bg-gray-900 border border-green-600/40 px-3 py-2 text-green-100"
                     />
                     <button
                       type="button"
@@ -506,7 +511,7 @@ export default function ModalNovoAdmin({
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+          <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex justify-end gap-3 border-t border-gray-700 bg-gray-900 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:-mb-6 sm:px-6">
             <button
               type="button"
               onClick={onClose}

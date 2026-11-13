@@ -818,13 +818,18 @@ function ShareReadyModal({
     Boolean((navigator.clipboard as ClipboardWithImages | undefined)?.write);
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto bg-black/82 px-4 py-5 backdrop-blur-md sm:py-6">
-      <div className="relative w-full max-w-[980px] overflow-hidden rounded-2xl border border-[#f8c64a]/55 bg-[#050505] shadow-[0_0_0_1px_rgba(255,240,168,0.08),0_30px_90px_rgba(0,0,0,0.78),0_0_60px_rgba(248,198,74,0.20)]">
+    <div className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/82 backdrop-blur-md sm:items-center sm:p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Seu card está pronto"
+        className="relative max-h-[calc(100dvh-1rem)] w-full max-w-[980px] overflow-y-auto overscroll-contain rounded-t-2xl border border-[#f8c64a]/55 bg-[#050505] shadow-[0_0_0_1px_rgba(255,240,168,0.08),0_30px_90px_rgba(0,0,0,0.78),0_0_60px_rgba(248,198,74,0.20)] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl"
+      >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_12%,rgba(248,198,74,0.18),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_36%)]" />
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/55 text-zinc-200 transition hover:border-[#f8c64a]/70 hover:text-[#f8c64a]"
+          className="sticky right-4 top-4 z-20 ml-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/55 text-zinc-200 transition hover:border-[#f8c64a]/70 hover:text-[#f8c64a]"
           aria-label="Fechar"
         >
           <FaTimes />

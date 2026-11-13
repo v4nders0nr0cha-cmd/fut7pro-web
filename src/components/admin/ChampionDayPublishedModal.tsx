@@ -79,7 +79,7 @@ export default function ChampionDayPublishedModal({
 
   return (
     <div
-      className={`fixed inset-0 z-[70] flex items-center justify-center px-4 py-6 transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[70] flex items-end justify-center px-0 pt-3 transition-opacity duration-300 sm:items-center sm:px-4 sm:py-6 ${
         open ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
       aria-hidden={!open}
@@ -98,7 +98,7 @@ export default function ChampionDayPublishedModal({
         aria-labelledby="champion-day-published-title"
         aria-describedby="champion-day-published-description"
         onClick={(event) => event.stopPropagation()}
-        className={`relative max-h-[92vh] w-full max-w-xl overflow-hidden rounded-[28px] border border-yellow-400/30 bg-[#111112] text-white shadow-[0_24px_90px_rgba(0,0,0,0.65)] transition-all duration-300 motion-safe:transform ${
+        className={`relative max-h-[calc(100dvh-0.75rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-[28px] border border-yellow-400/30 bg-[#111112] text-white shadow-[0_24px_90px_rgba(0,0,0,0.65)] transition-all duration-300 motion-safe:transform sm:max-h-[calc(100dvh-3rem)] sm:rounded-[28px] ${
           open ? "translate-y-0 scale-100" : "translate-y-4 scale-[0.98]"
         }`}
       >
@@ -118,14 +118,14 @@ export default function ChampionDayPublishedModal({
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300 transition hover:border-yellow-300/50 hover:text-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+          className="sticky top-3 z-10 ml-auto mr-4 block rounded-full border border-white/10 bg-[#222]/90 p-2 text-zinc-200 transition hover:border-yellow-300/50 hover:text-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
           aria-label="Fechar modal"
           tabIndex={open ? 0 : -1}
         >
           <X size={18} />
         </button>
 
-        <div className="relative flex flex-col items-center px-5 pb-6 pt-8 text-center sm:px-8 sm:pb-8 sm:pt-10">
+        <div className="relative flex flex-col items-center px-5 pb-6 pt-2 text-center sm:px-8 sm:pb-8 sm:pt-3">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-yellow-300/30 blur-xl" />
             <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-yellow-300/50 bg-gradient-to-br from-yellow-200 via-yellow-400 to-amber-600 text-black shadow-[0_0_36px_rgba(250,204,21,0.35)] sm:h-24 sm:w-24">

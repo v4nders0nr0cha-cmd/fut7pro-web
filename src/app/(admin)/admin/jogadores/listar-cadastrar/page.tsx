@@ -48,13 +48,13 @@ function ModalLifecycleJogador({
   const archiving = action === "archive";
   return (
     <div
-      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-3 sm:py-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="athlete-lifecycle-title"
     >
       <div
-        className={`rounded-2xl border-2 shadow-xl p-8 max-w-sm w-full flex flex-col items-center gap-4 ${
+        className={`max-h-[calc(100dvh-0.75rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border-2 p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-8 flex flex-col items-center gap-4 ${
           archiving ? "bg-[#201d14] border-yellow-700" : "bg-[#201414] border-red-700"
         }`}
       >
@@ -130,9 +130,9 @@ function ModalCadastroJogador({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
-      <div className="bg-[#151515] border border-cyan-700 rounded-2xl shadow-xl p-6 w-full max-w-2xl flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl flex flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-cyan-700 bg-[#151515] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b border-cyan-700/40 bg-[#151515] px-4 py-3 sm:-mx-6 sm:-mt-6 sm:px-6">
           <div>
             <h2 className="text-lg text-cyan-300 font-bold">Cadastrar Jogador</h2>
             <p className="text-sm text-gray-300">
@@ -173,9 +173,9 @@ function ModalEditarJogador({
 }) {
   if (!open || !jogador) return null;
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
-      <div className="bg-[#151515] border border-cyan-700 rounded-2xl shadow-xl p-6 w-full max-w-2xl flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl flex flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-cyan-700 bg-[#151515] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b border-cyan-700/40 bg-[#151515] px-4 py-3 sm:-mx-6 sm:-mt-6 sm:px-6">
           <div>
             <h2 className="text-lg text-cyan-300 font-bold">Editar Jogador</h2>
             <p className="text-sm text-gray-300">Atualize os dados do atleta e ajuste a foto.</p>
@@ -231,8 +231,8 @@ function ModalVincularJogador({
   const confirmDisabled = !confirmacaoOk || !contaId || loading;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
-      <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-lg flex flex-col gap-4">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg flex flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-600 bg-[#151515] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <div className="flex items-center gap-3">
           <AvatarFut7Pro
             src={jogador.avatarUrl || jogador.avatar || jogador.foto || jogador.photoUrl}
@@ -344,8 +344,8 @@ function ModalAutoApproveConfirm({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
-      <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-md flex flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-600 bg-[#151515] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <h2 className="text-lg text-yellow-400 font-bold">Ativar por 24 horas?</h2>
         <p className="text-sm text-gray-200 leading-relaxed">
           Durante as próximas 24 horas, qualquer pessoa que solicitar entrada pelo site do seu grupo
@@ -394,8 +394,8 @@ function ModalRejeitarSolicitacao({
 }) {
   if (!open || !solicitacao) return null;
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
-      <div className="bg-[#151515] border border-red-700 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-md flex flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-red-700 bg-[#151515] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <h2 className="text-lg text-red-400 font-bold">Rejeitar solicitação</h2>
         <p className="text-sm text-gray-200">
           Você está recusando <strong>{solicitacao.name}</strong>. A conta continua ativa no
@@ -470,8 +470,8 @@ function ModalVincularSolicitacao({
     !confirmacaoOk || !npcId || loading || !solicitacao.userId || npcs.length === 0;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
-      <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-lg flex flex-col gap-4">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/80 pt-3 sm:items-center sm:px-3 sm:py-6">
+      <div className="max-h-[calc(100dvh-0.75rem)] w-full max-w-lg flex flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-yellow-600 bg-[#151515] p-4 shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6">
         <div className="flex items-center gap-3">
           <AvatarFut7Pro
             src={solicitacao.avatarUrl || solicitacao.photoUrl}

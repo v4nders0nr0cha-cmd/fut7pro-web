@@ -1204,11 +1204,14 @@ function AmbassadorActionModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3"
+      className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 sm:items-center sm:p-3"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-zinc-700 bg-zinc-900 shadow-2xl sm:max-h-[calc(100dvh-1.5rem)] sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="border-b border-zinc-700 px-5 py-4">
@@ -1219,7 +1222,7 @@ function AmbassadorActionModal({
           </p>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="min-h-0 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/60 p-3 text-sm text-zinc-200">
             <p>
               <span className="text-zinc-400">Nome completo:</span> {ambassador.name}

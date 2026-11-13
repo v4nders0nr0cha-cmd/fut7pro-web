@@ -321,24 +321,25 @@ export default function ModalLancamento({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 px-0 pt-3 sm:items-center sm:px-3 sm:py-6">
       <form
         onSubmit={handleSubmit}
-        className="bg-neutral-900 rounded-xl shadow-xl p-6 w-full max-w-md relative"
-        style={{ minWidth: 320 }}
+        className="relative max-h-[calc(100dvh-0.75rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl bg-neutral-900 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-6"
         autoComplete="off"
       >
-        <h2 className="text-xl font-bold mb-2 text-yellow-500">
-          {isEdit ? "Editar Lancamento" : "Novo Lancamento"}
-        </h2>
-        <button
-          type="button"
-          className="absolute top-2 right-3 text-xl text-gray-400 hover:text-yellow-500"
-          onClick={onClose}
-          aria-label="Fechar"
-        >
-          x
-        </button>
+        <header className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-neutral-900 px-4 py-3 sm:-mx-6 sm:-mt-6 sm:px-6">
+          <h2 className="text-xl font-bold text-yellow-400">
+            {isEdit ? "Editar lançamento" : "Novo lançamento"}
+          </h2>
+          <button
+            type="button"
+            className="shrink-0 rounded-lg border border-white/15 bg-neutral-800 px-3 py-1 text-xl text-gray-200 hover:text-yellow-400"
+            onClick={onClose}
+            aria-label="Fechar"
+          >
+            ×
+          </button>
+        </header>
         <div className="grid grid-cols-2 gap-2 mb-2">
           <div>
             <label className="text-xs text-gray-300 font-bold mb-1 block">Data *</label>
