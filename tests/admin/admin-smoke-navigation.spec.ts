@@ -3,6 +3,23 @@ import { expect, test, type Page } from "@playwright/test";
 const fixturePassword = "fixture-only-password";
 const entryPath = "/admin/jogadores/listar-cadastrar#solicitacoes";
 const monthlyPath = "/admin/jogadores/mensalistas#solicitacoes-mensalista";
+const destinationContent: Record<string, RegExp> = {
+  "/admin/partidas/time-campeao-do-dia": /Time Campeão do Dia/i,
+  "/admin/partidas": /Partidas e Resultados/i,
+  "/admin/partidas/sorteio-inteligente": /Sorteio Inteligente/i,
+  "/admin/partidas/criar": /Criar Partidas/i,
+  "/admin/monetizacao": /Monetização.*Lucre Mais/i,
+  "/admin/jogadores/listar-cadastrar": /Jogadores cadastrados|Solicitações de entrada/i,
+  "/admin/jogadores/mensalistas": /Gestão de Mensalistas/i,
+  "/admin/conquistas": /Gestão de Conquistas/i,
+  "/admin/financeiro/patrocinadores": /Patrocinadores/i,
+  "/admin/financeiro/planos-limites": /Planos & Limites/i,
+  "/admin/personalizacao/identidade-visual": /Identidade visual do grupo/i,
+  "/admin/administracao/administradores": /Administradores do Grupo/i,
+  "/admin/comunicacao/notificacoes": /Notificações/i,
+  "/admin/comunicacao/mensagens": /Mensagens Recebidas/i,
+  "/admin/configuracoes/dominio-proprio": /Domínio Próprio/i,
+};
 
 test.beforeEach(async ({ page }) => {
   expect(process.env.ADMIN_SMOKE_FIXTURE, "Este smoke exige a API local de fixtures").toBe("1");
@@ -35,7 +52,14 @@ async function expectDestination(page: Page, href: string) {
     (url) => `${url.pathname}${url.hash}` === href,
     { timeout: 60000 }
   );
-  await expect(page.locator("main").first()).toBeVisible();
+  const main = page.locator("main").first();
+  await expect(main).toBeVisible();
+  const expectedContent = destinationContent[new URL(href, "http://fixture.local").pathname];
+  expect(expectedContent, `Destino sem assinatura de conteúdo: ${href}`).toBeDefined();
+  await expect(main, `Página incorreta ou vazia em ${href}`).toContainText(expectedContent, {
+    timeout: 30000,
+  });
+  await expect(page.getByText(/404|This page could not be found/i)).toHaveCount(0);
   await expect(
     page.getByText(/Falha ao carregar o painel|Painel demorou para responder/)
   ).toHaveCount(0);
@@ -101,14 +125,27 @@ test.describe("Admin Smoke Navigation — fixtures locais", () => {
     }
 
     for (const { testId, path } of [
+      {
+        testId: "admin-dashboard-card-time-campeao",
+        path: "/admin/partidas/time-campeao-do-dia",
+      },
       { testId: "admin-dashboard-card-partidas-resultados", path: "/admin/partidas" },
       {
         testId: "admin-dashboard-card-sorteio-inteligente",
         path: "/admin/partidas/sorteio-inteligente",
       },
       {
+        testId: "admin-dashboard-card-monetizacao",
+        path: "/admin/monetizacao",
+      },
+      {
         testId: "admin-dashboard-quick-cadastrar-jogador",
         path: "/admin/jogadores/listar-cadastrar",
+      },
+      { testId: "admin-dashboard-quick-criar-partida", path: "/admin/partidas/criar" },
+      {
+        testId: "admin-dashboard-quick-adicionar-patrocinador",
+        path: "/admin/financeiro/patrocinadores",
       },
       {
         testId: "admin-dashboard-quick-enviar-notificacao",
@@ -208,12 +245,17 @@ test.describe("Admin Smoke Navigation — fixtures locais", () => {
     await expect(
       page.getByRole("heading", { name: /Painel bloqueado por inadimplência/ })
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: /Ir para pagamento/ })).toHaveAttribute(
-      "href",
-      "/admin/financeiro/planos-limites"
-    );
-    await page.goto("/admin/dashboard");
-    await expect(page).toHaveURL(/\/admin\/status-assinatura/);
+    const paymentLink = page.getByRole("link", { name: /Ir para pagamento/ });
+    await expect(paymentLink).toHaveAttribute("href", "/admin/financeiro/planos-limites");
+    await paymentLink.click();
+    await expectDestination(page, "/admin/financeiro/planos-limites");
+    for (const restrictedPath of ["/admin/dashboard", "/admin/comunicacao/notificacoes"]) {
+      await page.goto(restrictedPath);
+      await expect(page).toHaveURL(/\/admin\/status-assinatura/);
+      await expect(
+        page.getByRole("heading", { name: /Painel bloqueado por inadimplência/ })
+      ).toBeVisible();
+    }
   });
 
   test("conta sem grupo apresenta estado vazio no Hub", async ({ page }) => {
