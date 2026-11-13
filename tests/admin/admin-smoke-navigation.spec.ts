@@ -6,6 +6,7 @@ const monthlyPath = "/admin/jogadores/mensalistas#solicitacoes-mensalista";
 
 test.beforeEach(async ({ page }) => {
   expect(process.env.ADMIN_SMOKE_FIXTURE, "Este smoke exige a API local de fixtures").toBe("1");
+  await page.addInitScript(() => localStorage.setItem("cookie-consent", "accepted"));
   await page.route(/^https:\/\/api\.fut7pro\.com\.br(?:\/|$)/, async (route) => {
     await route.abort();
     throw new Error(`Admin Smoke tentou acessar API de produção: ${route.request().url()}`);
@@ -14,8 +15,6 @@ test.beforeEach(async ({ page }) => {
 
 async function login(page: Page, email: string) {
   await page.goto("/admin/login");
-  const rejectCookies = page.getByRole("button", { name: "Rejeitar" });
-  if (await rejectCookies.isVisible()) await rejectCookies.click();
   await page.getByTestId("admin-login-email").fill(email);
   await page.getByRole("button", { name: "Entrar com senha" }).click();
   await page.getByTestId("admin-login-password").fill(fixturePassword);
@@ -43,6 +42,7 @@ async function expectDestination(page: Page, href: string) {
 }
 
 async function openRequests(page: Page, variant: "header" | "bottom") {
+  await expect(page.getByRole("button", { name: "Rejeitar" })).toHaveCount(0);
   const trigger = page.getByTestId(`admin-${variant}-requests-trigger`);
   await expect(trigger).toBeVisible({ timeout: 30000 });
   await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
