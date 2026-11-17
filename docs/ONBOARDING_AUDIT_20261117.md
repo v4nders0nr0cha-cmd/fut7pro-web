@@ -40,7 +40,6 @@ Testes direcionados do serviço e controller, componentes, hook, navegação e p
 
 Não foi executado cadastro real nem inspeção dos registros de produção. A validação visual em navegador autenticado, com fotos e branding reais, e o percurso esportivo completo desktop/mobile precisam de revisão antes da aprovação. As imagens educativas fornecidas foram convertidas para WebP, mantendo a fonte original.
 
-
 ## Revisão após CI e feedback
 
 A saudação deriva dos dados atualizados do guia, incluindo chegada assíncrona. A apresentação é registrada ao fechar temporariamente, preservando a recepção durante a primeira abertura. A sessão autenticada ganha um identificador opaco exclusivo por login, preservado na renovação de tokens e usado apenas para a preferência de apresentação. Cada novo login permite nova oferta mesmo na mesma aba. A dispensa permanente do Membership continua prevalecendo.
