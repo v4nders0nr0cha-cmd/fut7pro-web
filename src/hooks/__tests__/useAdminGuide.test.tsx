@@ -9,6 +9,11 @@ jest.mock("swr", () => {
   return { __esModule: true, ...actual };
 });
 
+let activeUserId = "user-1";
+jest.mock("next-auth/react", () => ({
+  useSession: () => ({ data: { user: { id: activeUserId } } }),
+}));
+
 let activeSlug = "pelada-a";
 jest.mock("@/context/RachaContext", () => ({
   useRacha: () => ({ tenantSlug: activeSlug }),
@@ -37,6 +42,7 @@ function wrapper({ children }: { children: ReactNode }) {
 
 beforeEach(() => {
   activeSlug = "pelada-a";
+  activeUserId = "user-1";
   global.fetch = jest.fn();
 });
 
@@ -211,4 +217,15 @@ it("permite atualizar a pelada B enquanto o PATCH da pelada A ainda está penden
   expect(
     (global.fetch as jest.Mock).mock.calls.filter(([, options]) => options?.method === "PATCH")
   ).toHaveLength(2);
+});
+
+it("isolates personal preferences when administrators change in the same group", async () => {
+  (global.fetch as jest.Mock)
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 2) })
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 8) });
+  const { result, rerender } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
+  activeUserId = "user-2";
+  rerender();
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(8));
 });

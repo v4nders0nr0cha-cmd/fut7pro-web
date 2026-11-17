@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import BottomMenuAdmin from "@/components/layout/BottomMenuAdmin";
+import AdminGuideContext from "@/components/admin-guide/AdminGuideContext";
 import AdminHelpLauncher from "@/components/admin-guide/AdminHelpLauncher";
 import { NotificationProvider } from "@/context/NotificationContext";
 import ToastGlobal from "@/components/ui/ToastGlobal";
@@ -615,7 +616,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
         <div className="flex flex-1">
           <Sidebar />
           <Sidebar mobile isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
-          <main className="flex-1 w-full px-4 sm:px-6 pt-20 md:pt-15 pb-24">{children}</main>
+          <main className="flex-1 w-full px-4 sm:px-6 pt-20 md:pt-15 pb-24">
+            <AdminGuideContext />
+            {children}
+          </main>
         </div>
         <BottomMenuAdmin />
         <AdminHelpLauncher />

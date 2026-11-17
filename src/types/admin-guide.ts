@@ -1,4 +1,8 @@
 export type AdminGuideAction =
+  | "STEP_SKIPPED"
+  | "STEP_SELECTED"
+  | "INVITATION_COPIED"
+  | "WELCOME_PRESENTED"
   | "WELCOME_SEEN"
   | "DASHBOARD_INVITE_DISMISSED"
   | "PUBLIC_SITE_OPENED"
@@ -11,7 +15,11 @@ export type AdminGuideAction =
 
 export type AdminGuidePedagogicalState = {
   revision: number;
+  currentStep?: string;
+  invitationCopiedAt?: string;
+  invitationChannel?: "WHATSAPP" | "INSTAGRAM";
   welcomeSeenAt?: string;
+  welcomePresentedAt?: string;
   dashboardInviteDismissedAt?: string;
   publicSiteOpenedAt?: string;
   firstMatchMode?: "INTELLIGENT_DRAW" | "CLASSIC_MATCH";
@@ -34,7 +42,13 @@ export type AdminGuideTask = {
 
 export type AdminGuideData = {
   guideVersion: number;
-  tenant: { id: string; slug: string; name: string };
+  tenant: {
+    id: string;
+    slug: string;
+    name: string;
+    logoUrl?: string | null;
+    publicUrl?: string | null;
+  };
   administrator: { membershipId: string; role: string; status: string };
   capabilities: Record<string, boolean>;
   pedagogicalState: AdminGuidePedagogicalState;
@@ -48,8 +62,14 @@ export type AdminGuideData = {
 };
 
 export type AdminGuidePatch =
+  | { action: "STEP_SELECTED" | "STEP_SKIPPED"; tipId: string; expectedRevision?: number }
+  | { action: "INVITATION_COPIED"; channel: "WHATSAPP" | "INSTAGRAM"; expectedRevision?: number }
   | {
-      action: "WELCOME_SEEN" | "DASHBOARD_INVITE_DISMISSED" | "PUBLIC_SITE_OPENED";
+      action:
+        | "WELCOME_PRESENTED"
+        | "WELCOME_SEEN"
+        | "DASHBOARD_INVITE_DISMISSED"
+        | "PUBLIC_SITE_OPENED";
       expectedRevision?: number;
     }
   | { action: "TIP_KNOWN" | "TIP_DISMISSED"; tipId: string; expectedRevision?: number }

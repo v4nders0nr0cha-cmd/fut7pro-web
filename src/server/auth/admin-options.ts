@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { JWT } from "next-auth/jwt";
@@ -388,6 +389,7 @@ export const authOptions: NextAuthOptionsLike = {
     async session({ session, token }) {
       if (token && session.user) {
         (session.user as any).id = token.id as string;
+        (session.user as any).onboardingLoginId = token.onboardingLoginId ?? null;
         (session.user as any).role = token.role as any;
         (session.user as any).tenantId = token.tenantId as string;
         (session.user as any).tenantSlug = (token as any).tenantSlug ?? null;
@@ -408,6 +410,7 @@ export const authOptions: NextAuthOptionsLike = {
 
     async jwt({ token, user, trigger, session }: any) {
       if (user) {
+        token.onboardingLoginId = randomUUID();
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
@@ -435,6 +438,8 @@ export const authOptions: NextAuthOptionsLike = {
           (token as any).authRealm = "admin";
         }
       }
+
+      token.onboardingLoginId ??= randomUUID();
 
       if (token.accessToken && token.refreshToken) {
         (token as any).authRealm =

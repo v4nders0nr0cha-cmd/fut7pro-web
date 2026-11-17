@@ -14,6 +14,10 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const ACTION_FIELDS: Record<string, string[]> = {
+  STEP_SKIPPED: ["tipId"],
+  STEP_SELECTED: ["tipId"],
+  INVITATION_COPIED: ["channel"],
+  WELCOME_PRESENTED: [],
   WELCOME_SEEN: [],
   DASHBOARD_INVITE_DISMISSED: [],
   PUBLIC_SITE_OPENED: [],

@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -1071,6 +1072,7 @@ export default function SorteioInteligenteAdmin() {
         throw new Error(message);
       }
 
+      notifyAdminGuideChanged();
       setPublicado(true);
       setSorteioErro(null);
       clearDraft();

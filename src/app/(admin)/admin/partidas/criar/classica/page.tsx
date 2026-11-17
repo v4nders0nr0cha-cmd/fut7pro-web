@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import Head from "next/head";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -822,6 +823,7 @@ function PartidaClassicaClient() {
       }
     }
 
+    notifyAdminGuideChanged();
     return createdMatch.id;
   };
 

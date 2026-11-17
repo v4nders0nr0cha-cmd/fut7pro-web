@@ -447,3 +447,14 @@ describe("admin-options jwt refresh flow", () => {
     );
   });
 });
+
+it("keeps the onboarding login identifier stable during refresh and renews it at sign-in", async () => {
+  const jwt = await loadJwtCallback();
+  const initial = await jwt({ token: {}, user: { id: "admin-1", name: "Ana" } } as any);
+  expect(initial.onboardingLoginId).toEqual(expect.any(String));
+  const resumed = await jwt({ token: initial } as any);
+  expect(resumed.onboardingLoginId).toBe(initial.onboardingLoginId);
+  const previousLoginId = initial.onboardingLoginId;
+  const signedInAgain = await jwt({ token: resumed, user: { id: "admin-1", name: "Ana" } } as any);
+  expect(signedInAgain.onboardingLoginId).not.toBe(previousLoginId);
+});
