@@ -24,6 +24,7 @@ jest.mock("@/hooks/useAdminNotifications", () => ({
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/admin/dashboard",
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     replace: replaceMock,
     push: jest.fn(),

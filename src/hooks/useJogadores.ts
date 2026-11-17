@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import { useMemo } from "react";
 import useSWR from "swr";
 import { useApiState } from "./useApiState";
@@ -227,6 +228,7 @@ export function useJogadores(rachaId: string, options?: UseJogadoresOptions) {
         body: JSON.stringify(payload),
       });
 
+      notifyAdminGuideChanged();
       await mutate().catch(() => undefined);
       return response;
     });
@@ -240,6 +242,7 @@ export function useJogadores(rachaId: string, options?: UseJogadoresOptions) {
         body: JSON.stringify(payload),
       });
 
+      notifyAdminGuideChanged();
       await mutate().catch(() => undefined);
       return response;
     });

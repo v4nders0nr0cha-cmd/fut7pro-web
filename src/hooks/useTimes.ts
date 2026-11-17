@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import useSWR from "swr";
 import type { Time } from "@/types/time";
 
@@ -122,6 +123,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
       throw await readApiError(res, "Falha ao criar time");
     }
 
+    notifyAdminGuideChanged();
     await mutate();
   }
 
@@ -145,6 +147,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
       throw await readApiError(res, "Falha ao atualizar time");
     }
 
+    notifyAdminGuideChanged();
     await mutate();
   }
 
@@ -160,6 +163,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
       throw await readApiError(res, "Falha ao arquivar time");
     }
 
+    notifyAdminGuideChanged();
     await mutate();
   }
 
@@ -175,6 +179,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
       throw await readApiError(res, "Falha ao reativar time");
     }
 
+    notifyAdminGuideChanged();
     await mutate();
   }
 
@@ -190,6 +195,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
       throw await readApiError(res, "Falha ao remover time");
     }
 
+    notifyAdminGuideChanged();
     await mutate();
   }
 

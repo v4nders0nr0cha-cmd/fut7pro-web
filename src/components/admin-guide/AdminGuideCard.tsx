@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 
 import AdminOnboarding from "./AdminOnboarding";
 import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 export default function AdminGuideCard() {
   const { guide, updating, update, actionError } = useAdminGuide();
+  const { data: session } = useSession();
+  const loginId = (session?.user as { onboardingLoginId?: string } | undefined)?.onboardingLoginId;
   const [openScope, setOpenScope] = useState<string | null>(null);
   const scope = guide ? `${guide.tenant.id}:${guide.administrator.membershipId}` : "";
   useEffect(() => {
@@ -18,16 +21,14 @@ export default function AdminGuideCard() {
     )
       return;
     try {
-      if (!sessionStorage.getItem(`onboarding-offered:${scope}`)) {
-        sessionStorage.setItem(`onboarding-offered:${scope}`, "1");
+      if (loginId && sessionStorage.getItem(`onboarding-offered:${scope}`) !== loginId) {
+        sessionStorage.setItem(`onboarding-offered:${scope}`, loginId);
         setOpenScope(scope);
-        if (!guide.pedagogicalState.welcomePresentedAt)
-          void update({ action: "WELCOME_PRESENTED" });
       }
     } catch {
       /* Manual access remains available when storage is unavailable. */
     }
-  }, [scope, guide]);
+  }, [scope, guide, loginId, update]);
   if (
     !guide ||
     guide.activationProgress.complete ||
@@ -35,6 +36,11 @@ export default function AdminGuideCard() {
   )
     return null;
   const open = openScope === scope;
+  const close = (permanentlyDismissed = false) => {
+    setOpenScope(null);
+    if (!permanentlyDismissed && !guide.pedagogicalState.welcomePresentedAt)
+      void update({ action: "WELCOME_PRESENTED" });
+  };
   return (
     <>
       {!open && (
@@ -62,13 +68,8 @@ export default function AdminGuideCard() {
           {actionError && <p role="alert">Não foi possível salvar sua preferência.</p>}
         </aside>
       )}
-      <Fut7DialogBase
-        open={open}
-        title="Guia Interativo Fut7Pro"
-        size="xl"
-        onClose={() => setOpenScope(null)}
-      >
-        <AdminOnboarding key={scope} onClose={() => setOpenScope(null)} />
+      <Fut7DialogBase open={open} title="Guia Interativo Fut7Pro" size="xl" onClose={() => close()}>
+        <AdminOnboarding key={scope} onClose={close} />
       </Fut7DialogBase>
     </>
   );

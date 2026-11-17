@@ -4,11 +4,14 @@ import AdminGuideCard from "../AdminGuideCard";
 const update = jest.fn().mockResolvedValue(true);
 const copy = jest.fn().mockResolvedValue(undefined);
 let guide: any;
+let loginId = "login-1";
 jest.mock("@/hooks/useAdminGuide", () => ({
   useAdminGuide: () => ({ guide, update, updating: false }),
 }));
 jest.mock("next-auth/react", () => ({
-  useSession: () => ({ data: { user: { name: "Ana Silva", image: null } } }),
+  useSession: () => ({
+    data: { user: { name: "Ana Silva", image: null, onboardingLoginId: loginId } },
+  }),
 }));
 jest.mock("next/image", () => ({ __esModule: true, default: (props: any) => <img {...props} /> }));
 jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
@@ -23,6 +26,7 @@ jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
 }));
 beforeEach(() => {
   jest.clearAllMocks();
+  loginId = "login-1";
   sessionStorage.clear();
   Object.defineProperty(navigator, "clipboard", { value: { writeText: copy }, configurable: true });
   copy.mockResolvedValue(undefined);
@@ -132,7 +136,8 @@ it("X closes temporarily and permanent dismissal saves only on explicit action",
   update.mockClear();
   fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(update).not.toHaveBeenCalled();
+  expect(update).toHaveBeenCalledWith({ action: "WELCOME_PRESENTED" });
+  expect(update).not.toHaveBeenCalledWith({ action: "DASHBOARD_INVITE_DISMISSED" });
   fireEvent.click(screen.getByRole("button", { name: "Não mostrar novamente" }));
   await waitFor(() =>
     expect(update).toHaveBeenCalledWith({ action: "DASHBOARD_INVITE_DISMISSED" })
@@ -147,4 +152,29 @@ it("manual opening remains available after permanent dismissal", () => {
   render(<AdminOnboarding />);
   expect(screen.getByRole("button", { name: "Copiar convite" })).toBeInTheDocument();
   expect(update).not.toHaveBeenCalled();
+});
+
+it("updates the return greeting when asynchronous guide data arrives", () => {
+  const loaded = guide;
+  guide = null;
+  const { rerender } = render(<AdminOnboarding />);
+  guide = {
+    ...loaded,
+    pedagogicalState: { revision: 1, welcomePresentedAt: "2026-11-17T12:00:00Z" },
+  };
+  rerender(<AdminOnboarding />);
+  expect(screen.getByText("Bem-vindo de volta, Ana!")).toBeInTheDocument();
+});
+
+it("offers again after a new authenticated login in the same tab", async () => {
+  const view = render(<AdminGuideCard />);
+  await screen.findByRole("dialog");
+  fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+  view.unmount();
+  const sameLogin = render(<AdminGuideCard />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  sameLogin.unmount();
+  loginId = "login-2";
+  render(<AdminGuideCard />);
+  await screen.findByRole("dialog");
 });

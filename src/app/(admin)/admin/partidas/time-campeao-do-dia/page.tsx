@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import Head from "next/head";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -563,6 +564,7 @@ export default function TimeCampeaoDoDiaPage() {
               body: "O Time Campeão, o banner e os Destaques do Dia desta rodada agora estão disponíveis na página pública do seu grupo.",
             }
       );
+      notifyAdminGuideChanged();
       await mutateRoundQueue();
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Falha ao publicar no site.");

@@ -39,3 +39,14 @@ Backend origin/main 904599d2. Frontend origin/main 6c07ebcc. Trabalho em branche
 Testes direcionados do serviço e controller, componentes, hook, navegação e proxy. Verificação TypeScript nos dois repositórios. Resultados finais constam nos PRs.
 
 Não foi executado cadastro real nem inspeção dos registros de produção. A validação visual em navegador autenticado, com fotos e branding reais, e o percurso esportivo completo desktop/mobile precisam de revisão antes da aprovação. As imagens educativas fornecidas foram convertidas para WebP, mantendo a fonte original.
+
+
+## Revisão após CI e feedback
+
+A saudação deriva dos dados atualizados do guia, incluindo chegada assíncrona. A apresentação é registrada ao fechar temporariamente, preservando a recepção durante a primeira abertura. A sessão autenticada ganha um identificador opaco exclusivo por login, preservado na renovação de tokens e usado apenas para a preferência de apresentação. Cada novo login permite nova oferta mesmo na mesma aba. A dispensa permanente do Membership continua prevalecendo.
+
+A orientação contextual agora apresenta passos das ações reais e permite localizar os botões Cadastrar Jogador e Novo Time. Consultas periódicas foram removidas. Gravações bem-sucedidas de jogadores, times, preparação de partidas, resultados e publicação esportiva emitem um evento que atualiza o guia visível. Atualização por foco e retomada continua disponível via SWR.
+
+A fonte oficial de atualizações do backend inclui a versão 2026.11.17 e o frontend referencia o PR backend #188 pelo fluxo editorial do repositório.
+
+O preview Vercel foi aberto pelo navegador em 17/11. A sessão expirou e a tentativa de seleção do grupo terminou em /admin/login?expired=1. A validação autenticada com dados reais depende de login disponibilizado pelo usuário. O preview do frontend também requer o backend com o contrato do PR #188 para validar as seis etapas integradas.

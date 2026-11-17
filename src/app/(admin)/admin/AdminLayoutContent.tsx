@@ -616,7 +616,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
         <div className="flex flex-1">
           <Sidebar />
           <Sidebar mobile isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
-          <main className="flex-1 w-full px-4 sm:px-6 pt-20 md:pt-15 pb-24"><AdminGuideContext />{children}</main>
+          <main className="flex-1 w-full px-4 sm:px-6 pt-20 md:pt-15 pb-24">
+            <AdminGuideContext />
+            {children}
+          </main>
         </div>
         <BottomMenuAdmin />
         <AdminHelpLauncher />

@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -923,6 +924,7 @@ export function MatchModal({
         }
 
         const saved = (await response.json()) as PublicMatch;
+        notifyAdminGuideChanged();
         resultVersionRef.current = saved.resultVersion ?? resultVersionRef.current;
         baselineRef.current = matchBaseline(saved);
         manualSaveOnlyRef.current = false;

@@ -12,11 +12,15 @@ const primary =
   "inline-flex min-h-11 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 font-semibold text-black hover:bg-yellow-300 disabled:opacity-50";
 const secondary =
   "inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-3 py-2 hover:bg-white/10 disabled:opacity-50";
-export default function AdminOnboarding({ onClose }: { onClose?: () => void }) {
+export default function AdminOnboarding({
+  onClose,
+}: {
+  onClose?: (permanentlyDismissed?: boolean) => void;
+}) {
   const { guide, updating, update, actionError } = useAdminGuide();
   const { data: session } = useSession();
-  const [returning] = useState(
-    Boolean(guide?.pedagogicalState.welcomePresentedAt || guide?.pedagogicalState.welcomeSeenAt)
+  const returning = Boolean(
+    guide?.pedagogicalState.welcomePresentedAt || guide?.pedagogicalState.welcomeSeenAt
   );
   const [selected, setSelected] = useState<string>();
   const [channel, setChannel] = useState<"WHATSAPP" | "INSTAGRAM" | "MANUAL">("WHATSAPP");
@@ -142,11 +146,11 @@ export default function AdminOnboarding({ onClose }: { onClose?: () => void }) {
         )}
         {onClose && (
           <div className="mt-5 flex flex-wrap justify-center gap-3 text-xs text-zinc-300">
-            <button onClick={onClose}>Agora não</button>
+            <button onClick={() => onClose()}>Agora não</button>
             <button
               disabled={updating}
               onClick={async () => {
-                if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) onClose();
+                if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) onClose(true);
               }}
             >
               Não mostrar novamente
