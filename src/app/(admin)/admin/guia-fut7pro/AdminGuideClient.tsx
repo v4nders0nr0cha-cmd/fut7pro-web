@@ -3,6 +3,7 @@
 import AdminOnboarding from "@/components/admin-guide/AdminOnboarding";
 import AdminGuideFirstMatchSection from "@/components/admin-guide/AdminGuideFirstMatchSection";
 import AdminGuideResourcesSection from "@/components/admin-guide/AdminGuideResourcesSection";
+import { isOnboardingActionUnlocked } from "@/lib/admin-onboarding";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 export default function AdminGuideClient() {
   const { guide, loading, retry, update, updating } = useAdminGuide();
@@ -29,7 +30,13 @@ export default function AdminGuideClient() {
                 Organização dos jogos e outros recursos
               </summary>
               <div className="mt-4 space-y-6">
-                <AdminGuideFirstMatchSection guide={guide} updating={updating} update={update} />
+                {isOnboardingActionUnlocked(guide.tasks, "FIRST_MATCHDAY") ? (
+                  <AdminGuideFirstMatchSection guide={guide} updating={updating} update={update} />
+                ) : (
+                  <p className="text-sm text-zinc-300">
+                    Conclua as etapas anteriores para liberar a organização dos jogos pelo guia.
+                  </p>
+                )}
                 <AdminGuideResourcesSection guide={guide} updating={updating} update={update} />
               </div>
             </details>

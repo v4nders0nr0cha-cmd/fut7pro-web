@@ -1,3 +1,5 @@
+import type { AdminGuideTask } from "@/types/admin-guide";
+
 export const ONBOARDING_IDS = [
   "ACCOUNT_READY",
   "ACTIVE_PLAYERS",
@@ -19,3 +21,10 @@ export const STEP_HELP: Record<string, string> = {
   CHAMPION_PUBLISHED:
     "Selecione a rodada com resultados registrados e partidas finalizadas, confira o time vencedor e publique o Time Campeão do Dia.",
 };
+
+export function isOnboardingActionUnlocked(tasks: AdminGuideTask[], taskId: string) {
+  const index = ONBOARDING_IDS.indexOf(taskId);
+  return ONBOARDING_IDS.slice(0, Math.max(0, index)).every((id) =>
+    tasks.some((task) => task.id === id && task.completed)
+  );
+}

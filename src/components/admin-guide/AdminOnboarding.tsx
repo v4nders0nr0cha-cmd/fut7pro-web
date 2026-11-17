@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import { CheckCircle2, Circle, Trophy } from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
-import { ONBOARDING_IDS, STEP_HELP } from "@/lib/admin-onboarding";
+import { ONBOARDING_IDS, STEP_HELP, isOnboardingActionUnlocked } from "@/lib/admin-onboarding";
+import AdminGuideInvitationPanel from "./AdminGuideInvitationPanel";
 import { guideDestination } from "@/lib/admin-guide-navigation";
 
 const primary =
@@ -23,10 +24,8 @@ export default function AdminOnboarding({
     guide?.pedagogicalState.welcomePresentedAt || guide?.pedagogicalState.welcomeSeenAt
   );
   const [selected, setSelected] = useState<string>();
-  const [channel, setChannel] = useState<"WHATSAPP" | "INSTAGRAM" | "MANUAL">("WHATSAPP");
-  const [feedback, setFeedback] = useState("");
-  const [copying, setCopying] = useState(false);
-  const [expandedImage, setExpandedImage] = useState(false);
+  const [invitationOpen, setInvitationOpen] = useState(false);
+  const invitationButtonRef = useRef<HTMLButtonElement>(null);
   if (!guide) return <p role="status">Carregando seus primeiros passos...</p>;
   const tasks = ONBOARDING_IDS.flatMap((id) => guide.tasks.filter((task) => task.id === id));
   const active =
@@ -44,56 +43,24 @@ export default function AdminOnboarding({
   if (!active) return null;
   const started = Boolean(guide.pedagogicalState.welcomeSeenAt);
   const firstName = session?.user?.name?.trim().split(/\s+/)[0] || "organizador";
-  const publicUrl = guide.tenant.publicUrl;
-  const invite = `Fala, galera! ⚽🔥\n\nNosso site da pelada já está no ar!\n\nEntrem pelo link e criem suas contas para acompanhar partidas, estatísticas e conquistas.\n\n👉 ${publicUrl}\n\nTamo junto! 👊⚽`;
   const select = async (id: string) => {
     setSelected(id);
-    setFeedback("");
     await update({ action: "STEP_SELECTED", tipId: id });
-  };
-  const copy = async () => {
-    if (!publicUrl || copying || updating) return;
-    setSelected("ACTIVE_PLAYERS");
-    setCopying(true);
-    setFeedback("");
-    try {
-      await navigator.clipboard.writeText(channel === "WHATSAPP" ? invite : publicUrl);
-    } catch {
-      setFeedback("A cópia falhou. Permita o acesso à área de transferência e tente novamente.");
-      setCopying(false);
-      return;
-    }
-    const saved = await update({
-      action: "INVITATION_COPIED",
-      channel: channel === "INSTAGRAM" ? "INSTAGRAM" : "WHATSAPP",
-    });
-    setFeedback(
-      saved
-        ? "Convite copiado! A divulgação pode começar."
-        : "Copiado. Não foi possível salvar o progresso. Tente copiar novamente."
-    );
-    setCopying(false);
   };
   const destination = guideDestination(guide, active);
   const next = tasks.slice(tasks.indexOf(active) + 1).find((item) => !item.completed);
-  const image = channel === "INSTAGRAM" ? "instagram" : "whatsapp";
-  if (expandedImage)
+  const actionUnlocked = isOnboardingActionUnlocked(guide.tasks, active.id);
+  if (invitationOpen)
     return (
-      <section className="space-y-4 text-white">
-        <button autoFocus className={secondary} onClick={() => setExpandedImage(false)}>
-          Voltar à orientação
-        </button>
-        <p className="text-sm text-zinc-300">
-          Exemplo ilustrativo. Nomes e links da imagem servem apenas como referência.
-        </p>
-        <Image
-          src={`/images/onboarding/${image}.webp`}
-          alt="Imagem educativa ampliada com destaque na localização do convite ou link"
-          width={1400}
-          height={1800}
-          className="h-auto w-full rounded-xl object-contain"
-        />
-      </section>
+      <AdminGuideInvitationPanel
+        guide={guide}
+        updating={updating}
+        update={update}
+        onBack={() => {
+          setInvitationOpen(false);
+          window.setTimeout(() => invitationButtonRef.current?.focus(), 0);
+        }}
+      />
     );
   return (
     <div className="grid min-w-0 gap-6 text-white md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)]">
@@ -215,138 +182,50 @@ export default function AdminOnboarding({
           <h3 className="text-lg font-bold">{active.title}</h3>
           <p className="text-sm text-zinc-300">{STEP_HELP[active.id]}</p>
           {active.id === "ACTIVE_PLAYERS" ? (
-            <>
-              <div role="group" aria-label="Como trazer jogadores" className="flex flex-wrap gap-2">
-                {(["WHATSAPP", "INSTAGRAM", "MANUAL"] as const).map((value) => (
-                  <button
-                    key={value}
-                    aria-pressed={channel === value}
-                    className={channel === value ? primary : secondary}
-                    onClick={() => {
-                      setChannel(value);
-                      setFeedback("");
-                    }}
-                  >
-                    {value === "WHATSAPP"
-                      ? "WhatsApp"
-                      : value === "INSTAGRAM"
-                        ? "Instagram"
-                        : "Cadastro manual"}
-                  </button>
-                ))}
-              </div>
-              {channel === "MANUAL" ? (
-                <>
-                  <p className="text-sm text-zinc-300">
-                    Você pode cadastrar um perfil de jogador que ainda não possui conta e vinculá-lo
-                    depois pelo fluxo de jogadores, preservando seu histórico. Recomendamos que cada
-                    jogador crie a própria conta. Use o cadastro manual quando necessário.
-                  </p>
-                  {active.canAct ? (
-                    <Link
-                      className={primary}
-                      href="/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS"
-                    >
-                      Cadastrar jogador manualmente
-                    </Link>
-                  ) : (
-                    <p>Peça ao Presidente ou Vice-Presidente para cadastrar o jogador.</p>
-                  )}
-                  <p className="text-xs text-zinc-400">
-                    Na página de jogadores, administradores autorizados também podem ativar a
-                    aprovação automática por 24 horas.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h4 className="font-semibold">
-                    {channel === "WHATSAPP"
-                      ? "Convide a galera pelo WhatsApp"
-                      : "Coloque o site no Instagram da pelada"}
-                  </h4>
-                  <p className="text-sm text-zinc-300">
-                    {channel === "WHATSAPP"
-                      ? "Compartilhe o convite no grupo. Depois de enviar, pressione a mensagem, escolha Fixar e selecione a duração disponível."
-                      : "Copie o link, abra o Instagram do grupo e entre em Editar perfil. Em Links, adicione o endereço e salve. Os nomes das opções podem variar conforme a versão."}
-                  </p>
-                  <p className="break-all rounded-lg bg-white/5 p-2 text-xs">
-                    {publicUrl || "O endereço público ainda não está disponível."}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      className={primary}
-                      disabled={!publicUrl || updating || copying}
-                      onClick={() => void copy()}
-                    >
-                      {copying
-                        ? "Copiando..."
-                        : channel === "WHATSAPP"
-                          ? "Copiar convite"
-                          : "Copiar link"}
-                    </button>
-                    <a
-                      className={secondary}
-                      href={
-                        channel === "WHATSAPP"
-                          ? `https://wa.me/?text=${encodeURIComponent(invite)}`
-                          : "https://www.instagram.com/"
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(event) => {
-                        if (!publicUrl) event.preventDefault();
-                        else
-                          void update({
-                            action: "RESOURCE_VIEWED",
-                            resourceId:
-                              channel === "WHATSAPP"
-                                ? "whatsapp-share-attempt"
-                                : "instagram-opened",
-                          });
-                      }}
-                    >
-                      {channel === "WHATSAPP" ? "Compartilhar no WhatsApp" : "Abrir Instagram"}
-                    </a>
-                  </div>
-                  <button className="block w-full text-left" onClick={() => setExpandedImage(true)}>
-                    <Image
-                      src={`/images/onboarding/${image}.webp`}
-                      alt={
-                        channel === "WHATSAPP"
-                          ? "Exemplo ilustrativo de convite fixado no WhatsApp, com destaque amarelo"
-                          : "Exemplo ilustrativo do link no perfil do Instagram, com destaque amarelo"
-                      }
-                      width={800}
-                      height={600}
-                      className="max-h-48 w-full rounded-lg object-contain"
-                    />
-                    <span className="text-xs text-zinc-400">
-                      Exemplo ilustrativo · Clique para ampliar
-                    </span>
-                  </button>
-                </>
-              )}
-              {feedback && (
-                <p role="status" className="text-sm text-yellow-200">
-                  {feedback}
-                </p>
-              )}
-            </>
+            <button
+              ref={invitationButtonRef}
+              type="button"
+              className={primary}
+              disabled={updating || !actionUnlocked}
+              aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
+              onClick={() => {
+                setSelected("ACTIVE_PLAYERS");
+                setInvitationOpen(true);
+              }}
+            >
+              Convidar jogadores agora
+            </button>
+          ) : actionUnlocked && destination ? (
+            <Link
+              className={primary}
+              href={
+                active.id === "ACCOUNT_READY" ? destination : `${destination}?guia=${active.id}`
+              }
+            >
+              {active.id === "ACCOUNT_READY"
+                ? "Ver site do grupo"
+                : active.completed
+                  ? "Consultar funcionalidade"
+                  : "Continuar"}
+            </Link>
           ) : (
-            destination && (
-              <Link
-                className={primary}
-                href={
-                  active.id === "ACCOUNT_READY" ? destination : `${destination}?guia=${active.id}`
-                }
-              >
-                {active.id === "ACCOUNT_READY"
-                  ? "Ver site do grupo"
-                  : active.completed
-                    ? "Consultar funcionalidade"
-                    : "Continuar"}
-              </Link>
-            )
+            <button
+              type="button"
+              className={primary}
+              disabled
+              aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
+            >
+              {active.id === "ACCOUNT_READY"
+                ? "Ver site do grupo"
+                : active.completed
+                  ? "Consultar funcionalidade"
+                  : "Continuar"}
+            </button>
+          )}
+          {!actionUnlocked && (
+            <p id="onboarding-action-locked" className="text-sm text-zinc-300">
+              Conclua as etapas anteriores para liberar esta ação.
+            </p>
           )}
           {!active.completed && !active.canAct && active.id !== "ACTIVE_PLAYERS" && (
             <p className="text-sm text-zinc-300">
