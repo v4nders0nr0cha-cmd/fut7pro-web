@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import useSWR from "swr";
+import { useSession } from "next-auth/react";
 import { useRacha } from "@/context/RachaContext";
 import type { AdminGuideData, AdminGuidePatch } from "@/types/admin-guide";
 
@@ -25,16 +26,19 @@ async function fetchGuide(): Promise<AdminGuideData> {
 
 export function useAdminGuide() {
   const { tenantSlug } = useRacha();
+  const { data: session } = useSession();
+  const userId = (session?.user as { id?: string } | undefined)?.id ?? "";
   const activeSlug = tenantSlug.trim().toLowerCase();
-  const scopeRef = useRef(activeSlug);
-  scopeRef.current = activeSlug;
+  const activeScope = `${userId}:${activeSlug}`;
+  const scopeRef = useRef(activeScope);
+  scopeRef.current = activeScope;
   const inFlightRef = useRef(new Set<string>());
   const [actionFailure, setActionFailure] = useState<{ slug: string; error: GuideError } | null>(
     null
   );
   const [updatingSlugs, setUpdatingSlugs] = useState<Set<string>>(() => new Set());
   const { data, error, isLoading, mutate } = useSWR<AdminGuideData, GuideError>(
-    activeSlug ? ["/api/admin/guide", activeSlug] : null,
+    activeSlug && userId ? ["/api/admin/guide", userId, activeSlug] : null,
     fetchGuide,
     {
       keepPreviousData: false,
@@ -51,7 +55,8 @@ export function useAdminGuide() {
 
   const update = useCallback(
     async (action: AdminGuidePatch) => {
-      if (!guide || scopeRef.current !== guide.tenant.slug.toLowerCase()) return false;
+      if (!guide || scopeRef.current !== `${userId}:${guide.tenant.slug.toLowerCase()}`)
+        return false;
       const scope = scopeRef.current;
       if (inFlightRef.current.has(scope)) return false;
       inFlightRef.current.add(scope);
@@ -85,16 +90,17 @@ export function useAdminGuide() {
         });
       }
     },
-    [guide, mutate]
+    [guide, mutate, userId]
   );
 
+  const retry = useCallback(() => mutate(), [mutate]);
   return {
     guide,
     loading: Boolean(activeSlug) && isLoading,
     error: error ?? null,
-    actionError: actionFailure?.slug === activeSlug ? actionFailure.error : null,
-    updating: updatingSlugs.has(activeSlug),
-    retry: () => mutate(),
+    actionError: actionFailure?.slug === activeScope ? actionFailure.error : null,
+    updating: updatingSlugs.has(activeScope),
+    retry,
     update,
   };
 }

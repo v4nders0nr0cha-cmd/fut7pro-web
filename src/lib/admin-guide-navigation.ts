@@ -16,7 +16,7 @@ const ALLOWED_ADMIN_ROUTES = new Set([
 
 export function guideDestination(guide: AdminGuideData, task: AdminGuideTask): string | null {
   if (!task.applicable || !task.canAct) return null;
-  if (task.id === "PUBLIC_SITE" && task.route === "/") {
+  if ((task.id === "PUBLIC_SITE" || task.id === "ACCOUNT_READY") && task.route === "/") {
     const slug = guide.tenant.slug;
     return /^[a-z0-9][a-z0-9-]*$/i.test(slug) ? `/${encodeURIComponent(slug)}` : null;
   }
