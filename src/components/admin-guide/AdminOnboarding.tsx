@@ -7,7 +7,6 @@ import { CheckCircle2, Circle, Trophy } from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import { ONBOARDING_IDS, STEP_HELP } from "@/lib/admin-onboarding";
 import { guideDestination } from "@/lib/admin-guide-navigation";
-import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 
 const primary =
   "inline-flex min-h-11 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 font-semibold text-black hover:bg-yellow-300 disabled:opacity-50";
@@ -74,6 +73,24 @@ export default function AdminOnboarding({ onClose }: { onClose?: () => void }) {
   const destination = guideDestination(guide, active);
   const next = tasks.slice(tasks.indexOf(active) + 1).find((item) => !item.completed);
   const image = channel === "INSTAGRAM" ? "instagram" : "whatsapp";
+  if (expandedImage)
+    return (
+      <section className="space-y-4 text-white">
+        <button autoFocus className={secondary} onClick={() => setExpandedImage(false)}>
+          Voltar à orientação
+        </button>
+        <p className="text-sm text-zinc-300">
+          Exemplo ilustrativo. Nomes e links da imagem servem apenas como referência.
+        </p>
+        <Image
+          src={`/images/onboarding/${image}.webp`}
+          alt="Imagem educativa ampliada com destaque na localização do convite ou link"
+          width={1400}
+          height={1800}
+          className="h-auto w-full rounded-xl object-contain"
+        />
+      </section>
+    );
   return (
     <div className="grid min-w-0 gap-6 text-white md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)]">
       <aside className="min-w-0 text-center md:border-r md:border-white/15 md:pr-6">
@@ -352,20 +369,6 @@ export default function AdminOnboarding({ onClose }: { onClose?: () => void }) {
           </p>
         )}
       </section>
-      <Fut7DialogBase
-        open={expandedImage}
-        title="Exemplo ilustrativo"
-        size="xl"
-        onClose={() => setExpandedImage(false)}
-      >
-        <Image
-          src={`/images/onboarding/${image}.webp`}
-          alt="Imagem educativa ampliada. Nomes e links são exemplos ilustrativos."
-          width={1200}
-          height={1200}
-          className="h-auto w-full object-contain"
-        />
-      </Fut7DialogBase>
     </div>
   );
 }
