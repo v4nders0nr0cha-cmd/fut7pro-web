@@ -261,6 +261,16 @@ for (const viewport of [
       complete: true,
       unlocked: true,
     };
+    guide.eligibility = {
+      eligiblePlayers: 10,
+      minimumPlayers: 10,
+      missingPlayers: 0,
+      preparationComplete: true,
+      footballUnlocked: true,
+    };
+    guide.actionAvailability = Object.fromEntries(
+      ids.map((id) => [id, { allowed: true, reason: null }])
+    );
     guide.reward.eligible = true;
     await page.reload();
     await expect(page.getByText("+10 DIAS DE FUT7PRO", { exact: true })).toBeVisible();
