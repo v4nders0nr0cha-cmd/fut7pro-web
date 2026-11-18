@@ -23,6 +23,7 @@ export type AdminGuidePedagogicalState = {
   preparationCelebratedAt?: string;
   footballInvitePresentedAt?: string;
   footballInviteDeferredAt?: string;
+  footballInviteDeferred?: boolean;
   footballStartedAt?: string;
   currentStep?: string;
   invitationCopiedAt?: string;
