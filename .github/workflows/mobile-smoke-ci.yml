@@ -17,7 +17,7 @@ jobs:
   mobile-smoke:
     name: Mobile Smoke Gate
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-noble
+    container: mcr.microsoft.com/playwright:v1.57.0-noble
     timeout-minutes: 60
 
     steps:

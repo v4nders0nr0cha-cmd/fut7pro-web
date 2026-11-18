@@ -21,7 +21,7 @@ jobs:
   superadmin-legacy-security:
     name: SuperAdmin Legacy Security Smoke
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-noble
+    container: mcr.microsoft.com/playwright:v1.57.0-noble
     timeout-minutes: 25
 
     steps:
@@ -78,7 +78,7 @@ jobs:
   admin-smoke:
     name: Admin Smoke Navigation
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-noble
+    container: mcr.microsoft.com/playwright:v1.57.0-noble
     timeout-minutes: 45
     env:
       ADMIN_SMOKE_FIXTURE: "1"

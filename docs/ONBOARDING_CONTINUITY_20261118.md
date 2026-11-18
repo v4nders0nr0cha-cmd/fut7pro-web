@@ -48,3 +48,7 @@ Browser: novos cenários executam o formulário real de times, falha de salvamen
 PostgreSQL: teste com serviço real verifica zero/um/dois times, observação por dois administradores, arquivamento posterior, contagem atual e conquista preservada. As validações esportivas e comerciais já existentes continuam na suíte completa.
 
 CI e identificadores finais ficam nas descrições dos PRs #257 e #189. Creator #132 permanece sem alterações nesta rodada. Conferência autenticada com dados reais, iPhone físico e homologação financeira continuam pendentes antes de produção. Nenhum merge, migração em produção ou deploy manual autorizado/executado.
+
+### Ambiente de navegador
+
+A regressão longa encontrou um encerramento nativo do WebKit após refresh e navegação na versão 1.56.1. A reprodução ocorreu no mesmo ponto em duas execuções do mesmo commit. O mantenedor documentou a falha de recarregamento e sua correção na 1.57: https://github.com/microsoft/playwright/issues/37766 . A ferramenta de testes e as imagens correspondentes de CI passam para 1.57.0, com os dois lockfiles sincronizados. Os mesmos percursos e assertions são mantidos, incluindo refresh e navegação direta; nenhum teste foi ignorado ou relaxado. Essa atualização afeta o ambiente de verificação, não a aplicação em produção.
