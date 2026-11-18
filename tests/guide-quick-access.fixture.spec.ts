@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { ids, installGuide, login } from "./fixtures/guide-continuity";
 const name = "Guia Interativo Fut7Pro";
 async function refreshed(page: Page) {
+  await expect(page).toHaveURL(/\/admin\/dashboard$/);
+  await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
   const access = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/admin/access"
   );

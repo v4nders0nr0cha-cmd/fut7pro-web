@@ -13,6 +13,8 @@ async function schedule(page: Page, mobile: boolean) {
   const menu = sidebar.getByRole("button", { name: "Partidas", exact: true });
   if ((await menu.getAttribute("aria-expanded")) !== "true") await menu.click();
   await sidebar.locator('a[href="/admin/partidas/proximos-rachas"]').click();
+  await expect(page).toHaveURL(/\/admin\/partidas\/proximos-rachas$/);
+  await page.getByRole("link", { name: "Gerenciar dias e horarios", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/rachas$/);
   await expect(page.getByLabel("Horário", { exact: true })).toBeEnabled();
 }
