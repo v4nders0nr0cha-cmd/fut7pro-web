@@ -98,7 +98,6 @@ export default function AdminGuideRewardNotice() {
               celebrando as próximas conquistas!
             </p>
             <button
-              autoFocus
               className="min-h-11 rounded-lg bg-yellow-400 px-4 py-3 font-bold text-black"
               onClick={() => setOpenScope("")}
             >

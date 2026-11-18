@@ -279,6 +279,8 @@ for (const viewport of [
     guide.reward.eligible = true;
     await page.reload();
     await expect(page.getByText("+10 DIAS DE FUT7PRO", { exact: true })).toBeVisible();
+    const rewardTitle = page.getByRole("heading", { name: "Você entrou para o jogo! 🏆" });
+    await expect(rewardTitle).toBeInViewport();
     await dialog.screenshot({ path: testInfo.outputPath(`reward-${viewport.name}.png`) });
     await page.getByRole("button", { name: "Continuar aproveitando o Fut7Pro" }).click();
     await expect(dialog).toHaveCount(0);
