@@ -1,6 +1,32 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import AdminOnboarding from "../AdminOnboarding";
+import { AdminGuideControllerProvider, useAdminGuideController } from "../AdminGuideController";
 import AdminGuidePresenter from "../AdminGuidePresenter";
+function Surface({ children }: { children: React.ReactNode }) {
+  const controller = useAdminGuideController();
+  return (
+    <>
+      <button onClick={controller?.openGuide}>Abrir guia neste teste</button>
+      {children}
+    </>
+  );
+}
+function render(ui: React.ReactNode) {
+  const wrap = (children: React.ReactNode) => (
+    <AdminGuideControllerProvider>
+      <Surface>{children}</Surface>
+    </AdminGuideControllerProvider>
+  );
+  const view = rtlRender(wrap(ui));
+  return { ...view, rerender: (children: React.ReactNode) => view.rerender(wrap(children)) };
+}
+let adminId = "admin-1";
+jest.mock("@/context/RachaContext", () => ({
+  useRacha: () => ({
+    tenantSlug: guide?.tenant.slug ?? "pelada",
+    rachaId: guide?.tenant.id ?? "group",
+  }),
+}));
 const update = jest.fn().mockResolvedValue(true);
 const retry = jest.fn(() => Promise.resolve(guide));
 let pathname = "/admin/dashboard";
@@ -13,6 +39,9 @@ jest.mock("next/navigation", () => ({
 }));
 const copy = jest.fn().mockResolvedValue(undefined);
 let guide: any;
+let guideLoading = false;
+let guideValidating = false;
+let guideError: Error | null = null;
 let loginId = "login-1";
 let eligiblePlayers = 10;
 function withPhases(value: any) {
@@ -91,11 +120,19 @@ function withPhases(value: any) {
   return value;
 }
 jest.mock("@/hooks/useAdminGuide", () => ({
-  useAdminGuide: () => ({ guide: withPhases(guide), update, retry, updating: false }),
+  useAdminGuide: () => ({
+    guide: withPhases(guide),
+    update,
+    retry,
+    updating: false,
+    loading: guideLoading,
+    validating: guideValidating,
+    error: guideError,
+  }),
 }));
 jest.mock("next-auth/react", () => ({
   useSession: () => ({
-    data: { user: { name: "Ana Silva", image: null, onboardingLoginId: loginId } },
+    data: { user: { id: adminId, name: "Ana Silva", image: null, onboardingLoginId: loginId } },
   }),
 }));
 jest.mock("next/image", () => ({
@@ -108,7 +145,9 @@ jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
     open ? (
       <div role="dialog">
         {icon}
-        <button onClick={onCloseButton ?? onClose}>Fechar modal</button>
+        <button aria-label="Fechar modal" onClick={onCloseButton ?? onClose}>
+          Fechar modal
+        </button>
         {children}
       </div>
     ) : null,
@@ -118,6 +157,10 @@ beforeEach(() => {
   pathname = "/admin/dashboard";
   search = "";
   loginId = "login-1";
+  adminId = "admin-1";
+  guideLoading = false;
+  guideValidating = false;
+  guideError = null;
   eligiblePlayers = 10;
   sessionStorage.clear();
   localStorage.clear();
@@ -241,6 +284,8 @@ it("X closes temporarily without leaving a dashboard card", async () => {
 it("requires confirmation before permanent dismissal and permits cancelling", async () => {
   render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
+  update.mockClear();
+  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_PRESENTED" }));
   update.mockClear();
   fireEvent.click(screen.getByRole("button", { name: "Não mostrar este Guia novamente" }));
   expect(screen.getByRole("alertdialog")).toBeVisible();
@@ -504,6 +549,7 @@ it("isolates temporary closing by group, administrator and real login", async ()
   await screen.findByRole("dialog");
   fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
   guide.administrator.membershipId = "another-administrator";
+  adminId = "another-admin";
   view.rerender(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
 });
@@ -602,7 +648,8 @@ it("refreshes before manual reopening and does not change permanent dismissal", 
   search = "retomarGuia=1&grupoGuia=pelada";
   view.rerender(<AdminGuidePresenter />);
   await waitFor(() => expect(retry).toHaveBeenCalledTimes(2));
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeDisabled();
   guide.tasks.slice(0, 3).forEach((task: any) => (task.completed = true));
   finish(guide);
   await screen.findByRole("heading", { name: "Cadastre os times" });
@@ -616,14 +663,12 @@ it("keeps the Dashboard usable if the manual progress read fails", async () => {
   retry.mockRejectedValueOnce(new Error("unavailable"));
   search = "retomarGuia=1&grupoGuia=pelada";
   view.rerender(<AdminGuidePresenter />);
-  await screen.findByText(/Não foi possível abrir o guia/);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(replace).toHaveBeenCalledWith("/admin/dashboard", { scroll: false });
-  search = "";
-  view.rerender(<AdminGuidePresenter />);
-  search = "retomarGuia=1&grupoGuia=pelada";
-  view.rerender(<AdminGuidePresenter />);
-  await screen.findByRole("dialog");
+  await screen.findByText(/Não foi possível atualizar seu progresso/);
+  expect(screen.getByRole("dialog")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeEnabled()
+  );
 });
 
 it("does not let an earlier automatic read display stale progress during a manual request", async () => {
@@ -648,9 +693,62 @@ it("does not let an earlier automatic read display stale progress during a manua
   await act(async () => {
     automatic(guide);
   });
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeDisabled();
   await act(async () => {
     manualRead(guide);
   });
   await screen.findByRole("dialog");
+});
+
+it("opens on an operational page with no cache and stays closed when the pending read arrives after X", async () => {
+  const loaded = guide;
+  guide = null;
+  guideLoading = true;
+  guideValidating = true;
+  pathname = "/admin/partidas/criar-times";
+  const view = render(<AdminGuidePresenter />);
+  fireEvent.click(screen.getByRole("button", { name: "Abrir guia neste teste" }));
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.getByText("Carregando seu progresso...")).toBeVisible();
+  expect(retry).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+  guide = loaded;
+  guideLoading = false;
+  guideValidating = false;
+  pathname = "/admin/dashboard";
+  view.rerender(<AdminGuidePresenter />);
+  await waitFor(() => expect(retry).toHaveBeenCalled());
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Abrir guia neste teste" }));
+  await screen.findByRole("dialog");
+});
+it("keeps the dialog DOM while loading fails and retries, restoring keyboard focus", async () => {
+  const loaded = guide;
+  guide = null;
+  guideLoading = true;
+  guideValidating = true;
+  pathname = "/admin/jogadores/listar-cadastrar";
+  const view = render(<AdminGuidePresenter />);
+  fireEvent.click(screen.getByRole("button", { name: "Abrir guia neste teste" }));
+  const dialog = screen.getByRole("dialog");
+  guideLoading = false;
+  guideValidating = false;
+  guideError = new Error("offline");
+  view.rerender(<AdminGuidePresenter />);
+  const retryControl = await screen.findByRole("button", { name: "Tentar novamente" });
+  expect(screen.getByRole("dialog")).toBe(dialog);
+  retryControl.focus();
+  retry.mockImplementationOnce(async () => {
+    guide = loaded;
+    guideError = null;
+    return loaded;
+  });
+  fireEvent.click(retryControl);
+  view.rerender(<AdminGuidePresenter />);
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeEnabled()
+  );
+  expect(screen.getByRole("dialog")).toBe(dialog);
+  expect(screen.getByRole("button", { name: "Fechar modal" })).toHaveFocus();
 });

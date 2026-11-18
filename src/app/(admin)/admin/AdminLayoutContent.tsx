@@ -1,4 +1,5 @@
 "use client";
+import { AdminGuideControllerProvider } from "@/components/admin-guide/AdminGuideController";
 import AdminGuideAccessHint from "@/components/admin-guide/AdminGuideAccessHint";
 import AdminGuidePresenter from "@/components/admin-guide/AdminGuidePresenter";
 
@@ -611,26 +612,32 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   }
 
   return withSessionModal(
-    <NotificationProvider>
-      <div
-        data-guide-navigation-open={mobileSidebarOpen ? "true" : undefined}
-        className="flex flex-col min-h-screen bg-gradient-to-br from-[#181818] to-[#232323]"
-      >
-        <ToastGlobal />
-        <Header onMenuClick={() => setMobileSidebarOpen(true)} />
-        <div className="flex flex-1">
-          <Sidebar />
-          <Sidebar mobile isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
-          <main className="flex-1 w-full px-4 sm:px-6 pt-20 md:pt-15 pb-24">
-            <AdminGuideContext />
-            <AdminGuidePresenter />
-            {children}
-          </main>
+    <AdminGuideControllerProvider>
+      <NotificationProvider>
+        <div
+          data-guide-navigation-open={mobileSidebarOpen ? "true" : undefined}
+          className="flex flex-col min-h-screen bg-gradient-to-br from-[#181818] to-[#232323]"
+        >
+          <ToastGlobal />
+          <Header onMenuClick={() => setMobileSidebarOpen(true)} />
+          <div className="flex flex-1">
+            <Sidebar />
+            <Sidebar
+              mobile
+              isOpen={mobileSidebarOpen}
+              onClose={() => setMobileSidebarOpen(false)}
+            />
+            <main className="flex-1 w-full px-4 sm:px-6 pt-20 md:pt-15 pb-24">
+              <AdminGuideContext />
+              <AdminGuidePresenter />
+              {children}
+            </main>
+          </div>
+          <BottomMenuAdmin />
+          <AdminHelpLauncher />
+          <AdminGuideAccessHint />
         </div>
-        <BottomMenuAdmin />
-        <AdminHelpLauncher />
-        <AdminGuideAccessHint />
-      </div>
-    </NotificationProvider>
+      </NotificationProvider>
+    </AdminGuideControllerProvider>
   );
 }

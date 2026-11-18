@@ -129,6 +129,10 @@ for (const viewport of [
         await dialog.getByRole("button", { name: "Fechar modal", exact: true }).click();
         await expect(dialog).toHaveCount(0);
       }
+      if (!legacy) {
+        const frames = samples.map((sample) => sample.frameMs).sort((a, b) => a - b);
+        expect(frames[1]).toBeLessThanOrEqual(300);
+      }
       const report = {
         mode: legacy ? "legacy" : "immediate",
         viewport,

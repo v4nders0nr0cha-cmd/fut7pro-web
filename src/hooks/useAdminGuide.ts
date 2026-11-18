@@ -23,7 +23,15 @@ async function readResponse<T>(response: Response): Promise<T> {
 }
 
 async function fetchGuide(): Promise<AdminGuideData> {
-  return readResponse<AdminGuideData>(await fetch("/api/admin/guide", { cache: "no-store" }));
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    return await readResponse<AdminGuideData>(
+      await fetch("/api/admin/guide", { cache: "no-store", signal: controller.signal })
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function useAdminGuide() {
@@ -38,7 +46,7 @@ export function useAdminGuide() {
     null
   );
   const [updatingSlugs, setUpdatingSlugs] = useState<Set<string>>(() => new Set());
-  const { data, error, isLoading, mutate } = useSWR<AdminGuideData, GuideError>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<AdminGuideData, GuideError>(
     activeSlug && userId ? ["/api/admin/guide", userId, activeSlug] : null,
     fetchGuide,
     {
@@ -177,6 +185,7 @@ export function useAdminGuide() {
   return {
     guide,
     loading: Boolean(activeSlug) && isLoading,
+    validating: isValidating,
     error: error ?? null,
     actionError: actionFailure?.slug === activeScope ? actionFailure.error : null,
     updating: updatingSlugs.has(activeScope),

@@ -43,12 +43,14 @@ export default function AdminOnboarding({
   origin = "pagina",
   initialStep,
   firstPresentation = false,
+  actionsReady = true,
 }: {
   onClose?: (permanentlyDismissed?: boolean) => void;
   onNavigate?: () => void;
   origin?: GuideOrigin;
   initialStep?: string;
   firstPresentation?: boolean;
+  actionsReady?: boolean;
 }) {
   const { guide, updating, update, actionError, error, retry } = useAdminGuide();
   const { data: session } = useSession();
@@ -186,7 +188,7 @@ export default function AdminOnboarding({
           <div className="mt-4 border-t border-white/10 pt-2">
             <button
               ref={dismissButtonRef}
-              disabled={updating}
+              disabled={updating || !actionsReady}
               className="min-h-11 text-xs text-red-300/90 underline decoration-red-300/30 underline-offset-4"
               onClick={() => setConfirmDismiss(true)}
             >
@@ -214,7 +216,7 @@ export default function AdminOnboarding({
             <button
               autoFocus
               className={secondary}
-              disabled={updating}
+              disabled={updating || !actionsReady}
               onClick={() => {
                 setConfirmDismiss(false);
                 dismissButtonRef.current?.focus();
@@ -224,7 +226,7 @@ export default function AdminOnboarding({
             </button>
             <button
               className="ml-2 min-h-11 text-sm text-red-300 underline"
-              disabled={updating}
+              disabled={updating || !actionsReady}
               onClick={async () => {
                 if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) {
                   setConfirmDismiss(false);
@@ -323,7 +325,7 @@ export default function AdminOnboarding({
               ref={invitationButtonRef}
               type="button"
               className={primary}
-              disabled={updating || !actionUnlocked}
+              disabled={updating || !actionUnlocked || !actionsReady}
               aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
               onClick={() => {
                 setSelected("ACTIVE_PLAYERS");
@@ -332,7 +334,7 @@ export default function AdminOnboarding({
             >
               Convidar jogadores agora
             </button>
-          ) : actionUnlocked && destination ? (
+          ) : actionUnlocked && actionsReady && destination ? (
             <Link
               className={primary}
               href={

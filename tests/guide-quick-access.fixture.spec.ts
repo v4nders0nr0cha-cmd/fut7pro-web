@@ -14,7 +14,7 @@ async function floatingGuide(page: Page) {
   await page.getByRole("button", { name: "Ajuda Fut7Pro", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Ajuda Fut7Pro", exact: true })
-    .getByRole("link", { name: /Guia Interativo/ })
+    .getByRole("button", { name: /Guia Interativo/ })
     .click();
   await expect(page.getByRole("navigation", { name: "Ajuda Fut7Pro", exact: true })).toHaveCount(0);
 }
@@ -49,7 +49,9 @@ test("quick guide access desktop keeps the profile page and manual preferences",
   await guide.getByRole("link", { name: "Continuar", exact: true }).click();
   await expect(page).toHaveURL(/criar-times/);
   await expect(guide).toHaveCount(0);
+  const operationalUrl = page.url();
   await floatingGuide(page);
+  await expect(page).toHaveURL(operationalUrl);
   await expect(
     guide.getByRole("heading", { name: "Cadastre os times", exact: true })
   ).toBeVisible();
@@ -61,6 +63,7 @@ test("quick guide access desktop keeps the profile page and manual preferences",
   await expect(guide).toBeVisible();
   expect(fixture.state.dashboardInviteDismissedAt).toBe(permanent);
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
+  await page.locator('header a[href="/admin/dashboard"]').click();
   await refreshed(page);
   await expect(guide).toHaveCount(0);
   await expect(hint).toHaveCount(0);
@@ -87,7 +90,7 @@ for (const viewport of [
     await login(page);
     const guide = page.getByRole("dialog", { name });
     await expect(guide).toBeVisible();
-    const book = page.getByRole("link", { name: "Abrir Guia Interativo", exact: true });
+    const book = page.getByRole("button", { name: "Abrir Guia Interativo", exact: true });
     await expect(book).toBeAttached();
     await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
     const hint = page.getByTestId("guide-access-hint");
@@ -124,7 +127,9 @@ for (const viewport of [
     await expect(page).toHaveURL(/\/admin\/dashboard$/);
     await guide.getByRole("link", { name: "Continuar", exact: true }).click();
     await expect(page).toHaveURL(/criar-times/);
+    const operationalUrl = page.url();
     await book.click();
+    await expect(page).toHaveURL(operationalUrl);
     await expect(
       guide.getByRole("heading", { name: "Cadastre os times", exact: true })
     ).toBeVisible();
@@ -139,6 +144,7 @@ for (const viewport of [
     await expect(guide).toBeVisible();
     expect(fixture.state.dashboardInviteDismissedAt).toBe(permanent);
     await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
+    await page.locator('header a[href="/admin/dashboard"]').click();
     await refreshed(page);
     await expect(guide).toHaveCount(0);
     await expect(hint).toHaveCount(0);
