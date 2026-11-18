@@ -54,7 +54,7 @@ export default function RankingAssistenciasPage() {
         <title>Ranking de Assistências | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Confira o ranking de assistências do grupo por quadrimestre, na temporada atual ou em todo o histórico."
+          content="Confira quem deu mais passes para gol por quadrimestre, na temporada atual ou em todo o histórico."
         />
         <meta
           name="keywords"
@@ -69,7 +69,7 @@ export default function RankingAssistenciasPage() {
           <div className="w-full max-w-3xl flex flex-col items-center">
             <PageHelp
               title="Ranking de Assistências"
-              summary="Passes para gol por atleta, organizados por período e no histórico do grupo."
+              summary="Passes para gol por atleta, organizados por período e ao longo das nossas partidas."
               detailsTitle="Como funciona o Ranking de Assistências"
               details={
                 <>

@@ -47,7 +47,7 @@ export default function RankingGeralPage() {
         <title>Ranking Geral de Pontos | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja o ranking geral de pontos dos atletas do grupo por quadrimestre, na temporada atual ou em todas as temporadas."
+          content="Veja a pontuação dos nossos atletas por quadrimestre, na temporada atual ou em todas as temporadas."
         />
         <meta
           name="keywords"
@@ -79,7 +79,7 @@ export default function RankingGeralPage() {
                 </p>
                 <p>
                   Busque seu nome para acompanhar sua evolução e comparar sua posição com os demais
-                  atletas do grupo.
+                  atletas nas nossas partidas.
                 </p>
               </>
             }

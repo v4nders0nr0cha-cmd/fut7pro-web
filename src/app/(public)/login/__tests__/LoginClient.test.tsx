@@ -150,7 +150,7 @@ describe("LoginClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Acessar perfil" }));
 
     expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste grupo" }));
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
@@ -192,7 +192,7 @@ describe("LoginClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
 
     expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste grupo" }));
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
@@ -484,7 +484,7 @@ describe("LoginClient", () => {
     render(<LoginClient />);
 
     expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste grupo" }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -534,7 +534,7 @@ describe("LoginClient", () => {
     render(<LoginClient />);
 
     expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste grupo" }));
 
     await waitFor(() => {
       expect(mutateCacheMock).toHaveBeenCalledWith("/api/me?slug=casa-do-gamer&context=athlete");

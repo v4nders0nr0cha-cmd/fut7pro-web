@@ -47,7 +47,8 @@ export default function AniversariantesPage() {
   }, [birthdays]);
 
   const seoTitle = "Aniversariantes do mês | Fut7Pro";
-  const seoDescription = "Veja quem faz aniversário neste mês no grupo de futebol entre amigos.";
+  const seoDescription =
+    "Veja quem faz aniversário neste mês e celebre com nossa turma de futebol.";
 
   return (
     <>

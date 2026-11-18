@@ -152,7 +152,7 @@ export default function ContatosPage() {
         <title>Fale Conosco | Contato Fut7Pro</title>
         <meta
           name="description"
-          content="Fale com os responsáveis pelo grupo para tirar dúvidas ou conversar sobre parcerias e patrocínios."
+          content="Fale com nossa administração para tirar dúvidas ou conversar sobre parcerias e patrocínios."
         />
         <meta
           name="keywords"
@@ -167,8 +167,8 @@ export default function ContatosPage() {
             Fale Conosco
           </h1>
           <p className="text-center text-zinc-300 mb-6">
-            Quer apoiar o grupo ou tirar alguma dúvida? Use os canais abaixo para falar com os
-            responsáveis.
+            Quer apoiar nosso futebol ou tirar alguma dúvida? Use os canais abaixo para falar com
+            nossa administração.
           </p>
 
           {/* Formulário */}

@@ -54,7 +54,7 @@ export default function PrestacaoDeContasPage() {
           Prestação de contas não publicada
         </h1>
         <p className="text-gray-300 max-w-2xl">
-          A administração deste grupo optou por não disponibilizar esta área publicamente.
+          Nossa administração optou por não disponibilizar esta área publicamente.
         </p>
       </div>
     );
@@ -67,7 +67,7 @@ export default function PrestacaoDeContasPage() {
           Prestação de contas indisponível
         </h1>
         <p className="text-gray-300 max-w-2xl">
-          Este grupo ainda não publicou lançamentos financeiros nesta área.
+          Ainda não publicamos lançamentos financeiros nesta área.
         </p>
         <p className="text-gray-400 mt-2 max-w-2xl">
           Quando houver movimentações registradas e visíveis, elas aparecerão aqui.
@@ -95,7 +95,7 @@ export default function PrestacaoDeContasPage() {
         <title>Prestação de Contas – {tenantName}</title>
         <meta
           name="description"
-          content="Acompanhe o saldo, receitas e despesas do grupo com transparência. Veja como os valores são usados em cada mês."
+          content="Acompanhe nosso saldo, receitas e despesas com transparência. Veja como os valores são usados a cada mês."
         />
         <meta
           name="keywords"
@@ -104,7 +104,7 @@ export default function PrestacaoDeContasPage() {
         <meta property="og:title" content={`Prestação de Contas – ${tenantName}`} />
         <meta
           property="og:description"
-          content="Veja a movimentação financeira do grupo mês a mês. Transparência para atletas e visitantes."
+          content="Veja nossa movimentação financeira mês a mês. Transparência para atletas e visitantes."
         />
       </Head>
       <main className="w-full pt-20 pb-10">
@@ -113,10 +113,10 @@ export default function PrestacaoDeContasPage() {
             Prestação de Contas
           </h1>
           <p className="mb-4 text-gray-400 text-xs sm:text-sm max-w-xl">
-            Aqui você pode acompanhar todas as receitas e despesas do grupo, de forma transparente.
+            Aqui você pode acompanhar nossas receitas e despesas de forma transparente.
             <br />
             Nosso objetivo é mostrar a todos os atletas e patrocinadores como está o saldo, de onde
-            vem o dinheiro e como ele é utilizado a cada mês para o benefício do grupo.
+            vem o dinheiro e como ele é utilizado a cada mês em nosso futebol.
             <br />
             Em caso de dúvida, procure a administração.
           </p>

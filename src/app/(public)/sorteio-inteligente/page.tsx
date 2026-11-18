@@ -33,7 +33,7 @@ const etapas = [
 const regras = [
   "Evita concentrações repetidas de atletas no mesmo time.",
   "Usa histórico recente para reduzir distorções de curto prazo.",
-  "Os resultados publicados ficam visíveis no site do grupo.",
+  "Os resultados publicados ficam visíveis neste site.",
 ];
 
 export default function SorteioInteligentePage() {
@@ -63,7 +63,7 @@ export default function SorteioInteligentePage() {
           <p className="text-center text-gray-300 max-w-3xl mx-auto mb-10">
             O Fut7Pro transforma o antigo sorteio manual em um processo técnico, justo e auditável.
             O objetivo é gerar partidas mais equilibradas e competitivas, com melhor experiência
-            para todo o grupo.
+            para quem entra em campo.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">

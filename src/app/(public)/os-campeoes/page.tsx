@@ -256,10 +256,10 @@ export default function CampeoesPage() {
   return (
     <>
       <Head>
-        <title>Os Campeões | Hall da Fama do Grupo | Fut7Pro</title>
+        <title>Os Campeões | Hall da Fama | Fut7Pro</title>
         <meta
           name="description"
-          content="Conheça os campeões do grupo por ano e quadrimestre, com base nos rankings de pontos, gols, assistências e desempenho por posição."
+          content="Conheça nossos campeões por ano e quadrimestre, com base nos rankings de pontos, gols, assistências e desempenho por posição."
         />
         <meta
           name="keywords"
@@ -269,19 +269,19 @@ export default function CampeoesPage() {
 
       <main className="w-full max-w-[1440px] mx-auto px-4 pt-[40px] pb-12">
         <h1 className="sr-only">
-          Os Campeões do grupo - Melhores do Ano, Rankings e Campeões por Quadrimestre
+          Os Campeões - Melhores do Ano, Rankings e Campeões por Quadrimestre
         </h1>
 
         <PageHelp
           title="Os Campeões"
-          summary="Hall da Fama com títulos anuais e quadrimestrais do grupo."
+          summary="Hall da Fama com os títulos anuais e quadrimestrais dos nossos jogadores."
           className="mb-8"
           detailsTitle="Como funciona a página Os Campeões"
           details={
             <>
               <p>
-                A página Os Campeões consolida os títulos oficiais do grupo por ano e por
-                quadrimestre, com vencedores calculados a partir das partidas publicadas.
+                A página Os Campeões reúne os títulos conquistados pelos nossos jogadores por ano e
+                por quadrimestre, com vencedores calculados a partir das partidas publicadas.
               </p>
 
               <div>

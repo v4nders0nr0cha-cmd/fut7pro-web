@@ -666,7 +666,7 @@ export default function Home({
               <Card title="Ranking" description="Compare seu desempenho com os melhores." />
             </Link>
             <Link href={publicHref("/os-campeoes")}>
-              <Card title="Campeões" description="Veja os destaques do grupo." />
+              <Card title="Campeões" description="Relembre quem fez história em campo." />
             </Link>
             <Link href={publicHref("/estatisticas/tira-teima")}>
               <Card
