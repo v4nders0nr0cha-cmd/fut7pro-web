@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 import AdminGuideAccessHint from "../AdminGuideAccessHint";
 import AdminGuideMobileAccess from "../AdminGuideMobileAccess";
 import { GUIDE_CLOSED, GUIDE_ACCESS_USED, notifyGuideAccess } from "@/lib/admin-guide-access";
@@ -117,4 +118,20 @@ it("never offers a hint for a permanently dismissed or completed guide", () => {
   view.rerender(<Surface />);
   act(() => notifyGuideAccess(GUIDE_CLOSED, identity()));
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
+it("distinguishes the X callback from Escape without changing existing dialog closing", () => {
+  const close = jest.fn();
+  const explicit = jest.fn();
+  render(
+    <Fut7DialogBase open title="Exemplo" onClose={close} onCloseButton={explicit}>
+      Conteúdo
+    </Fut7DialogBase>
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+  expect(explicit).toHaveBeenCalledTimes(1);
+  expect(close).not.toHaveBeenCalled();
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(close).toHaveBeenCalledTimes(1);
+  expect(explicit).toHaveBeenCalledTimes(1);
 });

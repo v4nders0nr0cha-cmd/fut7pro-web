@@ -29,3 +29,7 @@ A API dos cenários é isolada. A suíte existente de continuidade, segurança, 
 A fonte canônica da Central de Atualizações está no backend e a política do frontend exige uma entrada para melhoria funcional. O PR coordenado do backend se limita à nova entrada e aos testes de metadados do changelog, sem alterar serviços ou regras.
 
 Sem merge, deploy manual, migração ou alteração em produção nesta entrega.
+
+## PRs coordenados
+
+Frontend #260: acessos e orientação local. Backend #190: somente anúncio canônico e expectativas dos testes de metadados. Ambos em rascunho; a publicação deve ser coordenada para não anunciar atalhos antes da entrega do frontend.

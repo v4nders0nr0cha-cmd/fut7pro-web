@@ -50,6 +50,17 @@ export default function AdminGuidePresenter() {
     scope && params?.get("retomarGuia") === "1" && params?.get("grupoGuia") === guide?.tenant.slug
   );
   const manualRef = useRef("");
+  const requestedGroup = params?.get("grupoGuia");
+  const requestedManually = params?.get("retomarGuia") === "1";
+  useEffect(() => {
+    if (
+      scope &&
+      pathname === "/admin/dashboard" &&
+      requestedManually &&
+      requestedGroup !== guide?.tenant.slug
+    )
+      replace("/admin/dashboard", { scroll: false });
+  }, [scope, pathname, requestedManually, requestedGroup, guide?.tenant.slug, replace]);
   const entryManual = useRef(manual);
   entryManual.current = manual;
   // Every Dashboard entry reads current persisted operations before offering the guide.

@@ -1,4 +1,4 @@
-// Guide access discovery is local to this browser and membership, not a login.
+// A dica pertence a este navegador e vínculo administrativo, sem depender do login.
 export const GUIDE_CLOSED = "fut7pro:guide-main-closed";
 export const GUIDE_ACCESS_USED = "fut7pro:guide-access-used";
 export type GuideAccessIdentity = { tenantId: string; membershipId: string };
