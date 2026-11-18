@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import { useMemo } from "react";
 import useSWR from "swr";
 import { useApiState } from "./useApiState";
@@ -68,6 +69,7 @@ export function useRachaAgenda(options: UseRachaAgendaOptions = {}) {
       }
 
       const body = await response.json();
+      notifyAdminGuideChanged();
       await mutate();
       return body;
     });
@@ -84,6 +86,7 @@ export function useRachaAgenda(options: UseRachaAgendaOptions = {}) {
       }
 
       const body = await response.json();
+      notifyAdminGuideChanged();
       await mutate();
       return body;
     });

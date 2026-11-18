@@ -1,4 +1,5 @@
 "use client";
+import { contextualGuideHref, type GuideOrigin } from "@/lib/admin-guide-navigation";
 
 import { useState } from "react";
 import Image from "next/image";
@@ -23,15 +24,28 @@ type Props = {
   updating: boolean;
   update: (action: AdminGuidePatch) => Promise<boolean>;
   onBack: () => void;
+  origin?: GuideOrigin;
+  onNavigate?: () => void;
 };
 
-export default function AdminGuideInvitationPanel({ guide, updating, update, onBack }: Props) {
+export default function AdminGuideInvitationPanel({
+  guide,
+  updating,
+  update,
+  onBack,
+  origin = "pagina",
+  onNavigate,
+}: Props) {
   const [channel, setChannel] = useState<Channel>("WHATSAPP");
   const [feedback, setFeedback] = useState("");
   const [copying, setCopying] = useState(false);
   const [expandedImage, setExpandedImage] = useState(false);
   const publicUrl = guide.tenant.publicUrl;
-  const unlocked = isOnboardingActionUnlocked(guide.tasks, "ACTIVE_PLAYERS");
+  const unlocked = isOnboardingActionUnlocked(
+    guide.tasks,
+    "ACTIVE_PLAYERS",
+    guide.actionAvailability
+  );
   const canCopy = Boolean(publicUrl && unlocked && !updating && !copying);
   const canRegister =
     unlocked && Boolean(guide.tasks.find((task) => task.id === "ACTIVE_PLAYERS")?.canAct);
@@ -78,7 +92,7 @@ export default function AdminGuideInvitationPanel({ guide, updating, update, onB
           alt={`Exemplo ilustrativo ampliado do ${channel === "INSTAGRAM" ? "Instagram" : "WhatsApp"}`}
           width={941}
           height={1672}
-          className="h-auto w-full rounded-xl object-contain"
+          className="h-auto w-full max-w-full rounded-xl object-contain"
         />
         <p className="text-xs text-zinc-400">
           Exemplo ilustrativo. Os nomes e links da imagem são referências.
@@ -103,18 +117,14 @@ export default function AdminGuideInvitationPanel({ guide, updating, update, onB
         </h2>
         <p className="text-sm text-zinc-300">Escolha como chamar a galera para o site do grupo.</p>
       </header>
-      <div
-        role="group"
-        aria-label="Como trazer jogadores"
-        className="grid grid-cols-1 gap-2 sm:grid-cols-3"
-      >
+      <div role="group" aria-label="Como trazer jogadores" className="grid grid-cols-3 gap-1.5">
         {channels.map((option) => (
           <button
             type="button"
             key={option.id}
             aria-pressed={channel === option.id}
             aria-controls="invitation-channel-content"
-            className={channel === option.id ? primary : secondary}
+            className={`${channel === option.id ? primary : secondary} !px-2 text-xs sm:text-sm`}
             onClick={() => {
               setChannel(option.id);
               setFeedback("");
@@ -142,7 +152,12 @@ export default function AdminGuideInvitationPanel({ guide, updating, update, onB
             </p>
             {canRegister ? (
               <Link
-                href="/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS"
+                href={contextualGuideHref(
+                  "/admin/jogadores/listar-cadastrar",
+                  "ACTIVE_PLAYERS",
+                  origin
+                )}
+                onClick={onNavigate}
                 className={primary}
               >
                 Cadastrar jogador manualmente
@@ -192,10 +207,31 @@ export default function AdminGuideInvitationPanel({ guide, updating, update, onB
                 O endereço público ainda não está disponível.
               </p>
             )}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {channel === "WHATSAPP" &&
+                (publicUrl && unlocked ? (
+                  <a
+                    className={primary}
+                    href={`https://wa.me/?text=${encodeURIComponent(invite)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      void update({
+                        action: "RESOURCE_VIEWED",
+                        resourceId: "whatsapp-share-attempt",
+                      })
+                    }
+                  >
+                    Compartilhar no WhatsApp
+                  </a>
+                ) : (
+                  <button disabled className={primary}>
+                    Compartilhar no WhatsApp
+                  </button>
+                ))}
               <button
                 type="button"
-                className={primary}
+                className={channel === "WHATSAPP" ? secondary : primary}
                 disabled={!canCopy}
                 onClick={() => void copy()}
               >
@@ -205,30 +241,18 @@ export default function AdminGuideInvitationPanel({ guide, updating, update, onB
                     ? "Copiar convite"
                     : "Copiar link"}
               </button>
-              {publicUrl && unlocked ? (
+              {channel === "INSTAGRAM" && (
                 <a
                   className={secondary}
-                  href={
-                    channel === "WHATSAPP"
-                      ? `https://wa.me/?text=${encodeURIComponent(invite)}`
-                      : "https://www.instagram.com/"
-                  }
+                  href="https://www.instagram.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() =>
-                    void update({
-                      action: "RESOURCE_VIEWED",
-                      resourceId:
-                        channel === "WHATSAPP" ? "whatsapp-share-attempt" : "instagram-opened",
-                    })
+                    void update({ action: "RESOURCE_VIEWED", resourceId: "instagram-opened" })
                   }
                 >
-                  {channel === "WHATSAPP" ? "Compartilhar no WhatsApp" : "Abrir Instagram"}
+                  Abrir Instagram
                 </a>
-              ) : (
-                <button type="button" disabled className={secondary}>
-                  {channel === "WHATSAPP" ? "Compartilhar no WhatsApp" : "Abrir Instagram"}
-                </button>
               )}
             </div>
             {feedback && (
@@ -239,7 +263,7 @@ export default function AdminGuideInvitationPanel({ guide, updating, update, onB
             <figure className="space-y-2 border-t border-white/10 pt-4">
               <button
                 type="button"
-                className="block w-full rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+                className="block w-full overflow-hidden rounded-xl border border-white/10 bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
                 aria-label={`Ampliar imagem do ${channel === "WHATSAPP" ? "WhatsApp" : "Instagram"}`}
                 onClick={() => setExpandedImage(true)}
               >
@@ -253,7 +277,7 @@ export default function AdminGuideInvitationPanel({ guide, updating, update, onB
                   width={941}
                   height={1672}
                   sizes="(max-width: 767px) calc(100vw - 4rem), 680px"
-                  className="h-auto w-full rounded-xl object-contain"
+                  className="h-[220px] w-full rounded-xl object-cover object-top sm:mx-auto sm:h-[360px] sm:w-auto sm:max-w-full sm:object-contain"
                 />
               </button>
               <figcaption className="text-xs text-zinc-400">

@@ -1,4 +1,11 @@
 export type AdminGuideAction =
+  | "COMPLETION_PRESENTED"
+  | "REWARD_CLAIM"
+  | "REWARD_PRESENTED"
+  | "PREPARATION_CELEBRATED"
+  | "FOOTBALL_INVITE_PRESENTED"
+  | "FOOTBALL_INVITE_DEFERRED"
+  | "FOOTBALL_STARTED"
   | "STEP_SKIPPED"
   | "STEP_SELECTED"
   | "INVITATION_COPIED"
@@ -15,6 +22,14 @@ export type AdminGuideAction =
 
 export type AdminGuidePedagogicalState = {
   revision: number;
+  rewardPresentedAt?: string;
+  completionPresentedAt?: string;
+  completedTaskIds?: string[];
+  preparationCelebratedAt?: string;
+  footballInvitePresentedAt?: string;
+  footballInviteDeferredAt?: string;
+  footballInviteDeferred?: boolean;
+  footballStartedAt?: string;
   currentStep?: string;
   invitationCopiedAt?: string;
   invitationChannel?: "WHATSAPP" | "INSTAGRAM";
@@ -40,7 +55,42 @@ export type AdminGuideTask = {
   route: string;
 };
 
+export type AdminGuidePhase = {
+  id: string;
+  title: string;
+  taskIds: string[];
+  unlocked: boolean;
+  completed: number;
+  total: number;
+  percentage: number;
+  complete: boolean;
+};
+
 export type AdminGuideData = {
+  reward?: {
+    granted: boolean;
+    eligible: boolean;
+    days: number;
+    grantedAt: string | null;
+    trialEnd: string | null;
+    reason: string | null;
+  };
+  phases?: { preparation: AdminGuidePhase; football: AdminGuidePhase };
+  eligibility?: {
+    eligiblePlayers: number;
+    minimumPlayers: number;
+    missingPlayers: number;
+    preparationComplete: boolean;
+    footballUnlocked: boolean;
+  };
+  actionAvailability?: Record<
+    string,
+    {
+      allowed: boolean;
+      reason: "PERMISSION" | "PHASE_LOCKED" | "PREVIOUS_STEPS" | "OPERATIONAL" | null;
+    }
+  >;
+  transition?: { preparationCelebrationPending: boolean; footballInvitationPending: boolean };
   guideVersion: number;
   tenant: {
     id: string;
@@ -62,6 +112,17 @@ export type AdminGuideData = {
 };
 
 export type AdminGuidePatch =
+  | {
+      action:
+        | "COMPLETION_PRESENTED"
+        | "REWARD_CLAIM"
+        | "REWARD_PRESENTED"
+        | "PREPARATION_CELEBRATED"
+        | "FOOTBALL_INVITE_PRESENTED"
+        | "FOOTBALL_INVITE_DEFERRED"
+        | "FOOTBALL_STARTED";
+      expectedRevision?: number;
+    }
   | { action: "STEP_SELECTED" | "STEP_SKIPPED"; tipId: string; expectedRevision?: number }
   | { action: "INVITATION_COPIED"; channel: "WHATSAPP" | "INSTAGRAM"; expectedRevision?: number }
   | {

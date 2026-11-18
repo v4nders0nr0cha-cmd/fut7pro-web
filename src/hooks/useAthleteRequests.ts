@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import useSWR from "swr";
 import type { AthleteRequest } from "@/types/athlete-request";
 import { revalidateAdminRequestBadges } from "@/lib/admin-request-badges";
@@ -87,6 +88,7 @@ export function useAthleteRequests(options?: { status?: string; enabled?: boolea
       method: "PUT",
     });
     await mutate();
+    notifyAdminGuideChanged();
     await revalidateAdminRequestBadges();
   };
 
@@ -96,6 +98,7 @@ export function useAthleteRequests(options?: { status?: string; enabled?: boolea
       body: JSON.stringify({ message }),
     });
     await mutate();
+    notifyAdminGuideChanged();
     await revalidateAdminRequestBadges();
   };
 

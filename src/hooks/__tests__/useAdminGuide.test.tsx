@@ -193,6 +193,7 @@ it("permite atualizar a pelada B enquanto o PATCH da pelada A ainda está penden
   });
   expect(result.current.updating).toBe(true);
 
+  await waitFor(() => expect(resolvePatchA).toEqual(expect.any(Function)));
   activeSlug = "pelada-b";
   rerender();
   await waitFor(() => expect(result.current.guide?.tenant.slug).toBe("pelada-b"));
@@ -202,6 +203,7 @@ it("permite atualizar a pelada B enquanto o PATCH da pelada A ainda está penden
     pendingB = result.current.update({ action: "WELCOME_SEEN" });
   });
   expect(result.current.updating).toBe(true);
+  await waitFor(() => expect(resolvePatchB).toEqual(expect.any(Function)));
   await act(async () => {
     resolvePatchA({ ok: true, json: async () => ({}) } as Response);
     expect(await pendingA).toBe(false);
@@ -228,4 +230,110 @@ it("isolates personal preferences when administrators change in the same group",
   activeUserId = "user-2";
   rerender();
   await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(8));
+});
+
+it.each([
+  { action: "STEP_SKIPPED", tipId: "SCHEDULE" },
+  { action: "COMPLETION_PRESENTED" },
+  { action: "PREPARATION_CELEBRATED" },
+] as const)(
+  "revalidates a 409 and safely retries an idempotent guide action %j once",
+  async (action) => {
+    let revision = 2;
+    let patches = 0;
+    (global.fetch as jest.Mock).mockImplementation((_url, options?: RequestInit) => {
+      if (options?.method === "PATCH") {
+        patches++;
+        const payload = JSON.parse(String(options.body));
+        if (patches === 1) {
+          revision = 3;
+          return Promise.resolve({
+            ok: false,
+            status: 409,
+            json: async () => ({ message: "Conflito" }),
+          });
+        }
+        expect(payload.expectedRevision).toBe(3);
+        revision = 4;
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            pedagogicalState: makeGuide(activeSlug, revision).pedagogicalState,
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => makeGuide(activeSlug, revision) });
+    });
+    const { result } = renderHook(() => useAdminGuide(), { wrapper });
+    await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
+    await act(async () => expect(await result.current.update(action)).toBe(true));
+    expect(patches).toBe(2);
+    expect(result.current.actionError).toBeNull();
+  }
+);
+it("serializes updates from two guide instances without losing revisions", async () => {
+  let revision = 1;
+  const expected: number[] = [];
+  (global.fetch as jest.Mock).mockImplementation(async (_url, options?: RequestInit) => {
+    if (options?.method === "PATCH") {
+      const payload = JSON.parse(String(options.body));
+      expected.push(payload.expectedRevision);
+      if (payload.expectedRevision !== revision)
+        return { ok: false, status: 409, json: async () => ({ message: "Conflito" }) };
+      revision++;
+      return {
+        ok: true,
+        json: async () => ({ pedagogicalState: makeGuide(activeSlug, revision).pedagogicalState }),
+      };
+    }
+    return { ok: true, json: async () => makeGuide(activeSlug, revision) };
+  });
+  const { result } = renderHook(() => [useAdminGuide(), useAdminGuide()], { wrapper });
+  await waitFor(() => expect(result.current[0].guide).toBeTruthy());
+  await act(async () => {
+    const a = result.current[0].update({ action: "WELCOME_PRESENTED" });
+    const b = result.current[1].update({ action: "STEP_SKIPPED", tipId: "SCHEDULE" });
+    expect(await a).toBe(true);
+    expect(await b).toBe(true);
+  });
+  expect(expected).toEqual([1, 2]);
+});
+
+it("keeps a confirmed write when its subsequent progress read fails", async () => {
+  let reads = 0;
+  (global.fetch as jest.Mock).mockImplementation(async (_url, options?: RequestInit) => {
+    if (options?.method === "PATCH")
+      return {
+        ok: true,
+        json: async () => ({ pedagogicalState: makeGuide(activeSlug, 3).pedagogicalState }),
+      };
+    if (reads++ === 0) return { ok: true, json: async () => makeGuide(activeSlug, 2) };
+    return { ok: false, status: 503, json: async () => ({ message: "Indisponível" }) };
+  });
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
+  await act(async () =>
+    expect(await result.current.update({ action: "STEP_SKIPPED", tipId: "SCHEDULE" })).toBe(true)
+  );
+  expect(result.current.actionError).toBeNull();
+  expect(result.current.guide?.pedagogicalState.revision).toBe(3);
+});
+
+it("requires an explicit granted response when claiming the commercial reward", async () => {
+  (global.fetch as jest.Mock).mockImplementation(async (_url, options?: RequestInit) =>
+    options?.method === "PATCH"
+      ? {
+          ok: true,
+          json: async () => ({
+            pedagogicalState: makeGuide(activeSlug, 3).pedagogicalState,
+            reward: { granted: false, eligible: false },
+          }),
+        }
+      : { ok: true, json: async () => makeGuide(activeSlug, 2) }
+  );
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide).toBeTruthy());
+  await act(async () =>
+    expect(await result.current.update({ action: "REWARD_CLAIM" })).toBe(false)
+  );
 });

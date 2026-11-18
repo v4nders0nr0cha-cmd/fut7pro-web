@@ -137,7 +137,7 @@ it("apresenta o segundo momento e as duas modalidades sem criar partidas", () =>
   expect(screen.getByText(/Você ainda não possui uma partida registrada/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Escolher como criar a partida" })).toHaveAttribute(
     "href",
-    "/admin/partidas/criar"
+    "/admin/partidas/criar?guia=FIRST_MATCHDAY&guiaOrigem=pagina"
   );
   expect(update).not.toHaveBeenCalled();
 });
@@ -160,14 +160,14 @@ it("registra Sorteio Inteligente somente no clique e aguarda o estado confirmado
   );
   expect(screen.getByRole("link", { name: "Abrir Sorteio Inteligente" })).toHaveAttribute(
     "href",
-    "/admin/partidas/sorteio-inteligente"
+    "/admin/partidas/sorteio-inteligente?guia=FIRST_MATCHDAY&guiaOrigem=pagina"
   );
   expect(
     screen.getByText("75% dos jogadores ativos possuem avaliação completa.")
   ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Avaliar jogadores" })).toHaveAttribute(
     "href",
-    "/admin/jogadores/nivel-dos-atletas"
+    "/admin/jogadores/nivel-dos-atletas?guia=ATHLETE_LEVELS&guiaOrigem=pagina"
   );
 });
 
@@ -187,7 +187,7 @@ it("permite escolher e depois alterar a preferência para Partida Clássica", ()
   );
   expect(screen.getByRole("link", { name: "Criar Partida Clássica" })).toHaveAttribute(
     "href",
-    "/admin/partidas/criar/classica"
+    "/admin/partidas/criar/classica?guia=FIRST_MATCHDAY&guiaOrigem=pagina"
   );
   expect(
     screen.queryByRole("heading", { name: "Avalie o nível dos atletas" })
@@ -217,7 +217,7 @@ it("orienta sobre times insuficientes sem tratar elenco como presença confirmad
   show(makeGuide({ players: 8, teams: 1 }));
   expect(screen.getByRole("link", { name: "Gerenciar Times" })).toHaveAttribute(
     "href",
-    "/admin/partidas/criar-times"
+    "/admin/partidas/criar-times?guia=OFFICIAL_TEAMS&guiaOrigem=pagina"
   );
   expect(screen.getByText(/não a presença confirmada no dia do jogo/)).toBeInTheDocument();
 });
@@ -316,7 +316,7 @@ it("não troca visualmente a pelada ou modalidade antes da resposta do servidor"
   );
   expect(screen.getByRole("link", { name: "Criar Partida Clássica" })).toHaveAttribute(
     "href",
-    "/admin/partidas/criar/classica"
+    "/admin/partidas/criar/classica?guia=FIRST_MATCHDAY&guiaOrigem=pagina"
   );
   expect(screen.queryByRole("link", { name: "Abrir Sorteio Inteligente" })).not.toBeInTheDocument();
 });

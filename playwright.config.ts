@@ -34,6 +34,7 @@ loadEnvFile(".env.e2e.local");
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || "https://app.fut7pro.com.br";
 const useLocalWebServer = process.env.PLAYWRIGHT_WEB_SERVER === "1";
 const useAdminFixture = process.env.ADMIN_SMOKE_FIXTURE === "1";
+const useFixtureTls = useAdminFixture && baseURL === "https://127.0.0.1:3443";
 
 if (useAdminFixture) {
   for (const key of ["NEXT_PUBLIC_API_URL", "API_URL", "BACKEND_URL"]) {
@@ -41,8 +42,8 @@ if (useAdminFixture) {
       throw new Error(`${key} deve apontar para a fixture local no Admin Smoke.`);
     }
   }
-  if (baseURL !== "http://127.0.0.1:3000" || !useLocalWebServer) {
-    throw new Error("Admin Smoke exige frontend local na porta 3000.");
+  if ((!useFixtureTls && baseURL !== "http://127.0.0.1:3000") || !useLocalWebServer) {
+    throw new Error("Admin Smoke exige frontend local nas portas de fixture 3000/3443.");
   }
 }
 
@@ -55,6 +56,7 @@ export default defineConfig({
   reporter: "html",
   use: {
     baseURL,
+    ignoreHTTPSErrors: useFixtureTls, // Only the ephemeral loopback test certificate.
     actionTimeout: useAdminFixture ? 15000 : 0,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
@@ -96,10 +98,23 @@ export default defineConfig({
           : []),
         {
           command: useAdminFixture ? "pnpm start" : "pnpm dev",
-          url: `${baseURL.replace(/\/+$/, "")}/admin/login`,
+          url: useFixtureTls
+            ? "http://127.0.0.1:3000/admin/login"
+            : `${baseURL.replace(/\/+$/, "")}/admin/login`,
           reuseExistingServer: !process.env.CI,
           timeout: 600_000,
         },
+        ...(useFixtureTls
+          ? [
+              {
+                command: "node tests/admin/https-fixture-server.mjs",
+                url: "https://127.0.0.1:3443/admin/login",
+                ignoreHTTPSErrors: true,
+                reuseExistingServer: !process.env.CI,
+                timeout: 30_000,
+              },
+            ]
+          : []),
       ]
     : undefined,
 });

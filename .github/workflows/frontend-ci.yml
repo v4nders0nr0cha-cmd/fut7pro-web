@@ -110,6 +110,8 @@ jobs:
           echo "NEXT_PUBLIC_APP_URL=https://staging.fut7pro.com" >> .env.local
 
       - name: Build application
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm run build
 
       - name: Upload build artifacts
@@ -245,6 +247,8 @@ jobs:
           echo "NEXT_PUBLIC_APP_URL=https://staging.fut7pro.com" >> .env.local
 
       - name: Build for preview
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm run build
 
       - name: Check Vercel secrets availability

@@ -56,6 +56,7 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, {
       id: `fixture-${account.role.toLowerCase()}`,
       name: "Usuário Fixture",
+      image: "/images/avatar_padrao_admin.png",
       email,
       role: account.role,
       tenantId: account.group ? tenant.id : null,

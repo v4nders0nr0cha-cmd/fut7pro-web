@@ -42,8 +42,9 @@ export default function GerenciarRachasPage() {
     });
   }, [items]);
 
+  const horarioValido = /^([01]\d|2[0-3]):[0-5]\d$/.test(novoHorario);
   const adicionarRacha = async () => {
-    if (!novoHorario) return;
+    if (!horarioValido) return;
     const created = await createAgenda({ weekday: novoDia, time: novoHorario });
     if (created) {
       setNovoHorario("");
@@ -83,52 +84,119 @@ export default function GerenciarRachasPage() {
           </p>
 
           {isError && error && (
-            <div className="mb-4 rounded-lg border border-red-500/50 bg-red-900/40 px-4 py-3 text-sm text-red-200">
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-red-500/50 bg-red-900/40 px-4 py-3 text-sm text-red-200"
+            >
               {error}
             </div>
           )}
 
           {isSuccess && (
-            <div className="mb-4 rounded-lg border border-emerald-500/40 bg-emerald-900/30 px-4 py-3 text-sm text-emerald-200">
+            <div
+              role="status"
+              className="mb-4 rounded-lg border border-emerald-500/40 bg-emerald-900/30 px-4 py-3 text-sm text-emerald-200"
+            >
               Agenda atualizada com sucesso.
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 mb-8">
-            <select
-              className="bg-[#21272c] text-white border border-[#333] rounded px-3 py-2 focus:outline-none"
-              value={novoDia}
-              onChange={(e) => setNovoDia(Number(e.target.value))}
-              disabled={isLoading}
-            >
-              {DIAS_SEMANA.map((dia, i) => (
-                <option key={i} value={i}>
-                  {dia}
-                </option>
-              ))}
-            </select>
-            <input
-              type="time"
-              className="bg-[#21272c] text-white border border-[#333] rounded px-3 py-2 focus:outline-none"
-              value={novoHorario}
-              onChange={(e) => setNovoHorario(e.target.value)}
-              placeholder="Horario"
-              disabled={isLoading}
-            />
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void adicionarRacha();
+            }}
+            className="mb-6 grid min-w-0 gap-4 rounded-xl border border-white/10 bg-[#23272F] p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          >
+            <div className="min-w-0">
+              <label
+                htmlFor="agenda-weekday"
+                className="mb-2 block text-sm font-semibold text-white"
+              >
+                Dia da semana
+              </label>
+              <select
+                id="agenda-weekday"
+                className="min-h-12 w-full rounded-lg border border-white/25 bg-[#181B20] px-3 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                value={novoDia}
+                onChange={(event) => setNovoDia(Number(event.target.value))}
+                disabled={isLoading}
+              >
+                {DIAS_SEMANA.map((day, index) => (
+                  <option key={day} value={index}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-0">
+              <label htmlFor="agenda-time" className="mb-2 block text-sm font-semibold text-white">
+                Horário
+              </label>
+              <input
+                id="agenda-time"
+                type="time"
+                aria-describedby="agenda-time-help"
+                required
+                className="block min-h-12 w-full min-w-0 appearance-none rounded-lg border border-white/25 bg-[#181B20] px-3 py-3 text-base text-white [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                value={novoHorario}
+                onChange={(event) => setNovoHorario(event.target.value)}
+                disabled={isLoading}
+              />
+            </div>
             <button
-              className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-5 py-2 rounded transition shadow disabled:opacity-60 disabled:cursor-not-allowed"
-              onClick={adicionarRacha}
-              disabled={isLoading || !novoHorario}
+              type="submit"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-lg bg-cyan-600 px-5 py-3 font-bold text-white shadow hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isLoading || !horarioValido}
             >
-              <FaCheck /> Adicionar
+              <FaCheck aria-hidden="true" /> Adicionar
             </button>
-          </div>
+            <p id="agenda-time-help" className="text-sm text-zinc-300 sm:col-span-3">
+              {horarioValido
+                ? "Confira o dia e clique em Adicionar para salvar."
+                : "Escolha o dia e toque no campo de horário para informar quando a galera se reúne."}
+            </p>
+          </form>
 
           <div className="bg-[#23272F] rounded-xl shadow p-5">
             <div className="font-bold text-white mb-4 text-lg flex items-center gap-2">
               <FaClock className="text-cyan-400" /> Dias & horarios cadastrados
             </div>
-            <table className="w-full text-sm">
+            <div className="space-y-3 sm:hidden">
+              {isLoading && agendaOrdenada.length === 0 ? (
+                <p className="text-zinc-300">Carregando agenda...</p>
+              ) : agendaOrdenada.length === 0 ? (
+                <p className="text-zinc-300">Nenhum horário cadastrado.</p>
+              ) : (
+                agendaOrdenada.map((item) => (
+                  <article key={item.id} className="rounded-lg border border-white/15 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-semibold text-white">
+                        {DIAS_SEMANA[item.weekday]} · {item.time}
+                      </h3>
+                      <button
+                        type="button"
+                        aria-label={`Remover ${DIAS_SEMANA[item.weekday]} às ${item.time}`}
+                        disabled={isLoading}
+                        className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-red-300 disabled:opacity-50"
+                        onClick={() => void removerRacha(item.id)}
+                      >
+                        <FaTrash aria-hidden="true" />
+                      </button>
+                    </div>
+                    <p className="mt-1 text-sm text-zinc-300">
+                      Próximo encontro · {formatNextDate(item.nextDate)}
+                    </p>
+                    {item.holiday && (
+                      <p className="mt-2 text-sm text-yellow-300">
+                        {item.holidayName || "Feriado"}
+                      </p>
+                    )}
+                  </article>
+                ))
+              )}
+            </div>
+            <table className="hidden w-full text-sm sm:table">
               <thead>
                 <tr className="text-gray-400 text-left border-b border-[#23272F]">
                   <th className="py-2 px-3">Dia da Semana</th>

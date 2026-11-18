@@ -1,3 +1,4 @@
+import { BILLING_CHANGED, type BillingChangedDetail } from "@/lib/billing-events";
 import { useState, useEffect, useCallback } from "react";
 import BillingAPI, {
   BillingApiError,
@@ -154,6 +155,15 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
 
     loadData();
   }, [tenantId, refreshPlans, refreshSubscription]);
+
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const detail = (event as CustomEvent<BillingChangedDetail>).detail;
+      if (detail?.tenantId === (tenantId ?? subscription?.tenantId)) void refreshSubscription();
+    };
+    window.addEventListener(BILLING_CHANGED, changed);
+    return () => window.removeEventListener(BILLING_CHANGED, changed);
+  }, [tenantId, subscription?.tenantId, refreshSubscription]);
 
   return {
     subscription,

@@ -21,11 +21,14 @@ export function guideDestination(guide: AdminGuideData, task: AdminGuideTask): s
     return /^[a-z0-9][a-z0-9-]*$/i.test(slug) ? `/${encodeURIComponent(slug)}` : null;
   }
   if (task.id === "SCHEDULE") {
-    return task.route === "/admin/partidas/proximos-rachas" ? "/admin/rachas" : null;
+    return ["/admin/partidas/proximos-rachas", "/admin/rachas"].includes(task.route)
+      ? "/admin/rachas"
+      : null;
   }
   if (task.id === "FIRST_MATCHDAY") {
     if (task.route !== "/admin/partidas/criar" || !guide.capabilities.manageMatchesAndResults)
       return null;
+    if (guide.guideVersion >= 3) return "/admin/partidas/criar";
     if (guide.pedagogicalState.firstMatchMode === "INTELLIGENT_DRAW")
       return "/admin/partidas/sorteio-inteligente";
     if (guide.pedagogicalState.firstMatchMode === "CLASSIC_MATCH")
@@ -90,4 +93,12 @@ export function guideResourceDestinations(guide: AdminGuideData) {
         ? "/admin/comunicacao/enquetes"
         : null,
   };
+}
+
+export type GuideOrigin = "dashboard" | "pagina";
+export function contextualGuideHref(destination: string, step: string, origin: GuideOrigin) {
+  return `${destination}?${new URLSearchParams({ guia: step, guiaOrigem: origin })}`;
+}
+export function resumeGuideHref(slug: string) {
+  return `/admin/dashboard?${new URLSearchParams({ retomarGuia: "1", grupoGuia: slug })}`;
 }

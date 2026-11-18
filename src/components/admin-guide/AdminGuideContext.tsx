@@ -3,10 +3,20 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
-import { guideDestination } from "@/lib/admin-guide-navigation";
+import { resumeGuideHref, guideDestination } from "@/lib/admin-guide-navigation";
 import { ADMIN_GUIDE_CHANGED } from "@/lib/admin-guide-events";
 import { STEP_HELP } from "@/lib/admin-onboarding";
 const CONTEXT_STEPS: Record<string, string[]> = {
+  SCHEDULE: [
+    "Selecione o dia da semana.",
+    "Preencha o horário do encontro.",
+    "Clique em Adicionar e confira o horário salvo na lista.",
+  ],
+  ATHLETE_LEVELS: [
+    "Encontre o atleta na lista.",
+    "Informe as estrelas de habilidade e a condição física.",
+    "As avaliações são salvas quando os dois campos estão definidos. Aguarde a confirmação antes de seguir.",
+  ],
   ACTIVE_PLAYERS: [
     "Clique em Cadastrar Jogador.",
     "Preencha nome, apelido e posições. Adicione a foto se desejar.",
@@ -41,21 +51,33 @@ export default function AdminGuideContext() {
   const id = params?.get("guia");
   const task = guide?.tasks.find((item) => item.id === id);
   const destination = guide && task ? guideDestination(guide, task) : null;
-  const visible = Boolean(task && destination === pathname);
+  const visible = Boolean(
+    task &&
+      destination &&
+      (destination === pathname ||
+        (task.id === "FIRST_MATCHDAY" &&
+          (pathname.startsWith("/admin/partidas/criar/") ||
+            pathname === "/admin/partidas/sorteio-inteligente")))
+  );
   useEffect(() => {
-    if (!visible) return;
     const refresh = () => void retry();
     window.addEventListener(ADMIN_GUIDE_CHANGED, refresh);
     return () => window.removeEventListener(ADMIN_GUIDE_CHANGED, refresh);
-  }, [visible, retry]);
+  }, [retry]);
   if (!visible || !task) return null;
   const targetLabel =
-    task.id === "ACTIVE_PLAYERS"
-      ? "Cadastrar Jogador"
-      : task.id === "OFFICIAL_TEAMS"
-        ? "Novo Time"
-        : null;
-  const showAction = () => {
+    task.id === "SCHEDULE"
+      ? "Adicionar"
+      : task.id === "ACTIVE_PLAYERS"
+        ? "Cadastrar Jogador"
+        : task.id === "OFFICIAL_TEAMS"
+          ? "Novo Time"
+          : null;
+  const completedTeams =
+    task.id === "OFFICIAL_TEAMS" &&
+    task.completed &&
+    Number(guide?.operationalState.activeOfficialTeams) >= 2;
+  const showAction = (openForm = false) => {
     const target = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(
       (button) =>
         button.textContent?.trim() === targetLabel &&
@@ -64,6 +86,7 @@ export default function AdminGuideContext() {
     );
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
     target?.focus({ preventScroll: true });
+    if (openForm) target?.click();
   };
   return (
     <aside
@@ -71,13 +94,48 @@ export default function AdminGuideContext() {
       aria-label="Orientação do guia"
     >
       <h2 className="font-bold text-yellow-200">
-        {task.completed ? "Etapa concluída" : task.title}
+        {task.completed
+          ? task.id === "OFFICIAL_TEAMS"
+            ? "Etapa concluída!"
+            : "Etapa concluída"
+          : task.title}
       </h2>
-      <p className="mt-2">
-        {task.id === "ACTIVE_PLAYERS"
-          ? "Clique em Cadastrar Jogador, preencha o perfil e salve. Abrir o formulário mantém a etapa pendente até o cadastro ser concluído."
-          : STEP_HELP[task.id]}
-      </p>
+      {completedTeams ? (
+        <div className="mt-2 space-y-2">
+          <p>Você já cadastrou os dois times necessários para concluir esta etapa!</p>
+          <p>
+            Se sua pelada utiliza mais equipes, aproveite para cadastrar os demais times que
+            participam dos jogos. Assim, tudo fica organizado desde o início.
+          </p>
+        </div>
+      ) : (
+        <p className="mt-2">
+          {task.completed
+            ? task.id === "OFFICIAL_TEAMS"
+              ? "Seus times oficiais já estão cadastrados. Você pode continuar organizando os times ou avançar para os próximos passos."
+              : "Esta etapa foi concluída. Você pode continuar nesta página ou avançar para os próximos passos."
+            : task.id === "ACTIVE_PLAYERS"
+              ? "Clique em Cadastrar Jogador, preencha o perfil e salve. Abrir o formulário mantém a etapa pendente até o cadastro ser concluído."
+              : STEP_HELP[task.id]}
+        </p>
+      )}
+      {completedTeams && (
+        <button
+          type="button"
+          onClick={() => showAction(true)}
+          className="mr-4 mt-3 min-h-11 rounded-lg border border-yellow-400/40 px-3 text-yellow-200"
+        >
+          Cadastrar outro time
+        </button>
+      )}
+      {!task.completed &&
+        task.id === "OFFICIAL_TEAMS" &&
+        typeof guide?.operationalState.activeOfficialTeams === "number" && (
+          <p className="mt-2 text-zinc-300">
+            {guide.operationalState.activeOfficialTeams} de 2 times oficiais ativos cadastrados
+            {guide.operationalState.activeOfficialTeams === 1 ? " — falta mais um time." : "."}
+          </p>
+        )}
       {!task.completed && (
         <ol className="mt-3 list-decimal space-y-1 pl-5">
           {CONTEXT_STEPS[task.id]?.map((step) => (
@@ -88,14 +146,18 @@ export default function AdminGuideContext() {
       {!task.completed && targetLabel && (
         <button
           type="button"
-          onClick={showAction}
+          onClick={() => showAction()}
           className="mr-4 mt-3 min-h-11 rounded-lg border border-yellow-400/40 px-3 text-yellow-200"
         >
           Mostrar {targetLabel}
         </button>
       )}
       <Link
-        href="/admin/guia-fut7pro"
+        href={
+          params?.get("guiaOrigem") === "dashboard" && guide
+            ? resumeGuideHref(guide.tenant.slug)
+            : "/admin/guia-fut7pro"
+        }
         className="mt-2 inline-flex min-h-11 items-center text-yellow-200 underline"
       >
         {task.completed ? "Continuar guia" : "Voltar ao guia"}
