@@ -82,11 +82,13 @@ jobs:
     timeout-minutes: 45
     env:
       ADMIN_SMOKE_FIXTURE: "1"
+      FIXTURE_TLS_KEY: /tmp/admin-fixture.key
+      FIXTURE_TLS_CERT: /tmp/admin-fixture.crt
       NEXT_PUBLIC_API_URL: http://127.0.0.1:4317
       API_URL: http://127.0.0.1:4317
       BACKEND_URL: http://127.0.0.1:4317
-      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
-      NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_APP_URL: https://127.0.0.1:3443
+      NEXTAUTH_URL: https://127.0.0.1:3443
       NEXTAUTH_SECRET: ci-admin-fixture-only-secret
       NEXT_PUBLIC_TURNSTILE_ENABLED: "false"
       DISABLE_WEB_DIRECT_DB: "true"
@@ -117,11 +119,14 @@ jobs:
             echo "NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}"
             echo "API_URL=${API_URL}"
             echo "BACKEND_URL=${BACKEND_URL}"
-            echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
-            echo "NEXTAUTH_URL=http://127.0.0.1:3000"
+            echo "NEXT_PUBLIC_APP_URL=https://127.0.0.1:3443"
+            echo "NEXTAUTH_URL=https://127.0.0.1:3443"
             echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}"
             echo "DISABLE_WEB_DIRECT_DB=true"
           } > .env.local
+
+      - name: Create ephemeral loopback certificate
+        run: openssl req -x509 -newkey rsa:2048 -nodes -keyout "$FIXTURE_TLS_KEY" -out "$FIXTURE_TLS_CERT" -days 1 -subj "/CN=127.0.0.1" -addext "subjectAltName=IP:127.0.0.1"
 
       - name: Build isolated admin frontend
         env:
@@ -132,7 +137,7 @@ jobs:
         env:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
           PLAYWRIGHT_WEB_SERVER: "1"
-          PLAYWRIGHT_BASE_URL: "http://127.0.0.1:3000"
+          PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
           PLAYWRIGHT_JSON_OUTPUT_FILE: "test-results/admin-smoke-report.json"
         run: |
           pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts tests/onboarding-two-phases.fixture.spec.ts --project=chromium --workers=1 --reporter=line,json
@@ -159,7 +164,7 @@ jobs:
         env:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
           PLAYWRIGHT_WEB_SERVER: "1"
-          PLAYWRIGHT_BASE_URL: "http://127.0.0.1:3000"
+          PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
         run: pnpm exec playwright test tests/onboarding-two-phases.fixture.spec.ts --project=mobile-iphone --grep "fit mobile" --workers=1 --reporter=line --output=test-results/onboarding-webkit
 
       - name: Upload Playwright artifacts
