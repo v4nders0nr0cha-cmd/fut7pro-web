@@ -89,7 +89,10 @@ jest.mock("next-auth/react", () => ({
     data: { user: { name: "Ana Silva", image: null, onboardingLoginId: loginId } },
   }),
 }));
-jest.mock("next/image", () => ({ __esModule: true, default: (props: any) => <img {...props} /> }));
+jest.mock("next/image", () => ({
+  __esModule: true,
+  default: (props: any) => <img {...props} alt={props.alt ?? ""} />,
+}));
 jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
   __esModule: true,
   default: ({ open, children, onClose, icon }: any) =>
@@ -118,7 +121,7 @@ beforeEach(() => {
     },
     administrator: { membershipId: "member" },
     pedagogicalState: { revision: 0 },
-    activationProgress: { completed: 1, total: 6, percentage: 17, complete: false },
+    activationProgress: { completed: 1, total: 8, percentage: 13, complete: false },
     capabilities: { manageMatchesAndResults: true, publishChampion: true },
     tasks: [
       ["ACCOUNT_READY", "Conta criada e site no ar", "/", true],
@@ -150,10 +153,10 @@ beforeEach(() => {
     })),
   };
 });
-it("keeps the main welcome summary clean with six steps and a personal greeting", () => {
+it("keeps the main welcome summary clean with eight steps and a personal greeting", () => {
   render(<AdminOnboarding />);
   expect(screen.getByText("Olá, Ana! Bem-vindo ao Fut7Pro!")).toBeInTheDocument();
-  expect(screen.getByText(/17% concluído/)).toBeInTheDocument();
+  expect(screen.getByText(/13% concluído/)).toBeInTheDocument();
   expect(screen.getAllByRole("listitem")).toHaveLength(8);
   expect(screen.queryByText(guide.tenant.publicUrl)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "WhatsApp" })).not.toBeInTheDocument();

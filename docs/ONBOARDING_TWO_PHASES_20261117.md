@@ -50,3 +50,9 @@ Testes direcionados cobrem fases, fronteira 9/10, filtros e deduplicação, conq
 Pendente de validação humana: Safari em iPhone físico, comparação autenticada com fotos/escudos reais e confirmação do erro original em produção. O ajuste do campo de horário é verificável em código/testes, mas não comprova sozinho o comportamento do teclado/zoom de um iPhone real. Nenhuma configuração de Turnstile foi alterada.
 
 Publicação coordenada: backend v3 antes do frontend v3. Manter PRs em rascunho até revisão e validação visual. Nenhum merge nem deploy de produção foi realizado.
+
+### Evidências de CI
+
+Backend #189: segurança, testes e política de changelog aprovados. Testes locais direcionados: 53 do guia e 21 do changelog. Frontend #257: suíte completa com 718 testes em 157 suítes aprovada, além de lint, TypeScript e Prettier. O build inicialmente excedeu o heap de 2 GB do Node; o workflow passa a reservar até 4 GB apenas na compilação, sem alteração de infraestrutura ou configuração de produção.
+
+Ao iniciar o servidor local, os tipos gerados do Next também revelaram duas incompatibilidades preexistentes de parâmetros assíncronos nas rotas /api/jogadores/[id]/archive e /restore. Essas rotas não fazem parte do diff. A checagem de tipos limpa do CI passou; a divergência local fica registrada para revisão separada.
