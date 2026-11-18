@@ -42,6 +42,7 @@ Escreva em português brasileiro natural. O resultado deve parecer uma conversa 
 ## Revisão obrigatória antes de entregar texto
 
 Releia e ajuste silenciosamente:
+
 1. A primeira frase responde ao assunto sem enrolação?
 2. Há alguma afirmação sem evidência, tom publicitário, adjetivo vazio ou repetição?
 3. A resposta usa contraste fabricado, tríade forçada, abertura genérica, negrito excessivo ou estrutura mecânica?
@@ -50,6 +51,7 @@ Releia e ajuste silenciosamente:
 6. Mudanças de estilo preservam integralmente requisitos, fatos, funcionamento e sentido original?
 
 Exemplos de substituição:
+
 - Artificial: “Esta melhoria não apenas otimiza a experiência, mas também fortalece a jornada do usuário.”
   Natural: “A página agora mostra uma mensagem de carregamento até os dados aparecerem.”
 - Artificial: “Implementamos uma solução robusta, moderna e altamente eficiente.”
@@ -58,6 +60,7 @@ Exemplos de substituição:
   Natural: “O administrador pode cadastrar os jogadores nessa tela.”
 
 Referências para o critério editorial (não para reproduzir o vocabulário dos exemplos):
+
 - Wikipédia, ensaio “Sinais de texto gerado por inteligência artificial”: https://pt.wikipedia.org/wiki/Wikipédia:Sinais_de_texto_gerado_por_inteligência_artificial
 - Purdue OWL, “Writing in Plain Style”: https://owl.purdue.edu/owl/general_writing/writing_style/plain_style%20.html
 - Digital.gov, “Short and simple”: https://digital.gov/guides/plain-language/principles/short-simple
