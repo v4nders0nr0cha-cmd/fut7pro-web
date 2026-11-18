@@ -298,24 +298,14 @@ export default function AdminOnboarding({
         >
           <h3 className="text-lg font-bold">{active.title}</h3>
           <p className="text-sm text-zinc-300">{STEP_HELP[active.id]}</p>
-          {waitingForPlayers ? (
-            <div className="border-t border-white/10 pt-3">
-              <p className="text-xs leading-relaxed text-zinc-400">
-                Preparação concluída · {guide.eligibility?.eligiblePlayers} de{" "}
-                {guide.eligibility?.minimumPlayers} atletas elegíveis. Reúna a galera para liberar a
-                fase esportiva.
-              </p>
-              <button
-                ref={invitationButtonRef}
-                type="button"
-                className={`${primary} mt-3`}
-                disabled={updating}
-                onClick={() => setInvitationOpen(true)}
-              >
-                Convidar mais jogadores
-              </button>
-            </div>
-          ) : active.id === "ACTIVE_PLAYERS" ? (
+          {waitingForPlayers && (
+            <p className="border-t border-white/10 pt-3 text-xs leading-relaxed text-zinc-400">
+              Preparação concluída · {guide.eligibility?.eligiblePlayers} de{" "}
+              {guide.eligibility?.minimumPlayers} atletas elegíveis. Reúna a galera para liberar a
+              fase esportiva.
+            </p>
+          )}
+          {active.id === "ACTIVE_PLAYERS" ? (
             <button
               ref={invitationButtonRef}
               type="button"
