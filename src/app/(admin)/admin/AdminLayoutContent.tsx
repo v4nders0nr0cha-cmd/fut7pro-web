@@ -1,4 +1,5 @@
 "use client";
+import AdminGuidePresenter from "@/components/admin-guide/AdminGuidePresenter";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -618,6 +619,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
           <Sidebar mobile isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
           <main className="flex-1 w-full px-4 sm:px-6 pt-20 md:pt-15 pb-24">
             <AdminGuideContext />
+            <AdminGuidePresenter />
             {children}
           </main>
         </div>

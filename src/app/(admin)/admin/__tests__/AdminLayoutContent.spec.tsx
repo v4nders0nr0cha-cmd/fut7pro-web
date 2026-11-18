@@ -1,4 +1,4 @@
-jest.mock("@/components/admin-guide/AdminGuideRewardNotice", () => ({
+jest.mock("@/components/admin-guide/AdminGuidePresenter", () => ({
   __esModule: true,
   default: () => null,
 }));

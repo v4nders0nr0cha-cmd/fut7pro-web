@@ -49,7 +49,14 @@ export default function AdminGuidePresenter() {
   const manualRef = useRef("");
   // Every Dashboard entry reads current persisted operations before offering the guide.
   useEffect(() => {
-    if (!scope || pathname !== "/admin/dashboard") return;
+    if (pathname !== "/admin/dashboard") {
+      setReady("");
+      setPresentation(null);
+      setManualScope("");
+      leaving.current = "";
+      return;
+    }
+    if (!scope) return;
     let alive = true;
     void retry()
       .then((fresh) => {
@@ -125,11 +132,7 @@ export default function AdminGuidePresenter() {
     recorded.current.add(key);
     void update({ action });
   }, [visible, presentation, guide, scope, update]);
-  if (!guide || !scope || ready !== scope || pathname !== "/admin/dashboard") return null;
-  if (guide.activationProgress.complete)
-    return (
-      <AdminGuideRewardNotice allowPresentation={manual || manualScope === scope || !permanent} />
-    );
+  if (!guide || !scope) return null;
   const close = (permanentlyDismissed = false) => {
     if (!permanentlyDismissed) dismissGuideForLogin(scope);
     leaving.current = scope;
@@ -147,42 +150,55 @@ export default function AdminGuidePresenter() {
       first: !guide.pedagogicalState.welcomePresentedAt && !guide.pedagogicalState.welcomeSeenAt,
     });
   return (
-    <AdminGuideDialog key={`${scope}:${presentation?.view}`} open={visible} onClose={() => close()}>
-      {presentation?.view === "STEPS" ? (
-        <AdminOnboarding
-          key={scope}
-          origin="dashboard"
-          firstPresentation={presentation.first}
-          onClose={close}
-          onNavigate={navigate}
-        />
-      ) : presentation?.view === "INVITATION" ? (
-        <AdminGuideInvitationPanel
-          guide={guide}
-          updating={updating}
-          update={update}
-          origin="dashboard"
-          onNavigate={navigate}
-          onBack={() => setPresentation({ scope, view: invitationOrigin.current, first: false })}
-        />
-      ) : (
-        <AdminGuidePhaseTransition
-          guide={guide}
-          kind={presentation?.view === "FOOTBALL_INVITE" ? "FOOTBALL_INVITE" : "CELEBRATION"}
-          updating={updating}
-          onStart={() =>
-            void update({ action: "FOOTBALL_STARTED" }).then((saved) => {
-              if (saved && current.current === scope) steps();
-            })
-          }
-          onInvite={() => {
-            invitationOrigin.current =
-              presentation?.view === "FOOTBALL_INVITE" ? "FOOTBALL_INVITE" : "CELEBRATION";
-            setPresentation({ scope, view: "INVITATION", first: false });
-          }}
-          onClose={steps}
-        />
-      )}
-    </AdminGuideDialog>
+    <>
+      <AdminGuideRewardNotice
+        allowPresentation={
+          pathname === "/admin/dashboard" &&
+          ready === scope &&
+          (manual || manualScope === scope || !permanent)
+        }
+      />
+      <AdminGuideDialog
+        key={`${scope}:${presentation?.view}`}
+        open={visible}
+        onClose={() => close()}
+      >
+        {presentation?.view === "STEPS" ? (
+          <AdminOnboarding
+            key={scope}
+            origin="dashboard"
+            firstPresentation={presentation.first}
+            onClose={close}
+            onNavigate={navigate}
+          />
+        ) : presentation?.view === "INVITATION" ? (
+          <AdminGuideInvitationPanel
+            guide={guide}
+            updating={updating}
+            update={update}
+            origin="dashboard"
+            onNavigate={navigate}
+            onBack={() => setPresentation({ scope, view: invitationOrigin.current, first: false })}
+          />
+        ) : (
+          <AdminGuidePhaseTransition
+            guide={guide}
+            kind={presentation?.view === "FOOTBALL_INVITE" ? "FOOTBALL_INVITE" : "CELEBRATION"}
+            updating={updating}
+            onStart={() =>
+              void update({ action: "FOOTBALL_STARTED" }).then((saved) => {
+                if (saved && current.current === scope) steps();
+              })
+            }
+            onInvite={() => {
+              invitationOrigin.current =
+                presentation?.view === "FOOTBALL_INVITE" ? "FOOTBALL_INVITE" : "CELEBRATION";
+              setPresentation({ scope, view: "INVITATION", first: false });
+            }}
+            onClose={steps}
+          />
+        )}
+      </AdminGuideDialog>
+    </>
   );
 }

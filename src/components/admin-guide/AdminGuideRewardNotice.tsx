@@ -47,6 +47,9 @@ export default function AdminGuideRewardNotice({
     if (presentationAllowed && closedScope !== scope && (unseenCompletion || unseenReward))
       setOpenScope(scope);
   }, [guide, scope, update, retry, presentationAllowed, closedScope, failedScope]);
+  useEffect(() => {
+    if (!presentationAllowed) setOpenScope("");
+  }, [presentationAllowed]);
   const open = Boolean(presentationAllowed && openScope && openScope === scope);
   const confirmed = guide?.reward?.granted;
   // Persist the completion/reward presentation only after its visible DOM commit.

@@ -88,3 +88,15 @@ it("does not record an invisible final celebration and preserves permanent dismi
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(update).not.toHaveBeenCalled();
 });
+
+it("preserves reward confirmation after an operational save without presenting over the form", async () => {
+  const view = render(<AdminGuideRewardNotice allowPresentation={false} />);
+  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "REWARD_CLAIM" }));
+  guide = { ...guide, reward: { ...guide.reward, granted: true, eligible: false } };
+  view.rerender(<AdminGuideRewardNotice allowPresentation={false} />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(update).not.toHaveBeenCalledWith({ action: "REWARD_PRESENTED" });
+  view.rerender(<AdminGuideRewardNotice allowPresentation />);
+  await screen.findByText("+10 DIAS DE FUT7PRO");
+  expect(update).toHaveBeenCalledWith({ action: "REWARD_PRESENTED" });
+});
