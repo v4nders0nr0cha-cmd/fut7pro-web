@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import { resumeGuideHref } from "@/lib/admin-guide-navigation";
 import { GUIDE_ACCESS_USED, notifyGuideAccess } from "@/lib/admin-guide-access";
@@ -32,6 +33,7 @@ const destinations = [
 
 export default function AdminHelpLauncher() {
   const { guide, retry, error } = useAdminGuide();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -93,6 +95,7 @@ export default function AdminHelpLauncher() {
                   label === "Guia Interativo" && guide ? resumeGuideHref(guide.tenant.slug) : href
                 }
                 prefetch={label === "Guia Interativo" ? false : undefined}
+                replace={label === "Guia Interativo" && pathname === "/admin/dashboard"}
                 target={external ? "_blank" : undefined}
                 rel={external ? "noopener noreferrer" : undefined}
                 onClick={() => {

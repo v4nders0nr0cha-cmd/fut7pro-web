@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import { resumeGuideHref } from "@/lib/admin-guide-navigation";
@@ -7,12 +8,14 @@ import { GUIDE_ACCESS_USED, notifyGuideAccess } from "@/lib/admin-guide-access";
 
 export default function AdminGuideMobileAccess() {
   const { guide } = useAdminGuide();
+  const pathname = usePathname();
   if (!guide || guide.activationProgress.complete) return null;
   return (
     <Link
       id="admin-guide-mobile-link"
       href={resumeGuideHref(guide.tenant.slug)}
       prefetch={false}
+      replace={pathname === "/admin/dashboard"}
       aria-label="Abrir Guia Interativo"
       title="Guia Interativo"
       onClick={() =>
