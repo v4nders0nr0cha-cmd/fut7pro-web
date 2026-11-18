@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminOnboarding from "../AdminOnboarding";
 import AdminGuidePresenter from "../AdminGuidePresenter";
 const update = jest.fn().mockResolvedValue(true);
@@ -623,5 +623,34 @@ it("keeps the Dashboard usable if the manual progress read fails", async () => {
   view.rerender(<AdminGuidePresenter />);
   search = "retomarGuia=1&grupoGuia=pelada";
   view.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+});
+
+it("does not let an earlier automatic read display stale progress during a manual request", async () => {
+  let automatic!: (value: any) => void;
+  let manualRead!: (value: any) => void;
+  retry.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        automatic = resolve;
+      })
+  );
+  retry.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        manualRead = resolve;
+      })
+  );
+  const view = render(<AdminGuidePresenter />);
+  search = "retomarGuia=1&grupoGuia=pelada";
+  view.rerender(<AdminGuidePresenter />);
+  await waitFor(() => expect(retry).toHaveBeenCalledTimes(2));
+  await act(async () => {
+    automatic(guide);
+  });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await act(async () => {
+    manualRead(guide);
+  });
   await screen.findByRole("dialog");
 });

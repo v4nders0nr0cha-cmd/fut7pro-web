@@ -50,6 +50,7 @@ export default function AdminGuidePresenter() {
     scope && params?.get("retomarGuia") === "1" && params?.get("grupoGuia") === guide?.tenant.slug
   );
   const manualRef = useRef("");
+  const readVersion = useRef(0);
   const requestedGroup = params?.get("grupoGuia");
   const requestedManually = params?.get("retomarGuia") === "1";
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function AdminGuidePresenter() {
   // Every Dashboard entry reads current persisted operations before offering the guide.
   useEffect(() => {
     if (pathname !== "/admin/dashboard") {
+      readVersion.current += 1;
       setReady("");
       setPresentation(null);
       setManualScope("");
@@ -76,11 +78,12 @@ export default function AdminGuidePresenter() {
     }
     if (!scope) return;
     let alive = true;
+    const read = ++readVersion.current;
     const manuallyRequested = entryManual.current;
     if (manuallyRequested) manualRef.current = scope;
     void retry()
       .then((fresh) => {
-        if (alive && current.current === scope && fresh) {
+        if (alive && read === readVersion.current && current.current === scope && fresh) {
           if (manuallyRequested) {
             manualRef.current = scope;
             leaving.current = "";
@@ -90,13 +93,23 @@ export default function AdminGuidePresenter() {
             replace("/admin/dashboard", { scroll: false });
           }
           setReady(scope);
-        } else if (alive && current.current === scope && manuallyRequested) {
+        } else if (
+          alive &&
+          read === readVersion.current &&
+          current.current === scope &&
+          manuallyRequested
+        ) {
           setManualError(scope);
           replace("/admin/dashboard", { scroll: false });
         }
       })
       .catch(() => {
-        if (alive && current.current === scope && manuallyRequested) {
+        if (
+          alive &&
+          read === readVersion.current &&
+          current.current === scope &&
+          manuallyRequested
+        ) {
           setManualError(scope);
           replace("/admin/dashboard", { scroll: false });
         }
@@ -113,11 +126,12 @@ export default function AdminGuidePresenter() {
     if (!manual) manualRef.current = "";
     if (manual && manualRef.current !== scope) {
       manualRef.current = scope;
+      const read = ++readVersion.current;
       setReady("");
       setManualError("");
       void retry()
         .then((fresh) => {
-          if (current.current !== scope) return;
+          if (current.current !== scope || read !== readVersion.current) return;
           if (fresh) {
             leaving.current = "";
             navigating.current = "";
@@ -128,7 +142,7 @@ export default function AdminGuidePresenter() {
           replace("/admin/dashboard", { scroll: false });
         })
         .catch(() => {
-          if (current.current !== scope) return;
+          if (current.current !== scope || read !== readVersion.current) return;
           setManualError(scope);
           replace("/admin/dashboard", { scroll: false });
         });
