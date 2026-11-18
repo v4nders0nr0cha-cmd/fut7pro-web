@@ -7,6 +7,16 @@ import { guideDestination } from "@/lib/admin-guide-navigation";
 import { ADMIN_GUIDE_CHANGED } from "@/lib/admin-guide-events";
 import { STEP_HELP } from "@/lib/admin-onboarding";
 const CONTEXT_STEPS: Record<string, string[]> = {
+  SCHEDULE: [
+    "Selecione o dia da semana.",
+    "Preencha o horário do encontro.",
+    "Clique em Adicionar e confira o horário salvo na lista.",
+  ],
+  ATHLETE_LEVELS: [
+    "Encontre o atleta na lista.",
+    "Informe as estrelas de habilidade e a condição física.",
+    "As avaliações são salvas quando os dois campos estão definidos. Aguarde a confirmação antes de seguir.",
+  ],
   ACTIVE_PLAYERS: [
     "Clique em Cadastrar Jogador.",
     "Preencha nome, apelido e posições. Adicione a foto se desejar.",
@@ -50,11 +60,13 @@ export default function AdminGuideContext() {
   }, [visible, retry]);
   if (!visible || !task) return null;
   const targetLabel =
-    task.id === "ACTIVE_PLAYERS"
-      ? "Cadastrar Jogador"
-      : task.id === "OFFICIAL_TEAMS"
-        ? "Novo Time"
-        : null;
+    task.id === "SCHEDULE"
+      ? "Adicionar"
+      : task.id === "ACTIVE_PLAYERS"
+        ? "Cadastrar Jogador"
+        : task.id === "OFFICIAL_TEAMS"
+          ? "Novo Time"
+          : null;
   const showAction = () => {
     const target = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(
       (button) =>

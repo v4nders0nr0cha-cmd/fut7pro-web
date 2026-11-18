@@ -51,7 +51,7 @@ export default function AdminGuideFirstMatchSection({
   const levelTask = guide.tasks.find((task) => task.id === "ATHLETE_LEVELS");
   const monthlyTask = guide.tasks.find((task) => task.id === "MONTHLY_MODEL");
   const teamTask = guide.tasks.find((task) => task.id === "OFFICIAL_TEAMS");
-  const players = count(guide, "activeHumanPlayers");
+  const players = count(guide, "eligiblePlayerCount") ?? count(guide, "activeHumanPlayers");
   const teams = count(guide, "activeOfficialTeams");
   const levelCoverage = count(guide, "athleteLevelCoverage");
   const matchDestination = matchTask ? guideDestination(guide, matchTask) : null;

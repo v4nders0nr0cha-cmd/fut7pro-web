@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import useSWR from "swr";
 import { useRacha } from "@/context/RachaContext";
 import { useApiState } from "./useApiState";
@@ -143,6 +144,7 @@ export function useNiveisAtletas(rachaIdParam?: string, options?: { enabled?: bo
         body: JSON.stringify(payload),
       });
 
+      notifyAdminGuideChanged();
       await mutate(
         (current) => {
           const existing = Array.isArray(current) ? [...current] : [];

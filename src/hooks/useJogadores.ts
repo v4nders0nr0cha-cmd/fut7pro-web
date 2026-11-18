@@ -253,6 +253,7 @@ export function useJogadores(rachaId: string, options?: UseJogadoresOptions) {
     const response = await requestJson(path, {
       method: action === "delete" ? "DELETE" : "POST",
     });
+    notifyAdminGuideChanged();
     await mutate().catch(() => undefined);
     return response;
   };

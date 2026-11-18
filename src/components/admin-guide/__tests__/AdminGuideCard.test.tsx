@@ -5,8 +5,84 @@ const update = jest.fn().mockResolvedValue(true);
 const copy = jest.fn().mockResolvedValue(undefined);
 let guide: any;
 let loginId = "login-1";
+let eligiblePlayers = 10;
+function withPhases(value: any) {
+  if (!value) return value;
+  const preparationIds = ["ACCOUNT_READY", "ACTIVE_PLAYERS", "SCHEDULE", "OFFICIAL_TEAMS"];
+  const footballIds = [
+    "ATHLETE_LEVELS",
+    "FIRST_MATCHDAY",
+    "RESULTS_RECORDED",
+    "CHAMPION_PUBLISHED",
+  ];
+  const progress = (ids: string[], title: string) => {
+    const completed = ids.filter((id) =>
+      value.tasks.some((task: any) => task.id === id && task.completed)
+    ).length;
+    return {
+      id: title,
+      title,
+      taskIds: ids,
+      completed,
+      total: 4,
+      percentage: completed * 25,
+      complete: completed === 4,
+      unlocked: true,
+    };
+  };
+  const preparation = progress(preparationIds, "Parte 1 — Prepare seu grupo");
+  const football = progress(footballIds, "Parte 2 — Entre em campo");
+  football.unlocked = preparation.complete && eligiblePlayers >= 10;
+  value.phases = { preparation, football };
+  value.guideVersion = 3;
+  value.eligibility = {
+    eligiblePlayers,
+    minimumPlayers: 10,
+    missingPlayers: Math.max(0, 10 - eligiblePlayers),
+    preparationComplete: preparation.complete,
+    footballUnlocked: football.unlocked,
+  };
+  const ids = [...preparationIds, ...footballIds];
+  value.actionAvailability = Object.fromEntries(
+    ids.map((id, index) => {
+      const task = value.tasks.find((item: any) => item.id === id);
+      const allowed = Boolean(
+        (id === "ACTIVE_PLAYERS" || task?.canAct) &&
+          ids
+            .slice(0, index)
+            .every((previous) =>
+              value.tasks.some((item: any) => item.id === previous && item.completed)
+            ) &&
+          (!footballIds.includes(id) || football.unlocked)
+      );
+      return [
+        id,
+        {
+          allowed,
+          reason: allowed
+            ? null
+            : task?.canAct === false
+              ? "PERMISSION"
+              : footballIds.includes(id) && !football.unlocked
+                ? "PHASE_LOCKED"
+                : "PREVIOUS_STEPS",
+        },
+      ];
+    })
+  );
+  value.transition = {
+    preparationCelebrationPending:
+      preparation.complete && !value.pedagogicalState.preparationCelebratedAt,
+    footballInvitationPending:
+      football.unlocked &&
+      !value.pedagogicalState.footballStartedAt &&
+      !value.pedagogicalState.footballInvitePresentedAt &&
+      !value.pedagogicalState.dashboardInviteDismissedAt,
+  };
+  return value;
+}
 jest.mock("@/hooks/useAdminGuide", () => ({
-  useAdminGuide: () => ({ guide, update, updating: false }),
+  useAdminGuide: () => ({ guide: withPhases(guide), update, updating: false }),
 }));
 jest.mock("next-auth/react", () => ({
   useSession: () => ({
@@ -16,9 +92,10 @@ jest.mock("next-auth/react", () => ({
 jest.mock("next/image", () => ({ __esModule: true, default: (props: any) => <img {...props} /> }));
 jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
   __esModule: true,
-  default: ({ open, children, onClose }: any) =>
+  default: ({ open, children, onClose, icon }: any) =>
     open ? (
       <div role="dialog">
+        {icon}
         <button onClick={onClose}>Fechar modal</button>
         {children}
       </div>
@@ -27,6 +104,7 @@ jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   loginId = "login-1";
+  eligiblePlayers = 10;
   sessionStorage.clear();
   Object.defineProperty(navigator, "clipboard", { value: { writeText: copy }, configurable: true });
   copy.mockResolvedValue(undefined);
@@ -50,8 +128,10 @@ beforeEach(() => {
         "/admin/jogadores/listar-cadastrar",
         false,
       ],
-      ["OFFICIAL_TEAMS", "Cadastre os times oficiais", "/admin/partidas/criar-times", false],
-      ["FIRST_MATCHDAY", "Prepare o primeiro jogo", "/admin/partidas/criar", false],
+      ["SCHEDULE", "Defina os dias e horários", "/admin/rachas", false],
+      ["OFFICIAL_TEAMS", "Cadastre os times", "/admin/partidas/criar-times", false],
+      ["ATHLETE_LEVELS", "Avalie o nível dos atletas", "/admin/jogadores/nivel-dos-atletas", false],
+      ["FIRST_MATCHDAY", "Prepare a primeira rodada", "/admin/partidas/criar", false],
       ["RESULTS_RECORDED", "Registre os resultados", "/admin/partidas/resultados-do-dia", false],
       [
         "CHAMPION_PUBLISHED",
@@ -74,7 +154,7 @@ it("keeps the main welcome summary clean with six steps and a personal greeting"
   render(<AdminOnboarding />);
   expect(screen.getByText("Olá, Ana! Bem-vindo ao Fut7Pro!")).toBeInTheDocument();
   expect(screen.getByText(/17% concluído/)).toBeInTheDocument();
-  expect(screen.getAllByRole("listitem")).toHaveLength(6);
+  expect(screen.getAllByRole("listitem")).toHaveLength(8);
   expect(screen.queryByText(guide.tenant.publicUrl)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "WhatsApp" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Copiar convite" })).not.toBeInTheDocument();
@@ -131,7 +211,7 @@ it("starts guidance and skipping persists selection without completion", async (
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Começar guia" }));
   await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_SEEN" }));
-  fireEvent.click(screen.getByRole("button", { name: "Pular etapa" }));
+  fireEvent.click(screen.getByRole("button", { name: "Pular por enquanto" }));
   await waitFor(() =>
     expect(update).toHaveBeenCalledWith({ action: "STEP_SKIPPED", tipId: "ACTIVE_PLAYERS" })
   );
@@ -212,7 +292,7 @@ it("opens a separate invitation panel and restores the clean summary on return",
   expect(update).not.toHaveBeenCalled();
 });
 
-it.each([2, 3, 4, 5])(
+it.each([2, 3, 4, 5, 6, 7])(
   "keeps step %s readable while preventing action ahead of its prerequisites",
   (index) => {
     render(<AdminOnboarding />);
@@ -220,11 +300,17 @@ it.each([2, 3, 4, 5])(
     expect(screen.getByRole("heading", { name: guide.tasks[index].title })).toBeVisible();
     expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
     expect(screen.queryByRole("link", { name: "Continuar" })).not.toBeInTheDocument();
-    expect(screen.getByText("Conclua as etapas anteriores para liberar esta ação.")).toBeVisible();
+    expect(
+      screen.getByText(
+        index >= 4
+          ? "Conclua a Parte 1 para liberar esta fase."
+          : "Conclua as etapas anteriores para liberar esta ação."
+      )
+    ).toBeVisible();
   }
 );
 
-it.each([2, 3, 4, 5])("unlocks step %s only after all predecessors complete", (index) => {
+it.each([2, 3, 4, 5, 6, 7])("unlocks step %s only after all predecessors complete", (index) => {
   for (let i = 0; i < index; i++) guide.tasks[i].completed = true;
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: guide.tasks[index].title }));
@@ -236,7 +322,7 @@ it.each([2, 3, 4, 5])("unlocks step %s only after all predecessors complete", (i
 
 it("skipping recruitment preserves its pending state and does not unlock teams", async () => {
   render(<AdminOnboarding />);
-  fireEvent.click(screen.getByRole("button", { name: "Pular etapa" }));
+  fireEvent.click(screen.getByRole("button", { name: "Pular por enquanto" }));
   await waitFor(() => expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled());
   expect(update).toHaveBeenCalledWith({ action: "STEP_SKIPPED", tipId: "ACTIVE_PLAYERS" });
   expect(guide.tasks[1].completed).toBe(false);
@@ -244,7 +330,7 @@ it("skipping recruitment preserves its pending state and does not unlock teams",
 
 it("responds to prerequisite completion received from the server", () => {
   const { rerender } = render(<AdminOnboarding />);
-  fireEvent.click(screen.getByRole("button", { name: "Cadastre os times oficiais" }));
+  fireEvent.click(screen.getByRole("button", { name: "Defina os dias e horários" }));
   expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   guide = {
     ...guide,
@@ -269,4 +355,46 @@ it("preserves permissions after prerequisites complete", () => {
   render(<AdminOnboarding />);
   expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   expect(screen.queryByRole("link", { name: "Continuar" })).not.toBeInTheDocument();
+});
+
+it("navigation to the next explanation does not write to the backend", () => {
+  render(<AdminOnboarding />);
+  fireEvent.click(screen.getByRole("button", { name: "Ver próxima etapa" }));
+  expect(screen.getByRole("heading", { name: "Defina os dias e horários" })).toBeVisible();
+  expect(update).not.toHaveBeenCalled();
+});
+it("the information icon explains both phases and returns to the guide", async () => {
+  render(<AdminGuideCard />);
+  await screen.findByRole("dialog");
+  fireEvent.click(screen.getByRole("button", { name: "Sobre o Guia Interativo" }));
+  expect(screen.getByRole("heading", { name: "Como funciona o Guia Interativo?" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Voltar ao guia" }));
+  expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeVisible();
+});
+it("celebrates preparation once and shows how many athletes are missing", async () => {
+  guide.tasks.slice(0, 4).forEach((task) => (task.completed = true));
+  eligiblePlayers = 7;
+  render(<AdminGuideCard />);
+  await screen.findByRole("heading", { name: "Sua pelada está configurada! 🎉⚽" });
+  expect(screen.getByText(/7 de 10 atletas cadastrados/)).toBeVisible();
+  expect(update).toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" });
+  fireEvent.click(screen.getByRole("button", { name: "Convidar mais jogadores" }));
+  expect(screen.getByRole("button", { name: "Copiar convite" })).toBeVisible();
+});
+it("offers football on a new login after enough players join", async () => {
+  guide.tasks.slice(0, 4).forEach((task) => (task.completed = true));
+  guide.pedagogicalState.preparationCelebratedAt = "2026-11-17T00:00:00Z";
+  eligiblePlayers = 9;
+  const initial = render(<AdminGuideCard />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  eligiblePlayers = 10;
+  initial.rerender(<AdminGuideCard />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  initial.unmount();
+  loginId = "login-2";
+  render(<AdminGuideCard />);
+  await screen.findByRole("heading", { name: /A galera está chegando/ });
+  fireEvent.click(screen.getByRole("button", { name: "Começar a Parte 2" }));
+  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "FOOTBALL_STARTED" }));
+  await screen.findByRole("heading", { name: "Avalie o nível dos atletas" });
 });

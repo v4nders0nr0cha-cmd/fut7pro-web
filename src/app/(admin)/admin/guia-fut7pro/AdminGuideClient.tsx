@@ -1,5 +1,6 @@
 "use client";
 
+import AdminGuidePreparationNotice from "@/components/admin-guide/AdminGuidePreparationNotice";
 import AdminOnboarding from "@/components/admin-guide/AdminOnboarding";
 import AdminGuideFirstMatchSection from "@/components/admin-guide/AdminGuideFirstMatchSection";
 import AdminGuideResourcesSection from "@/components/admin-guide/AdminGuideResourcesSection";
@@ -24,13 +25,20 @@ export default function AdminGuideClient() {
           </section>
         ) : (
           <>
-            <AdminOnboarding key={guide.administrator.membershipId} />
+            <AdminGuidePreparationNotice />
+            <AdminOnboarding
+              key={`${guide.administrator.membershipId}:${guide.pedagogicalState.footballStartedAt ?? ""}`}
+            />
             <details className="rounded-xl border border-white/15 p-4">
               <summary className="cursor-pointer font-semibold">
                 Organização dos jogos e outros recursos
               </summary>
               <div className="mt-4 space-y-6">
-                {isOnboardingActionUnlocked(guide.tasks, "FIRST_MATCHDAY") ? (
+                {isOnboardingActionUnlocked(
+                  guide.tasks,
+                  "FIRST_MATCHDAY",
+                  guide.actionAvailability
+                ) ? (
                   <AdminGuideFirstMatchSection guide={guide} updating={updating} update={update} />
                 ) : (
                   <p className="text-sm text-zinc-300">
