@@ -33,6 +33,11 @@ const routes = [
 // PostgreSQL integration separately verifies the production completion predicates.
 export async function installGuide(page: Page) {
   expect(process.env.ADMIN_SMOKE_FIXTURE).toBe("1");
+  page.on("pageerror", (error) => console.error("[guide fixture page]", error.message));
+  page.on("response", async (response) => {
+    if (new URL(response.url()).pathname === "/api/admin/access" && !response.ok())
+      console.error("[guide fixture access]", response.status(), await response.text());
+  });
   await page.addInitScript(() => localStorage.setItem("cookie-consent", "accepted"));
   await page.route(/^https:\/\/api\.fut7pro\.com\.br(?:\/|$)/, (route) => route.abort());
   const teams: any[] = [];

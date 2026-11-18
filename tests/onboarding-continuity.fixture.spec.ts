@@ -51,6 +51,7 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
       { exact: true }
     )
   ).toBeVisible();
+  await expect(page.getByText("Time adicionado", { exact: true })).toBeHidden();
   await page
     .getByRole("complementary", { name: "Orientação do guia" })
     .screenshot({ path: info.outputPath("teams-complete-minimum.png") });
@@ -81,7 +82,13 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
     guide.getByRole("heading", { name: "Avalie o nível dos atletas", exact: true })
   ).toBeVisible();
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
+  const accessAfterRefresh = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/api/admin/access"
+  );
   await page.reload();
+  const accessResponse = await accessAfterRefresh;
+  expect(accessResponse.ok(), await accessResponse.text()).toBe(true);
+  expect(await accessResponse.json()).toMatchObject({ allowed: true });
   await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
   await expect(guide).toHaveCount(0);
   expect(
