@@ -67,6 +67,9 @@ it.each([false, true])(
       screen.getByText(isMobile ? "Continue quando quiser" : "Seu guia está sempre por aqui!")
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
+    expect(
+      document.getElementById(isMobile ? "admin-guide-mobile-link" : "admin-help-launcher")
+    ).toHaveFocus();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     view.unmount();
     render(<Surface />);

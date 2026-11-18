@@ -134,7 +134,12 @@ export default function AdminGuideAccessHint() {
       <button
         type="button"
         className="mt-2 min-h-11 rounded px-2 text-xs font-semibold text-yellow-200 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
-        onClick={() => setRequested("")}
+        onClick={() => {
+          setRequested("");
+          document
+            .getElementById(position.mobile ? "admin-guide-mobile-link" : "admin-help-launcher")
+            ?.focus();
+        }}
       >
         Entendi
       </button>
