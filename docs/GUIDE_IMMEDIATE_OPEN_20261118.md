@@ -37,7 +37,7 @@ Antes: commit `fbb45d6a33f2a20990f5cad9f9bbe3c399dfebbf`, sem alterações do ap
 | Celular, Dashboard |                           6027,0 |
 | Celular, Times     |                           6091,6 |
 
-Em todas as amostras anteriores, o diálogo só aparecia na Dashboard e havia um GET. Dados brutos anteriores estão no anexo local `baseline.json`. Resultados posteriores e capturas serão acrescentados após a execução completa.
+Em todas as amostras anteriores, o diálogo só aparecia na Dashboard e havia um GET. Dados brutos anteriores estão no anexo local `baseline.json`. A primeira comparação posterior, na execução [44415210580](https://github.com/v4nders0nr0cha-cmd/fut7pro-web/actions/runs/44415210580), aprovou os quatro cenários de desempenho. Medianas até o diálogo: 4,8 ms (desktop/Dashboard), 4,1 ms (desktop/Times), 4,5 ms (celular/Dashboard) e 4,1 ms (celular/Times). As medianas do primeiro frame ficaram entre 12 e 14,4 ms. Houve um GET por abertura, mantendo a rota e o documento; a consulta continuou levando cerca de seis segundos. Os demais percursos dessa execução identificaram expectativas incorretas de navegação nos testes, corrigidas em seguida. O resultado completo e as capturas finais são registrados no PR.
 
 ## Arquivos
 
