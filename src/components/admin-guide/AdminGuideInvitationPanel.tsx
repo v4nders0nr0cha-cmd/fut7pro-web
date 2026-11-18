@@ -1,4 +1,5 @@
 "use client";
+import { contextualGuideHref, type GuideOrigin } from "@/lib/admin-guide-navigation";
 
 import { useState } from "react";
 import Image from "next/image";
@@ -23,9 +24,18 @@ type Props = {
   updating: boolean;
   update: (action: AdminGuidePatch) => Promise<boolean>;
   onBack: () => void;
+  origin?: GuideOrigin;
+  onNavigate?: () => void;
 };
 
-export default function AdminGuideInvitationPanel({ guide, updating, update, onBack }: Props) {
+export default function AdminGuideInvitationPanel({
+  guide,
+  updating,
+  update,
+  onBack,
+  origin = "pagina",
+  onNavigate,
+}: Props) {
   const [channel, setChannel] = useState<Channel>("WHATSAPP");
   const [feedback, setFeedback] = useState("");
   const [copying, setCopying] = useState(false);
@@ -142,7 +152,12 @@ export default function AdminGuideInvitationPanel({ guide, updating, update, onB
             </p>
             {canRegister ? (
               <Link
-                href="/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS"
+                href={contextualGuideHref(
+                  "/admin/jogadores/listar-cadastrar",
+                  "ACTIVE_PLAYERS",
+                  origin
+                )}
+                onClick={onNavigate}
                 className={primary}
               >
                 Cadastrar jogador manualmente

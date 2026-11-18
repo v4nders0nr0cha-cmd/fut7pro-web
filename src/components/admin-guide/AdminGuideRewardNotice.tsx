@@ -4,69 +4,68 @@ import { useAdminGuide } from "@/hooks/useAdminGuide";
 import { notifyBillingChanged } from "@/lib/billing-events";
 import AdminGuideDialog from "./AdminGuideDialog";
 
-export default function AdminGuideRewardNotice() {
+export default function AdminGuideRewardNotice({
+  allowPresentation,
+}: {
+  allowPresentation?: boolean;
+}) {
   const { guide, update, updating } = useAdminGuide();
   const attempted = useRef("");
+  const recorded = useRef(new Set<string>());
   const alive = useRef(true);
-  const dismissed = useRef(false);
+  const currentScope = useRef("");
+  const [openScope, setOpenScope] = useState("");
+  const [closedScope, setClosedScope] = useState("");
+  const [failedScope, setFailedScope] = useState("");
+  const [retry, setRetry] = useState(0);
+  const presentationAllowed =
+    allowPresentation ?? !guide?.pedagogicalState.dashboardInviteDismissedAt;
+  const scope = guide ? `${guide.tenant.id}:${guide.administrator.membershipId}` : "";
+  currentScope.current = scope;
   useEffect(() => {
     alive.current = true;
     return () => {
       alive.current = false;
     };
   }, []);
-  const [openScope, setOpenScope] = useState("");
-  const [failedScope, setFailedScope] = useState("");
-  const currentScope = useRef("");
-  const scope = guide ? `${guide.tenant.id}:${guide.administrator.membershipId}` : "";
-  currentScope.current = scope;
-  dismissed.current = Boolean(guide?.pedagogicalState.dashboardInviteDismissedAt);
-  const [retry, setRetry] = useState(0);
   useEffect(() => {
-    if (!guide?.activationProgress.complete || !guide.reward || !scope) return;
-    if (!guide.reward.granted && !guide.reward.eligible) return;
-    if (
-      guide.reward.granted &&
-      (guide.pedagogicalState.rewardPresentedAt ||
-        guide.pedagogicalState.dashboardInviteDismissedAt)
-    )
+    if (!guide?.activationProgress.complete || !scope) return;
+    const claimKey = `${scope}:${retry}`;
+    if (guide.reward?.eligible && !guide.reward.granted && attempted.current !== claimKey) {
+      attempted.current = claimKey;
+      void update({ action: "REWARD_CLAIM" }).then((saved) => {
+        if (!alive.current || currentScope.current !== scope) return;
+        if (saved) notifyBillingChanged({ tenantId: guide.tenant.id, slug: guide.tenant.slug });
+        else setFailedScope(scope);
+      });
       return;
-    const key = `${scope}:${guide.reward.granted}:${retry}`;
-    if (attempted.current === key) return;
-    attempted.current = key;
-    void (async () => {
-      if (!guide.reward!.granted) {
-        const saved = await update({ action: "REWARD_CLAIM" });
-        if (saved && alive.current && currentScope.current === scope)
-          notifyBillingChanged({ tenantId: guide.tenant.id, slug: guide.tenant.slug });
-        if (
-          !saved &&
-          alive.current &&
-          currentScope.current === scope &&
-          !guide.pedagogicalState.dashboardInviteDismissedAt
-        )
-          setFailedScope(scope);
-        return; // Revalidation supplies the authoritative, granted state.
-      }
-      if (await update({ action: "REWARD_PRESENTED" })) {
-        if (alive.current && currentScope.current === scope) {
-          setFailedScope("");
-          if (!dismissed.current) setOpenScope(scope);
-        }
-      }
-    })();
-  }, [guide, scope, update, retry]);
+    }
+    if (guide.reward?.eligible && !guide.reward.granted && failedScope !== scope) return;
+    const unseenCompletion =
+      !guide.pedagogicalState.completionPresentedAt && !guide.pedagogicalState.rewardPresentedAt;
+    const unseenReward = guide.reward?.granted && !guide.pedagogicalState.rewardPresentedAt;
+    if (presentationAllowed && closedScope !== scope && (unseenCompletion || unseenReward))
+      setOpenScope(scope);
+  }, [guide, scope, update, retry, presentationAllowed, closedScope, failedScope]);
+  const open = Boolean(presentationAllowed && openScope && openScope === scope);
+  const confirmed = guide?.reward?.granted;
+  // Persist the completion/reward presentation only after its visible DOM commit.
+  useEffect(() => {
+    if (!open || !guide) return;
+    const action = confirmed ? "REWARD_PRESENTED" : "COMPLETION_PRESENTED";
+    const key = `${scope}:${action}`;
+    if (recorded.current.has(key)) return;
+    recorded.current.add(key);
+    void update({ action });
+  }, [open, guide, confirmed, scope, update]);
   if (!guide) return null;
-  const confirmed = guide.reward?.granted;
   const failed = Boolean(failedScope && failedScope === scope);
+  const close = () => {
+    setOpenScope("");
+    setClosedScope(scope);
+  };
   return (
-    <AdminGuideDialog
-      open={Boolean((openScope && openScope === scope) || failed)}
-      onClose={() => {
-        setOpenScope("");
-        setFailedScope("");
-      }}
-    >
+    <AdminGuideDialog open={open} onClose={close}>
       <section className="space-y-5 text-white" aria-labelledby="guide-reward-title">
         <h2 id="guide-reward-title" className="text-2xl font-bold">
           {confirmed ? "Você entrou para o jogo! 🏆" : "Guia concluído!"}
@@ -99,26 +98,44 @@ export default function AdminGuideRewardNotice() {
             </p>
             <button
               className="min-h-11 rounded-lg bg-yellow-400 px-4 py-3 font-bold text-black"
-              onClick={() => setOpenScope("")}
+              onClick={close}
             >
               Continuar aproveitando o Fut7Pro
             </button>
           </>
         ) : (
           <>
-            <p role="alert">
-              Não foi possível confirmar o benefício agora. Seu progresso está salvo. Tente
-              novamente para consultar a concessão com segurança.
+            <p>
+              Parabéns! Você concluiu as oito etapas do Guia Interativo e publicou seu primeiro Time
+              Campeão do Dia.
             </p>
+            <p className="text-zinc-300">
+              Continue organizando sua pelada, acompanhando os atletas e celebrando as próximas
+              conquistas. O guia continua disponível no seu perfil.
+            </p>
+            {failed && (
+              <>
+                <p role="alert">
+                  Não foi possível confirmar o benefício agora. Seu progresso está salvo. Tente
+                  novamente para consultar a concessão com segurança.
+                </p>
+                <button
+                  disabled={updating}
+                  className="min-h-11 rounded-lg bg-yellow-400 px-4 py-3 font-bold text-black"
+                  onClick={() => {
+                    setFailedScope("");
+                    setRetry((value) => value + 1);
+                  }}
+                >
+                  Tentar novamente
+                </button>
+              </>
+            )}
             <button
-              disabled={updating}
-              className="min-h-11 rounded-lg bg-yellow-400 px-4 py-3 font-bold text-black"
-              onClick={() => {
-                setFailedScope("");
-                setRetry((value) => value + 1);
-              }}
+              className="min-h-11 rounded-lg border border-white/20 px-4 py-3"
+              onClick={close}
             >
-              Tentar novamente
+              Continuar aproveitando o Fut7Pro
             </button>
           </>
         )}

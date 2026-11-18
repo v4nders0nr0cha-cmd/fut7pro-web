@@ -2,6 +2,15 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminOnboarding from "../AdminOnboarding";
 import AdminGuidePresenter from "../AdminGuidePresenter";
 const update = jest.fn().mockResolvedValue(true);
+const retry = jest.fn(() => Promise.resolve(guide));
+let pathname = "/admin/dashboard";
+let search = "";
+const replace = jest.fn();
+jest.mock("next/navigation", () => ({
+  usePathname: () => pathname,
+  useSearchParams: () => new URLSearchParams(search),
+  useRouter: () => ({ replace }),
+}));
 const copy = jest.fn().mockResolvedValue(undefined);
 let guide: any;
 let loginId = "login-1";
@@ -82,7 +91,7 @@ function withPhases(value: any) {
   return value;
 }
 jest.mock("@/hooks/useAdminGuide", () => ({
-  useAdminGuide: () => ({ guide: withPhases(guide), update, updating: false }),
+  useAdminGuide: () => ({ guide: withPhases(guide), update, retry, updating: false }),
 }));
 jest.mock("next-auth/react", () => ({
   useSession: () => ({
@@ -106,9 +115,12 @@ jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
 }));
 beforeEach(() => {
   jest.clearAllMocks();
+  pathname = "/admin/dashboard";
+  search = "";
   loginId = "login-1";
   eligiblePlayers = 10;
   sessionStorage.clear();
+  localStorage.clear();
   Object.defineProperty(navigator, "clipboard", { value: { writeText: copy }, configurable: true });
   copy.mockResolvedValue(undefined);
   update.mockResolvedValue(true);
@@ -205,7 +217,7 @@ it("opening external channels and manual form does not complete recruitment", ()
   fireEvent.click(screen.getByRole("button", { name: "Cadastro manual" }));
   expect(screen.getByRole("link", { name: "Cadastrar jogador manualmente" })).toHaveAttribute(
     "href",
-    "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS"
+    "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=pagina"
   );
   expect(update).not.toHaveBeenCalled();
 });
@@ -263,7 +275,7 @@ it("updates the return greeting when asynchronous guide data arrives", () => {
   expect(screen.getByText("Bem-vindo de volta, Ana!")).toBeInTheDocument();
 });
 
-it("does not insist on the welcome after another authenticated login", async () => {
+it("resumes guidance on another authenticated login after a temporary close", async () => {
   const view = render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
@@ -271,7 +283,8 @@ it("does not insist on the welcome after another authenticated login", async () 
   guide.pedagogicalState.welcomePresentedAt = "2026-11-18T12:00:00Z";
   loginId = "login-2";
   render(<AdminGuidePresenter />);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await screen.findByRole("dialog");
+  expect(screen.getByText("Bem-vindo de volta, Ana!")).toBeVisible();
 });
 
 it("opens a separate invitation panel and restores the clean summary on return", async () => {
@@ -324,7 +337,7 @@ it.each([2, 3, 4, 5, 6, 7])("unlocks step %s only after all predecessors complet
   fireEvent.click(screen.getByRole("button", { name: guide.tasks[index].title }));
   expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
     "href",
-    `${guide.tasks[index].route}?guia=${guide.tasks[index].id}`
+    `${guide.tasks[index].route}?guia=${guide.tasks[index].id}&guiaOrigem=pagina`
   );
 });
 
@@ -389,21 +402,17 @@ it("celebrates preparation once and shows how many athletes are missing", async 
   fireEvent.click(screen.getByRole("button", { name: "Convidar mais jogadores" }));
   expect(screen.getByRole("button", { name: "Copiar convite" })).toBeVisible();
 });
-it("offers football on a new login after enough players join", async () => {
+it("offers a newly unlocked football milestone during the same login", async () => {
   guide.tasks.slice(0, 4).forEach((task) => (task.completed = true));
   guide.pedagogicalState.preparationCelebratedAt = "2026-11-17T00:00:00Z";
   eligiblePlayers = 9;
   const initial = render(<AdminGuidePresenter />);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await screen.findByRole("dialog");
+  expect(screen.getByText(/faltam 1/)).toBeVisible();
   eligiblePlayers = 10;
   initial.rerender(<AdminGuidePresenter />);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  initial.unmount();
-  loginId = "login-2";
-  render(<AdminGuidePresenter />);
   await screen.findByRole("heading", { name: /A galera está chegando/ });
   fireEvent.click(screen.getByRole("button", { name: "Começar a Parte 2" }));
-  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "FOOTBALL_STARTED" }));
   await screen.findByRole("heading", { name: "Avalie o nível dos atletas" });
 });
 
@@ -422,4 +431,78 @@ it("uses neutral, proportional branding and contextual return copy", () => {
   eligiblePlayers = 10;
   view.rerender(<AdminOnboarding />);
   expect(screen.getByText(/A galera já está chegando!/)).toBeVisible();
+});
+
+it("never opens over an operational form or records an unseen presentation", async () => {
+  pathname = "/admin/partidas/criar-times";
+  render(<AdminGuidePresenter />);
+  await Promise.resolve();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(update).not.toHaveBeenCalled();
+});
+it("keeps X across Dashboard remounts in the same login, but allows an explicit contextual return", async () => {
+  const view = render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+  view.unmount();
+  const second = render(<AdminGuidePresenter />);
+  await waitFor(() => expect(retry).toHaveBeenCalledTimes(2));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  search = "retomarGuia=1&grupoGuia=pelada";
+  second.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  expect(replace).toHaveBeenCalledWith("/admin/dashboard", { scroll: false });
+});
+it("selects the next real pending task on return rather than a completed historical selection", async () => {
+  guide.tasks.slice(0, 3).forEach((task) => (task.completed = true));
+  guide.pedagogicalState.currentStep = "CHAMPION_PUBLISHED";
+  guide.pedagogicalState.welcomePresentedAt = "2026-11-17T00:00:00Z";
+  render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  expect(screen.getByRole("heading", { name: "Cadastre os times" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
+    "href",
+    "/admin/partidas/criar-times?guia=OFFICIAL_TEAMS&guiaOrigem=dashboard"
+  );
+});
+it("does not record a milestone until its dialog is actually visible", async () => {
+  update.mockImplementation(async () => {
+    expect(screen.getByRole("dialog")).toBeVisible();
+    return true;
+  });
+  render(<AdminGuidePresenter />);
+  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_PRESENTED" }));
+});
+
+it("isolates temporary closing by group, administrator and real login", async () => {
+  const view = render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+  guide = {
+    ...guide,
+    tenant: { ...guide.tenant, id: "group-b", slug: "pelada-b" },
+    administrator: { membershipId: "member-b" },
+  };
+  view.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+  guide.administrator.membershipId = "another-administrator";
+  view.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+});
+
+it("keeps completed explanations clickable and advances a selected pending step only when it really completes", () => {
+  guide.tasks.slice(0, 3).forEach((task) => (task.completed = true));
+  const view = render(<AdminOnboarding />);
+  fireEvent.click(screen.getByRole("button", { name: "Cadastre os times", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Defina os dias e horários", exact: true }));
+  expect(
+    screen.getByRole("heading", { name: "Defina os dias e horários", exact: true })
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Cadastre os times", exact: true }));
+  guide.tasks[3].completed = true;
+  view.rerender(<AdminOnboarding />);
+  expect(
+    screen.getByRole("heading", { name: "Avalie o nível dos atletas", exact: true })
+  ).toBeVisible();
 });

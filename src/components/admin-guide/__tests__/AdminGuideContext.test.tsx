@@ -2,27 +2,31 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import AdminGuideContext from "../AdminGuideContext";
 import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 const retry = jest.fn();
+let params = "guia=OFFICIAL_TEAMS";
+let guide: any;
 jest.mock("next/navigation", () => ({
   usePathname: () => "/admin/partidas/criar-times",
-  useSearchParams: () => new URLSearchParams("guia=OFFICIAL_TEAMS"),
+  useSearchParams: () => new URLSearchParams(params),
 }));
-jest.mock("@/hooks/useAdminGuide", () => ({
-  useAdminGuide: () => ({
-    retry,
-    guide: {
-      tasks: [
-        {
-          id: "OFFICIAL_TEAMS",
-          title: "Cadastre os times oficiais",
-          route: "/admin/partidas/criar-times",
-          applicable: true,
-          canAct: true,
-          completed: false,
-        },
-      ],
-    },
-  }),
-}));
+jest.mock("@/hooks/useAdminGuide", () => ({ useAdminGuide: () => ({ retry, guide }) }));
+beforeEach(() => {
+  jest.clearAllMocks();
+  params = "guia=OFFICIAL_TEAMS";
+  guide = {
+    tenant: { slug: "pelada" },
+    operationalState: { activeOfficialTeams: 0 },
+    tasks: [
+      {
+        id: "OFFICIAL_TEAMS",
+        title: "Cadastre os times oficiais",
+        route: "/admin/partidas/criar-times",
+        applicable: true,
+        canAct: true,
+        completed: false,
+      },
+    ],
+  };
+});
 it("revalidates after a saved operation and removes its listener when leaving", () => {
   const timer = jest.spyOn(window, "setInterval");
   const { unmount } = render(<AdminGuideContext />);
@@ -54,4 +58,46 @@ it("takes the administrator to the real team creation action", () => {
   fireEvent.click(screen.getByRole("button", { name: "Mostrar Novo Time" }));
   expect(scroll).toHaveBeenCalled();
   expect(getByRole("button", { name: "Novo Time" })).toHaveFocus();
+});
+
+it("refreshes saved operations even without a guia parameter, without rendering guidance", () => {
+  params = "";
+  render(<AdminGuideContext />);
+  notifyAdminGuideChanged();
+  expect(retry).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+});
+it("uses real team counts, preserves an open form, and returns to the originating guide", () => {
+  params = "guia=OFFICIAL_TEAMS&guiaOrigem=dashboard";
+  const Page = () => (
+    <>
+      <AdminGuideContext />
+      <input aria-label="Nome em edição" defaultValue="Time ainda em edição" />
+    </>
+  );
+  const view = render(<Page />);
+  guide.operationalState.activeOfficialTeams = 1;
+  view.rerender(<Page />);
+  expect(screen.getByText(/falta mais um time/)).toBeVisible();
+  expect(screen.getByRole("link", { name: "Voltar ao guia" })).toHaveAttribute(
+    "href",
+    "/admin/dashboard?retomarGuia=1&grupoGuia=pelada"
+  );
+  guide.operationalState.activeOfficialTeams = 2;
+  guide.tasks[0].completed = true;
+  view.rerender(<Page />);
+  expect(screen.getByRole("heading", { name: "Etapa concluída" })).toBeVisible();
+  expect(screen.getByRole("textbox", { name: "Nome em edição" })).toHaveValue(
+    "Time ainda em edição"
+  );
+  expect(screen.getByRole("link", { name: "Continuar guia" })).toHaveAttribute(
+    "href",
+    "/admin/dashboard?retomarGuia=1&grupoGuia=pelada"
+  );
+  params = "guia=OFFICIAL_TEAMS&guiaOrigem=pagina";
+  view.rerender(<Page />);
+  expect(screen.getByRole("link", { name: "Continuar guia" })).toHaveAttribute(
+    "href",
+    "/admin/guia-fut7pro"
+  );
 });

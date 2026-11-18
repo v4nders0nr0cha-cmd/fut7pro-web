@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CheckCircle2, Circle, Trophy } from "lucide-react";
-import { guideDestination } from "@/lib/admin-guide-navigation";
+import { contextualGuideHref, guideDestination } from "@/lib/admin-guide-navigation";
 import type { AdminGuideData, AdminGuidePatch } from "@/types/admin-guide";
 
 type MatchMode = "INTELLIGENT_DRAW" | "CLASSIC_MATCH";
@@ -148,7 +148,7 @@ export default function AdminGuideFirstMatchSection({
         </p>
         {teams !== null && teams < 2 && teamDestination && (
           <Link
-            href={teamDestination}
+            href={contextualGuideHref(teamDestination, "OFFICIAL_TEAMS", "pagina")}
             className="mt-3 inline-block text-sm font-semibold text-yellow-200 underline"
           >
             Gerenciar Times
@@ -173,7 +173,7 @@ export default function AdminGuideFirstMatchSection({
           </p>
           {levelDestination && (
             <Link
-              href={levelDestination}
+              href={contextualGuideHref(levelDestination, "ATHLETE_LEVELS", "pagina")}
               className="mt-3 inline-block text-sm font-semibold text-yellow-200 underline"
             >
               Avaliar jogadores
@@ -243,7 +243,7 @@ export default function AdminGuideFirstMatchSection({
           </p>
           {matchDestination && (
             <Link
-              href={matchDestination}
+              href={contextualGuideHref(matchDestination, "FIRST_MATCHDAY", "pagina")}
               className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
             >
               {mode === "INTELLIGENT_DRAW"

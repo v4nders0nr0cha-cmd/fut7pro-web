@@ -96,6 +96,7 @@ export function useAdminGuide() {
                 "PREPARATION_CELEBRATED",
                 "FOOTBALL_INVITE_PRESENTED",
                 "WELCOME_PRESENTED",
+                "COMPLETION_PRESENTED",
                 "REWARD_PRESENTED",
                 "REWARD_CLAIM",
               ].includes(action.action)
@@ -137,6 +138,7 @@ export function useAdminGuide() {
               "PREPARATION_CELEBRATED",
               "FOOTBALL_INVITE_PRESENTED",
               "WELCOME_PRESENTED",
+              "COMPLETION_PRESENTED",
               "REWARD_PRESENTED",
             ].includes(action.action)
           );

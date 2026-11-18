@@ -35,11 +35,15 @@ it("does not grant an incomplete journey or an ineligible group", () => {
   guide.activationProgress.complete = false;
   const view = render(<AdminGuideRewardNotice />);
   expect(update).not.toHaveBeenCalled();
-  guide.activationProgress.complete = true;
-  guide.reward.eligible = false;
+  guide = {
+    ...guide,
+    activationProgress: { complete: true },
+    reward: { ...guide.reward, eligible: false },
+  };
   view.rerender(<AdminGuideRewardNotice />);
-  expect(update).not.toHaveBeenCalled();
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(update).toHaveBeenCalledWith({ action: "COMPLETION_PRESENTED" });
+  expect(screen.getByRole("heading", { name: "Guia concluído!" })).toBeVisible();
+  expect(screen.queryByText("+10 DIAS DE FUT7PRO")).not.toBeInTheDocument();
 });
 it("respects permanent dismissal and already presented rewards", async () => {
   guide.reward.granted = true;
@@ -57,5 +61,30 @@ it("offers safe recovery after a failed claim without announcing a fictitious re
   await screen.findByRole("alert");
   expect(screen.queryByText("+10 DIAS DE FUT7PRO")).not.toBeInTheDocument();
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" })));
-  await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
+  await waitFor(() =>
+    expect(update.mock.calls.filter(([value]) => value.action === "REWARD_CLAIM")).toHaveLength(2)
+  );
+});
+
+it("records generic completion after showing it, without calling the reward service", async () => {
+  guide.reward.eligible = false;
+  update.mockImplementation(async () => {
+    expect(screen.getByRole("dialog")).toBeVisible();
+    return true;
+  });
+  const view = render(<AdminGuideRewardNotice />);
+  await screen.findByRole("heading", { name: "Guia concluído!" });
+  expect(update).toHaveBeenCalledWith({ action: "COMPLETION_PRESENTED" });
+  expect(update).not.toHaveBeenCalledWith({ action: "REWARD_CLAIM" });
+  guide.pedagogicalState.completionPresentedAt = "2026-11-18T12:00:00Z";
+  fireEvent.click(screen.getByRole("button", { name: "Continuar aproveitando o Fut7Pro" }));
+  view.unmount();
+  render(<AdminGuideRewardNotice />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+it("does not record an invisible final celebration and preserves permanent dismissal", () => {
+  guide.reward.eligible = false;
+  render(<AdminGuideRewardNotice allowPresentation={false} />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(update).not.toHaveBeenCalled();
 });

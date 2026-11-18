@@ -1,165 +1,183 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
+import {
+  guideLoginScope,
+  isGuideTemporarilyDismissed,
+  dismissGuideForLogin,
+} from "@/lib/admin-guide-presentation";
 import AdminOnboarding from "./AdminOnboarding";
 import AdminGuideInvitationPanel from "./AdminGuideInvitationPanel";
 import AdminGuidePhaseTransition, { type GuideTransitionKind } from "./AdminGuidePhaseTransition";
 import AdminGuideDialog from "./AdminGuideDialog";
+import AdminGuideRewardNotice from "./AdminGuideRewardNotice";
 
 type GuideView = "STEPS" | "INVITATION" | GuideTransitionKind;
+type Presentation = { scope: string; view: GuideView; first: boolean };
 export default function AdminGuidePresenter() {
-  const { guide, updating, update } = useAdminGuide();
+  const { guide, updating, update, retry } = useAdminGuide();
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const router = useRouter();
   const loginId = (session?.user as { onboardingLoginId?: string } | undefined)?.onboardingLoginId;
-  const [openScope, setOpenScope] = useState<string | null>(null);
-  const [view, setView] = useState<GuideView>("STEPS");
-  const invitationOrigin = useRef<GuideTransitionKind>("CELEBRATION");
-  const [firstWelcome, setFirstWelcome] = useState(false);
-  const [initialStep, setInitialStep] = useState<string>();
-  const offeredLogin = useRef("");
-  const preparationClaim = useRef("");
-  const currentOpen = useRef<string | null>(null);
-  const currentScope = useRef("");
-  const alive = useRef(true);
-  const scope = guide ? `${guide.tenant.id}:${guide.administrator.membershipId}` : "";
-  currentScope.current = scope;
-  currentOpen.current = openScope;
+  const scope =
+    guide && loginId
+      ? guideLoginScope(guide.tenant.id, guide.administrator.membershipId, loginId)
+      : "";
+  const current = useRef(scope);
+  current.current = pathname === "/admin/dashboard" ? scope : "";
+  const [, setStorageVersion] = useState(0);
   useEffect(() => {
-    alive.current = true;
-    return () => {
-      alive.current = false;
+    const changed = (event: StorageEvent) => {
+      if (event.key === `guide-closed:${scope}`) setStorageVersion((value) => value + 1);
     };
-  }, []);
+    window.addEventListener("storage", changed);
+    return () => window.removeEventListener("storage", changed);
+  }, [scope]);
+  const [ready, setReady] = useState("");
+  const [presentation, setPresentation] = useState<Presentation | null>(null);
+  const [manualScope, setManualScope] = useState("");
+  const leaving = useRef("");
+  const recorded = useRef(new Set<string>());
+  const invitationOrigin = useRef<GuideTransitionKind>("CELEBRATION");
+  const manual = Boolean(
+    scope && params?.get("retomarGuia") === "1" && params?.get("grupoGuia") === guide?.tenant.slug
+  );
+  const manualRef = useRef("");
+  // Every Dashboard entry reads current persisted operations before offering the guide.
+  useEffect(() => {
+    if (!scope || pathname !== "/admin/dashboard") return;
+    let alive = true;
+    void retry()
+      .then((fresh) => {
+        if (alive && current.current === scope && fresh) setReady(scope);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [scope, pathname, retry]);
+  const temporary = scope ? isGuideTemporarilyDismissed(scope) : false;
+  const permanent = Boolean(guide?.pedagogicalState.dashboardInviteDismissedAt);
+  const allowed = manual || manualScope === scope || (!temporary && !permanent);
   useEffect(() => {
     if (
       !guide ||
       !scope ||
-      !loginId ||
-      guide.activationProgress.complete ||
-      guide.pedagogicalState.dashboardInviteDismissedAt
+      ready !== scope ||
+      current.current !== scope ||
+      (leaving.current === scope && !manual)
     )
       return;
-    const loginKey = `${scope}:${loginId}`;
-    if (offeredLogin.current === loginKey) return;
-    offeredLogin.current = loginKey;
-    const candidate: GuideView | null = guide.transition?.preparationCelebrationPending
-      ? "CELEBRATION"
-      : guide.transition?.footballInvitationPending
-        ? "FOOTBALL_INVITE"
-        : !guide.phases?.preparation.complete &&
-            !guide.pedagogicalState.welcomePresentedAt &&
-            !guide.pedagogicalState.welcomeSeenAt
-          ? "STEPS"
-          : null;
-    if (!candidate) return;
-    const offerKey = `${loginId}:${guide.guideVersion}:${candidate}`;
-    try {
-      if (sessionStorage.getItem(`onboarding-offered:${scope}`) === offerKey) return;
-    } catch {
-      /* Persistent membership state still controls phase transitions. */
+    if (!manual) manualRef.current = "";
+    if (manual && manualRef.current !== scope) {
+      leaving.current = "";
+      manualRef.current = scope;
+      setManualScope(scope);
+      router.replace("/admin/dashboard", { scroll: false });
     }
-    const present = async () => {
-      if (candidate === "CELEBRATION") preparationClaim.current = scope;
-      if (candidate === "CELEBRATION" && !(await update({ action: "PREPARATION_CELEBRATED" })))
-        return;
-      if (
-        candidate === "FOOTBALL_INVITE" &&
-        !(await update({ action: "FOOTBALL_INVITE_PRESENTED" }))
-      )
-        return;
-      if (!alive.current || currentScope.current !== scope) return;
-      if (candidate === "STEPS") {
-        if (!(await update({ action: "WELCOME_PRESENTED" }))) return;
-        if (!alive.current || currentScope.current !== scope) return;
-        setFirstWelcome(true);
+    if (!allowed || guide.activationProgress.complete) return;
+    const candidate: GuideView =
+      guide.transition?.preparationCelebrationPending &&
+      !recorded.current.has(`${scope}:CELEBRATION`)
+        ? "CELEBRATION"
+        : guide.transition?.footballInvitationPending &&
+            !recorded.current.has(`${scope}:FOOTBALL_INVITE`)
+          ? "FOOTBALL_INVITE"
+          : "STEPS";
+    setPresentation((previous) => {
+      if (previous?.scope === scope) {
+        // New milestones may supersede normal steps; saving their marker must not
+        // immediately replace their visible celebration with the next candidate.
+        if (previous.view !== "STEPS" || candidate === "STEPS") return previous;
       }
-      try {
-        sessionStorage.setItem(`onboarding-offered:${scope}`, offerKey);
-      } catch {
-        /* A tab without storage can continue using the guide. */
-      }
-      setView(candidate);
-      setOpenScope(scope);
-    };
-    void present();
-  }, [guide, scope, loginId, update]);
-  useEffect(() => {
-    if (
-      !guide?.transition?.preparationCelebrationPending ||
-      openScope !== scope ||
-      preparationClaim.current === scope ||
-      guide.pedagogicalState.dashboardInviteDismissedAt
-    )
-      return;
-    preparationClaim.current = scope;
-    void update({ action: "PREPARATION_CELEBRATED" }).then((claimed) => {
-      if (
-        claimed &&
-        alive.current &&
-        currentScope.current === scope &&
-        currentOpen.current === scope
-      )
-        setView("CELEBRATION");
+      return {
+        scope,
+        view: candidate,
+        first: !guide.pedagogicalState.welcomePresentedAt && !guide.pedagogicalState.welcomeSeenAt,
+      };
     });
-  }, [guide, openScope, scope, update]);
-  if (
-    !guide ||
-    guide.activationProgress.complete ||
-    guide.pedagogicalState.dashboardInviteDismissedAt
-  )
-    return null;
-  const open = openScope === scope;
-  const close = (permanent = false) => {
-    setOpenScope(null);
-    if (
-      !permanent &&
-      (view === "FOOTBALL_INVITE" ||
-        (view === "INVITATION" && invitationOrigin.current === "FOOTBALL_INVITE"))
-    )
-      void update({ action: "FOOTBALL_INVITE_DEFERRED" });
+  }, [guide, scope, ready, allowed, manual, router]);
+  const visible = Boolean(
+    presentation?.scope === scope &&
+      allowed &&
+      ready === scope &&
+      pathname === "/admin/dashboard" &&
+      !guide?.activationProgress.complete
+  );
+  // These effects run only after the corresponding dialog has committed to the DOM.
+  useEffect(() => {
+    if (!visible || !presentation || !guide) return;
+    const view = presentation.view;
+    const action =
+      view === "CELEBRATION"
+        ? "PREPARATION_CELEBRATED"
+        : view === "FOOTBALL_INVITE"
+          ? "FOOTBALL_INVITE_PRESENTED"
+          : view === "STEPS" && presentation.first
+            ? "WELCOME_PRESENTED"
+            : null;
+    const key = `${scope}:${view}`;
+    if (!action || recorded.current.has(key)) return;
+    recorded.current.add(key);
+    void update({ action });
+  }, [visible, presentation, guide, scope, update]);
+  if (!guide || !scope || ready !== scope || pathname !== "/admin/dashboard") return null;
+  if (guide.activationProgress.complete)
+    return (
+      <AdminGuideRewardNotice allowPresentation={manual || manualScope === scope || !permanent} />
+    );
+  const close = (permanentlyDismissed = false) => {
+    if (!permanentlyDismissed) dismissGuideForLogin(scope);
+    leaving.current = scope;
+    setPresentation(null);
+    setManualScope("");
   };
-  const startFootball = async () => {
-    if (await update({ action: "FOOTBALL_STARTED" })) {
-      setInitialStep(
-        ["ATHLETE_LEVELS", "FIRST_MATCHDAY", "RESULTS_RECORDED", "CHAMPION_PUBLISHED"].find((id) =>
-          guide.tasks.some((task) => task.id === id && !task.completed)
-        ) ?? "ATHLETE_LEVELS"
-      );
-      setView("STEPS");
-    }
+  const navigate = () => {
+    leaving.current = scope;
+    setPresentation(null);
   };
+  const steps = () => setPresentation({ scope, view: "STEPS", first: false });
   return (
-    <>
-      <AdminGuideDialog open={open} onClose={() => close()}>
-        {view === "STEPS" ? (
-          <AdminOnboarding
-            key={`${scope}:${initialStep ?? ""}`}
-            initialStep={initialStep}
-            firstPresentation={firstWelcome}
-            onClose={close}
-          />
-        ) : view === "INVITATION" ? (
-          <AdminGuideInvitationPanel
-            guide={guide}
-            updating={updating}
-            update={update}
-            onBack={() => setView(invitationOrigin.current)}
-          />
-        ) : (
-          <AdminGuidePhaseTransition
-            guide={guide}
-            kind={view}
-            updating={updating}
-            onStart={() => void startFootball()}
-            onInvite={() => {
-              invitationOrigin.current = view;
-              setView("INVITATION");
-            }}
-            onClose={() => close()}
-          />
-        )}
-      </AdminGuideDialog>
-    </>
+    <AdminGuideDialog open={visible} onClose={() => close()}>
+      {presentation?.view === "STEPS" ? (
+        <AdminOnboarding
+          key={scope}
+          origin="dashboard"
+          firstPresentation={presentation.first}
+          onClose={close}
+          onNavigate={navigate}
+        />
+      ) : presentation?.view === "INVITATION" ? (
+        <AdminGuideInvitationPanel
+          guide={guide}
+          updating={updating}
+          update={update}
+          origin="dashboard"
+          onNavigate={navigate}
+          onBack={() => setPresentation({ scope, view: invitationOrigin.current, first: false })}
+        />
+      ) : (
+        <AdminGuidePhaseTransition
+          guide={guide}
+          kind={presentation?.view === "FOOTBALL_INVITE" ? "FOOTBALL_INVITE" : "CELEBRATION"}
+          updating={updating}
+          onStart={() =>
+            void update({ action: "FOOTBALL_STARTED" }).then((saved) => {
+              if (saved && current.current === scope) steps();
+            })
+          }
+          onInvite={() => {
+            invitationOrigin.current =
+              presentation?.view === "FOOTBALL_INVITE" ? "FOOTBALL_INVITE" : "CELEBRATION";
+            setPresentation({ scope, view: "INVITATION", first: false });
+          }}
+          onClose={steps}
+        />
+      )}
+    </AdminGuideDialog>
   );
 }

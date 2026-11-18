@@ -1,6 +1,5 @@
 "use client";
 
-import AdminGuidePreparationNotice from "@/components/admin-guide/AdminGuidePreparationNotice";
 import AdminOnboarding from "@/components/admin-guide/AdminOnboarding";
 import AdminGuideFirstMatchSection from "@/components/admin-guide/AdminGuideFirstMatchSection";
 import AdminGuideResourcesSection from "@/components/admin-guide/AdminGuideResourcesSection";
@@ -25,7 +24,6 @@ export default function AdminGuideClient() {
           </section>
         ) : (
           <>
-            <AdminGuidePreparationNotice />
             <AdminOnboarding
               key={`${guide.administrator.membershipId}:${guide.pedagogicalState.footballStartedAt ?? ""}`}
             />

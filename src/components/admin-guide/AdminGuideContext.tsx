@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
-import { guideDestination } from "@/lib/admin-guide-navigation";
+import { resumeGuideHref, guideDestination } from "@/lib/admin-guide-navigation";
 import { ADMIN_GUIDE_CHANGED } from "@/lib/admin-guide-events";
 import { STEP_HELP } from "@/lib/admin-onboarding";
 const CONTEXT_STEPS: Record<string, string[]> = {
@@ -51,13 +51,19 @@ export default function AdminGuideContext() {
   const id = params?.get("guia");
   const task = guide?.tasks.find((item) => item.id === id);
   const destination = guide && task ? guideDestination(guide, task) : null;
-  const visible = Boolean(task && destination === pathname);
+  const visible = Boolean(
+    task &&
+      destination &&
+      (destination === pathname ||
+        (task.id === "FIRST_MATCHDAY" &&
+          (pathname.startsWith("/admin/partidas/criar/") ||
+            pathname === "/admin/partidas/sorteio-inteligente")))
+  );
   useEffect(() => {
-    if (!visible) return;
     const refresh = () => void retry();
     window.addEventListener(ADMIN_GUIDE_CHANGED, refresh);
     return () => window.removeEventListener(ADMIN_GUIDE_CHANGED, refresh);
-  }, [visible, retry]);
+  }, [retry]);
   if (!visible || !task) return null;
   const targetLabel =
     task.id === "SCHEDULE"
@@ -86,10 +92,22 @@ export default function AdminGuideContext() {
         {task.completed ? "Etapa concluída" : task.title}
       </h2>
       <p className="mt-2">
-        {task.id === "ACTIVE_PLAYERS"
-          ? "Clique em Cadastrar Jogador, preencha o perfil e salve. Abrir o formulário mantém a etapa pendente até o cadastro ser concluído."
-          : STEP_HELP[task.id]}
+        {task.completed
+          ? task.id === "OFFICIAL_TEAMS"
+            ? "Seus times oficiais já estão cadastrados. Você pode continuar organizando os times ou avançar para os próximos passos."
+            : "Esta etapa foi concluída. Você pode continuar nesta página ou avançar para os próximos passos."
+          : task.id === "ACTIVE_PLAYERS"
+            ? "Clique em Cadastrar Jogador, preencha o perfil e salve. Abrir o formulário mantém a etapa pendente até o cadastro ser concluído."
+            : STEP_HELP[task.id]}
       </p>
+      {!task.completed &&
+        task.id === "OFFICIAL_TEAMS" &&
+        typeof guide?.operationalState.activeOfficialTeams === "number" && (
+          <p className="mt-2 text-zinc-300">
+            {guide.operationalState.activeOfficialTeams} de 2 times oficiais ativos cadastrados
+            {guide.operationalState.activeOfficialTeams === 1 ? " — falta mais um time." : "."}
+          </p>
+        )}
       {!task.completed && (
         <ol className="mt-3 list-decimal space-y-1 pl-5">
           {CONTEXT_STEPS[task.id]?.map((step) => (
@@ -107,7 +125,11 @@ export default function AdminGuideContext() {
         </button>
       )}
       <Link
-        href="/admin/guia-fut7pro"
+        href={
+          params?.get("guiaOrigem") === "dashboard" && guide
+            ? resumeGuideHref(guide.tenant.slug)
+            : "/admin/guia-fut7pro"
+        }
         className="mt-2 inline-flex min-h-11 items-center text-yellow-200 underline"
       >
         {task.completed ? "Continuar guia" : "Voltar ao guia"}

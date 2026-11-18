@@ -232,38 +232,45 @@ it("isolates personal preferences when administrators change in the same group",
   await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(8));
 });
 
-it("revalidates a 409 and safely retries an explicit deferral once", async () => {
-  let revision = 2;
-  let patches = 0;
-  (global.fetch as jest.Mock).mockImplementation((_url, options?: RequestInit) => {
-    if (options?.method === "PATCH") {
-      patches++;
-      const payload = JSON.parse(String(options.body));
-      if (patches === 1) {
-        revision = 3;
+it.each([
+  { action: "STEP_SKIPPED", tipId: "SCHEDULE" },
+  { action: "COMPLETION_PRESENTED" },
+  { action: "PREPARATION_CELEBRATED" },
+] as const)(
+  "revalidates a 409 and safely retries an idempotent guide action %j once",
+  async (action) => {
+    let revision = 2;
+    let patches = 0;
+    (global.fetch as jest.Mock).mockImplementation((_url, options?: RequestInit) => {
+      if (options?.method === "PATCH") {
+        patches++;
+        const payload = JSON.parse(String(options.body));
+        if (patches === 1) {
+          revision = 3;
+          return Promise.resolve({
+            ok: false,
+            status: 409,
+            json: async () => ({ message: "Conflito" }),
+          });
+        }
+        expect(payload.expectedRevision).toBe(3);
+        revision = 4;
         return Promise.resolve({
-          ok: false,
-          status: 409,
-          json: async () => ({ message: "Conflito" }),
+          ok: true,
+          json: async () => ({
+            pedagogicalState: makeGuide(activeSlug, revision).pedagogicalState,
+          }),
         });
       }
-      expect(payload.expectedRevision).toBe(3);
-      revision = 4;
-      return Promise.resolve({
-        ok: true,
-        json: async () => ({ pedagogicalState: makeGuide(activeSlug, revision).pedagogicalState }),
-      });
-    }
-    return Promise.resolve({ ok: true, json: async () => makeGuide(activeSlug, revision) });
-  });
-  const { result } = renderHook(() => useAdminGuide(), { wrapper });
-  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
-  await act(async () =>
-    expect(await result.current.update({ action: "STEP_SKIPPED", tipId: "SCHEDULE" })).toBe(true)
-  );
-  expect(patches).toBe(2);
-  expect(result.current.actionError).toBeNull();
-});
+      return Promise.resolve({ ok: true, json: async () => makeGuide(activeSlug, revision) });
+    });
+    const { result } = renderHook(() => useAdminGuide(), { wrapper });
+    await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
+    await act(async () => expect(await result.current.update(action)).toBe(true));
+    expect(patches).toBe(2);
+    expect(result.current.actionError).toBeNull();
+  }
+);
 it("serializes updates from two guide instances without losing revisions", async () => {
   let revision = 1;
   const expected: number[] = [];

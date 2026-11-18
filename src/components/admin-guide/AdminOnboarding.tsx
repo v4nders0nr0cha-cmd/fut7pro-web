@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,7 +14,11 @@ import {
   onboardingBlockMessage,
 } from "@/lib/admin-onboarding";
 import AdminGuideInvitationPanel from "./AdminGuideInvitationPanel";
-import { guideDestination } from "@/lib/admin-guide-navigation";
+import {
+  contextualGuideHref,
+  type GuideOrigin,
+  guideDestination,
+} from "@/lib/admin-guide-navigation";
 
 const primary =
   "inline-flex min-h-11 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 font-semibold text-black hover:bg-yellow-300 disabled:opacity-50";
@@ -22,10 +26,14 @@ const secondary =
   "inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-3 py-2 hover:bg-white/10 disabled:opacity-50";
 export default function AdminOnboarding({
   onClose,
+  onNavigate,
+  origin = "pagina",
   initialStep,
   firstPresentation = false,
 }: {
   onClose?: (permanentlyDismissed?: boolean) => void;
+  onNavigate?: () => void;
+  origin?: GuideOrigin;
   initialStep?: string;
   firstPresentation?: boolean;
 }) {
@@ -39,20 +47,21 @@ export default function AdminOnboarding({
   const [invitationOpen, setInvitationOpen] = useState(false);
   const invitationButtonRef = useRef<HTMLButtonElement>(null);
   const dismissButtonRef = useRef<HTMLButtonElement>(null);
+  const selectedCompleted = guide?.tasks.find((task) => task.id === selected)?.completed;
+  const previousCompletion = useRef({ id: selected, completed: selectedCompleted });
+  useEffect(() => {
+    if (
+      selectedCompleted &&
+      previousCompletion.current.id === selected &&
+      previousCompletion.current.completed === false
+    )
+      setSelected(undefined);
+    previousCompletion.current = { id: selected, completed: selectedCompleted };
+  }, [selected, selectedCompleted]);
   if (!guide) return <p role="status">Carregando seus primeiros passos...</p>;
   const tasks = ONBOARDING_IDS.flatMap((id) => guide.tasks.filter((task) => task.id === id));
   const active =
-    tasks.find((item) => item.id === selected) ??
-    tasks
-      .slice(
-        Math.max(
-          0,
-          tasks.findIndex((item) => item.id === guide.pedagogicalState.currentStep)
-        )
-      )
-      .find((item) => !item.completed) ??
-    tasks.find((item) => !item.completed) ??
-    tasks[0];
+    tasks.find((item) => item.id === selected) ?? tasks.find((item) => !item.completed) ?? tasks[0];
   if (!active) return null;
   const started = Boolean(guide.pedagogicalState.welcomeSeenAt);
   const firstName = session?.user?.name?.trim().split(/\s+/)[0] || "organizador";
@@ -70,6 +79,8 @@ export default function AdminOnboarding({
     return (
       <AdminGuideInvitationPanel
         guide={guide}
+        origin={origin}
+        onNavigate={onNavigate}
         updating={updating}
         update={update}
         onBack={() => {
@@ -239,9 +250,12 @@ export default function AdminOnboarding({
             <Link
               className={primary}
               href={
-                active.id === "ACCOUNT_READY" ? destination : `${destination}?guia=${active.id}`
+                active.id === "ACCOUNT_READY"
+                  ? destination
+                  : contextualGuideHref(destination, active.id, origin)
               }
               onClick={() => {
+                onNavigate?.();
                 if (FOOTBALL_IDS.includes(active.id) && !guide.pedagogicalState.footballStartedAt)
                   void update({ action: "FOOTBALL_STARTED" });
                 else void update({ action: "STEP_SELECTED", tipId: active.id });

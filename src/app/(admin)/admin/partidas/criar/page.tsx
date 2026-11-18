@@ -1,11 +1,21 @@
 "use client";
 
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { contextualGuideHref } from "@/lib/admin-guide-navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { FaRandom, FaClipboardList } from "react-icons/fa";
 
 export default function CriarPartidasPage() {
   const router = useRouter();
+  const params = useSearchParams();
+  const destination = (path: string) =>
+    params?.get("guia") === "FIRST_MATCHDAY"
+      ? contextualGuideHref(
+          path,
+          "FIRST_MATCHDAY",
+          params.get("guiaOrigem") === "dashboard" ? "dashboard" : "pagina"
+        )
+      : path;
 
   return (
     <>
@@ -27,7 +37,7 @@ export default function CriarPartidasPage() {
           {/* Card Sorteio Inteligente */}
           <button
             className="bg-neutral-900 border-2 border-yellow-500 rounded-2xl shadow-lg p-8 flex flex-col items-center hover:bg-yellow-400 hover:text-black transition group"
-            onClick={() => router.push("/admin/partidas/sorteio-inteligente")}
+            onClick={() => router.push(destination("/admin/partidas/sorteio-inteligente"))}
             type="button"
           >
             <FaRandom
@@ -51,7 +61,7 @@ export default function CriarPartidasPage() {
           {/* Card Partida Classica */}
           <button
             className="bg-neutral-900 border-2 border-yellow-500 rounded-2xl shadow-lg p-8 flex flex-col items-center hover:bg-yellow-400 hover:text-black transition group"
-            onClick={() => router.push("/admin/partidas/criar/classica")}
+            onClick={() => router.push(destination("/admin/partidas/criar/classica"))}
             type="button"
           >
             <FaClipboardList

@@ -94,3 +94,11 @@ export function guideResourceDestinations(guide: AdminGuideData) {
         : null,
   };
 }
+
+export type GuideOrigin = "dashboard" | "pagina";
+export function contextualGuideHref(destination: string, step: string, origin: GuideOrigin) {
+  return `${destination}?${new URLSearchParams({ guia: step, guiaOrigem: origin })}`;
+}
+export function resumeGuideHref(slug: string) {
+  return `/admin/dashboard?${new URLSearchParams({ retomarGuia: "1", grupoGuia: slug })}`;
+}

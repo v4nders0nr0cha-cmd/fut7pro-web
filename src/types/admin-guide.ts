@@ -1,4 +1,5 @@
 export type AdminGuideAction =
+  | "COMPLETION_PRESENTED"
   | "REWARD_CLAIM"
   | "REWARD_PRESENTED"
   | "PREPARATION_CELEBRATED"
@@ -22,6 +23,7 @@ export type AdminGuideAction =
 export type AdminGuidePedagogicalState = {
   revision: number;
   rewardPresentedAt?: string;
+  completionPresentedAt?: string;
   completedTaskIds?: string[];
   preparationCelebratedAt?: string;
   footballInvitePresentedAt?: string;
@@ -112,6 +114,7 @@ export type AdminGuideData = {
 export type AdminGuidePatch =
   | {
       action:
+        | "COMPLETION_PRESENTED"
         | "REWARD_CLAIM"
         | "REWARD_PRESENTED"
         | "PREPARATION_CELEBRATED"
