@@ -51,6 +51,9 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
       { exact: true }
     )
   ).toBeVisible();
+  await page
+    .getByRole("complementary", { name: "Orientação do guia" })
+    .screenshot({ path: info.outputPath("teams-complete-minimum.png") });
   // The new contextual action opens the existing form; revalidation preserves it.
   await page.getByRole("button", { name: "Cadastrar outro time", exact: true }).click();
   await form.getByLabel("Nome do time").fill("Rascunho preservado");

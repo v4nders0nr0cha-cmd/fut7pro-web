@@ -133,12 +133,6 @@ for (const viewport of [
         await route.fulfill({ json: { pedagogicalState: state, reward: guide.reward } });
       } else await route.fulfill({ json: guide });
     });
-    await page.route("**/api/auth/session", async (route) => {
-      const response = await route.fetch();
-      const session = await response.json();
-      if (session?.user) session.user.image = "/images/avatar_padrao_admin.png";
-      await route.fulfill({ response, json: session });
-    });
     const assetDiagnostics: string[] = [];
     page.on("requestfailed", (request) => {
       if (request.url().includes("/_next/"))
