@@ -8,6 +8,7 @@ import {
   isGuideTemporarilyDismissed,
   dismissGuideForLogin,
 } from "@/lib/admin-guide-presentation";
+import { GUIDE_CLOSED, notifyGuideAccess } from "@/lib/admin-guide-access";
 import AdminOnboarding from "./AdminOnboarding";
 import AdminGuideInvitationPanel from "./AdminGuideInvitationPanel";
 import AdminGuidePhaseTransition, { type GuideTransitionKind } from "./AdminGuidePhaseTransition";
@@ -21,7 +22,7 @@ export default function AdminGuidePresenter() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const params = useSearchParams();
-  const router = useRouter();
+  const { replace } = useRouter();
   const loginId = (session?.user as { onboardingLoginId?: string } | undefined)?.onboardingLoginId;
   const scope =
     guide && loginId
@@ -38,6 +39,7 @@ export default function AdminGuidePresenter() {
     return () => window.removeEventListener("storage", changed);
   }, [scope]);
   const [ready, setReady] = useState("");
+  const [manualError, setManualError] = useState("");
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [manualScope, setManualScope] = useState("");
   const leaving = useRef("");
@@ -48,6 +50,8 @@ export default function AdminGuidePresenter() {
     scope && params?.get("retomarGuia") === "1" && params?.get("grupoGuia") === guide?.tenant.slug
   );
   const manualRef = useRef("");
+  const entryManual = useRef(manual);
+  entryManual.current = manual;
   // Every Dashboard entry reads current persisted operations before offering the guide.
   useEffect(() => {
     if (pathname !== "/admin/dashboard") {
@@ -61,39 +65,70 @@ export default function AdminGuidePresenter() {
     }
     if (!scope) return;
     let alive = true;
+    const manuallyRequested = entryManual.current;
+    if (manuallyRequested) manualRef.current = scope;
     void retry()
       .then((fresh) => {
-        if (alive && current.current === scope && fresh) setReady(scope);
+        if (alive && current.current === scope && fresh) {
+          if (manuallyRequested) {
+            manualRef.current = scope;
+            leaving.current = "";
+            navigating.current = "";
+            setManualScope(scope);
+            setManualError("");
+            replace("/admin/dashboard", { scroll: false });
+          }
+          setReady(scope);
+        } else if (alive && current.current === scope && manuallyRequested) {
+          setManualError(scope);
+          replace("/admin/dashboard", { scroll: false });
+        }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (alive && current.current === scope && manuallyRequested) {
+          setManualError(scope);
+          replace("/admin/dashboard", { scroll: false });
+        }
+      });
     return () => {
       alive = false;
     };
-  }, [scope, pathname, retry]);
+  }, [scope, pathname, retry, replace]);
   const temporary = scope ? isGuideTemporarilyDismissed(scope) : false;
   const permanent = Boolean(guide?.pedagogicalState.dashboardInviteDismissedAt);
   const allowed = manual || manualScope === scope || (!temporary && !permanent);
   useEffect(() => {
-    if (
-      !guide ||
-      !scope ||
-      ready !== scope ||
-      current.current !== scope ||
-      (leaving.current === scope && !manual)
-    )
-      return;
+    if (!guide || !scope || current.current !== scope) return;
     if (!manual) manualRef.current = "";
     if (manual && manualRef.current !== scope) {
-      leaving.current = "";
-      navigating.current = "";
       manualRef.current = scope;
-      setManualScope(scope);
-      router.replace("/admin/dashboard", { scroll: false });
+      setReady("");
+      setManualError("");
+      void retry()
+        .then((fresh) => {
+          if (current.current !== scope) return;
+          if (fresh) {
+            leaving.current = "";
+            navigating.current = "";
+            setPresentation(null);
+            setManualScope(scope);
+            setReady(scope);
+          } else setManualError(scope);
+          replace("/admin/dashboard", { scroll: false });
+        })
+        .catch(() => {
+          if (current.current !== scope) return;
+          setManualError(scope);
+          replace("/admin/dashboard", { scroll: false });
+        });
+      return;
     }
-    if (!allowed || guide.activationProgress.complete) return;
-    const candidate: GuideView =
-      guide.transition?.preparationCelebrationPending &&
-      !recorded.current.has(`${scope}:CELEBRATION`)
+    if (ready !== scope || (leaving.current === scope && !manual)) return;
+    if (!allowed || (guide.activationProgress.complete && manualScope !== scope && !manual)) return;
+    const candidate: GuideView = guide.activationProgress.complete
+      ? "STEPS"
+      : guide.transition?.preparationCelebrationPending &&
+          !recorded.current.has(`${scope}:CELEBRATION`)
         ? "CELEBRATION"
         : guide.transition?.footballInvitationPending &&
             !recorded.current.has(`${scope}:FOOTBALL_INVITE`)
@@ -111,13 +146,13 @@ export default function AdminGuidePresenter() {
         first: !guide.pedagogicalState.welcomePresentedAt && !guide.pedagogicalState.welcomeSeenAt,
       };
     });
-  }, [guide, scope, ready, allowed, manual, router]);
+  }, [guide, scope, ready, allowed, manual, manualScope, replace, retry]);
   const visible = Boolean(
     presentation?.scope === scope &&
       allowed &&
       ready === scope &&
       pathname === "/admin/dashboard" &&
-      !guide?.activationProgress.complete
+      (!guide?.activationProgress.complete || manualScope === scope)
   );
   // These effects run only after the corresponding dialog has committed to the DOM.
   useEffect(() => {
@@ -156,11 +191,17 @@ export default function AdminGuidePresenter() {
     });
   return (
     <>
+      {manualError === scope && pathname === "/admin/dashboard" && (
+        <p role="status" className="text-sm text-zinc-300">
+          Não foi possível abrir o guia. Tente novamente pelo acesso de ajuda.
+        </p>
+      )}
       <AdminGuideRewardNotice
         allowPresentation={
           pathname === "/admin/dashboard" &&
           navigating.current !== scope &&
           ready === scope &&
+          !visible &&
           (manual || manualScope === scope || !permanent)
         }
       />
@@ -168,6 +209,13 @@ export default function AdminGuidePresenter() {
         key={`${scope}:${presentation?.view}`}
         open={visible}
         onClose={() => close()}
+        onCloseByButton={() => {
+          if (presentation?.view === "STEPS" && !guide.activationProgress.complete && !permanent)
+            notifyGuideAccess(GUIDE_CLOSED, {
+              tenantId: guide.tenant.id,
+              membershipId: guide.administrator.membershipId,
+            });
+        }}
       >
         {presentation?.view === "STEPS" ? (
           <AdminOnboarding

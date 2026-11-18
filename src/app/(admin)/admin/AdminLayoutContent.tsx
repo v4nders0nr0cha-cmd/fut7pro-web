@@ -1,4 +1,5 @@
 "use client";
+import AdminGuideAccessHint from "@/components/admin-guide/AdminGuideAccessHint";
 import AdminGuidePresenter from "@/components/admin-guide/AdminGuidePresenter";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -611,7 +612,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
 
   return withSessionModal(
     <NotificationProvider>
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-[#181818] to-[#232323]">
+      <div
+        data-guide-navigation-open={mobileSidebarOpen ? "true" : undefined}
+        className="flex flex-col min-h-screen bg-gradient-to-br from-[#181818] to-[#232323]"
+      >
         <ToastGlobal />
         <Header onMenuClick={() => setMobileSidebarOpen(true)} />
         <div className="flex flex-1">
@@ -625,6 +629,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
         </div>
         <BottomMenuAdmin />
         <AdminHelpLauncher />
+        <AdminGuideAccessHint />
       </div>
     </NotificationProvider>
   );

@@ -17,6 +17,7 @@ export type Fut7DialogBaseProps = {
   footer?: ReactNode;
   initialFocusRef?: RefObject<HTMLElement>;
   onClose: () => void;
+  onCloseButton?: () => void;
 };
 
 const toneStyles: Record<
@@ -71,6 +72,7 @@ export default function Fut7DialogBase({
   footer,
   initialFocusRef,
   onClose,
+  onCloseButton,
 }: Fut7DialogBaseProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLElement | null>(null);
@@ -176,7 +178,7 @@ export default function Fut7DialogBase({
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={onClose}
+            onClick={onCloseButton ?? onClose}
             className="shrink-0 rounded-xl border border-white/15 bg-white/5 p-2.5 text-zinc-200 transition hover:border-yellow-300/50 hover:text-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
             aria-label="Fechar modal"
           >

@@ -6,10 +6,12 @@ import AdminGuideAbout from "./AdminGuideAbout";
 export default function AdminGuideDialog({
   open,
   onClose,
+  onCloseByButton,
   children,
 }: {
   open: boolean;
   onClose: () => void;
+  onCloseByButton?: () => void;
   children: ReactNode;
 }) {
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -22,6 +24,11 @@ export default function AdminGuideDialog({
       onClose={() => {
         setAboutOpen(false);
         onClose();
+      }}
+      onCloseButton={() => {
+        setAboutOpen(false);
+        onClose();
+        onCloseByButton?.();
       }}
       icon={
         <button

@@ -16,6 +16,7 @@ import { DEFAULT_ADMIN_AVATAR, getAvatarSrc } from "@/utils/avatar";
 import { useRacha } from "@/context/RachaContext";
 import { getAdminProfileSections } from "./adminProfileNavigation";
 import { LogOut } from "lucide-react";
+import AdminGuideMobileAccess from "@/components/admin-guide/AdminGuideMobileAccess";
 import AdminRequestsMenu from "@/components/admin/AdminRequestsMenu";
 
 type BadgeKey = "notificacoes" | "mensagens";
@@ -199,6 +200,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </button>
         ) : (
           <>
+            <AdminGuideMobileAccess />
             <Link
               href="/admin/mais"
               className="flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 lg:hidden"
