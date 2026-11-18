@@ -101,6 +101,9 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
     expect(accessResponse.ok(), await accessResponse.text()).toBe(true);
     expect(await accessResponse.json()).toMatchObject({ allowed: true });
     await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
+    // The loopback fixture has no live traffic: finish session/tenant revalidation
+    // before a full-document deep link aborts requests in the previous WebKit page.
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
   };
   await reloadDashboard();
   await expect(guide).toHaveCount(0);
