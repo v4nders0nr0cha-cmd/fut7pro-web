@@ -72,10 +72,13 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   ).toBeVisible();
   await expect(guide.getByText(/9 de 10 atletas cadastrados/)).toBeVisible();
   await guide.getByRole("button", { name: "Agora não", exact: true }).click();
+  await expect(guide.getByText(/9 de 10 atletas elegíveis/)).toBeVisible();
   await expect(
-    guide.getByRole("heading", { name: "Avalie o nível dos atletas", exact: true })
-  ).toBeVisible();
-  await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+    guide.getByRole("button", { name: "Avalie o nível dos atletas", exact: true })
+  ).toHaveCount(0);
+  await expect(
+    guide.getByRole("list", { name: "Etapas de Prepare seu grupo" }).locator("li")
+  ).toHaveCount(4);
   fixture.setEligible(10);
   await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
   await expect(guide.getByRole("heading", { name: /A galera está chegando/ })).toBeVisible();
@@ -83,15 +86,30 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await expect(
     guide.getByRole("heading", { name: "Avalie o nível dos atletas", exact: true })
   ).toBeVisible();
+  await expect(
+    guide.getByRole("list", { name: "Etapas de Entre em campo" }).locator("li")
+  ).toHaveCount(4);
+  await expect(guide.getByRole("list", { name: "Etapas de Prepare seu grupo" })).toHaveCount(0);
+  if (info.project.name === "chromium")
+    await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toBeInViewport({
+      ratio: 1,
+    });
+  await guide.screenshot({ path: info.outputPath("active-football-phase.png") });
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
-  const accessAfterRefresh = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/admin/access"
-  );
-  await page.reload();
-  const accessResponse = await accessAfterRefresh;
-  expect(accessResponse.ok(), await accessResponse.text()).toBe(true);
-  expect(await accessResponse.json()).toMatchObject({ allowed: true });
-  await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
+  const reloadDashboard = async () => {
+    const accessAfterRefresh = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/admin/access"
+    );
+    await page.reload();
+    const accessResponse = await accessAfterRefresh;
+    expect(accessResponse.ok(), await accessResponse.text()).toBe(true);
+    expect(await accessResponse.json()).toMatchObject({ allowed: true });
+    await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
+    // The loopback fixture has no live traffic: finish session/tenant revalidation
+    // before a full-document deep link aborts requests in the previous WebKit page.
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
+  };
+  await reloadDashboard();
   await expect(guide).toHaveCount(0);
   expect(
     await page.evaluate(() =>
@@ -122,13 +140,13 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await guide.getByRole("button", { name: "Não mostrar este Guia novamente", exact: true }).click();
   await guide.getByRole("button", { name: "Não mostrar novamente", exact: true }).click();
   await expect(guide).toHaveCount(0);
-  await page.reload();
+  await reloadDashboard();
   await expect(guide).toHaveCount(0);
   await page.goto(`${teamsPage}?guia=OFFICIAL_TEAMS&guiaOrigem=dashboard`);
   await page.getByRole("link", { name: "Continuar guia", exact: true }).click();
   await expect(guide).toBeVisible();
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
-  await page.reload();
+  await reloadDashboard();
   await expect(guide).toHaveCount(0);
   for (const post of fixture.posts) {
     expect(new URL(post.url).searchParams.has("guia")).toBe(false);

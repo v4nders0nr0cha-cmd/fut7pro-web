@@ -188,6 +188,15 @@ for (const viewport of [
       await expect(dialog.getByRole("button", { name: "Fechar modal" })).toBeInViewport();
     };
     await fits();
+    const phaseList = dialog.getByRole("list", { name: "Etapas de Prepare seu grupo" });
+    await expect(phaseList.locator("li")).toHaveCount(4);
+    await expect(dialog.getByRole("list", { name: "Etapas de Entre em campo" })).toHaveCount(0);
+    const listBox = await phaseList.boundingBox();
+    const detailBox = await dialog
+      .getByRole("region", { name: "Traga seus primeiros jogadores" })
+      .boundingBox();
+    expect(listBox!.y + listBox!.height).toBeLessThanOrEqual(detailBox!.y);
+    await expect(dialog.getByRole("button", { name: "Ver próxima etapa" })).toHaveCount(0);
     await expect(dialog.getByRole("button", { name: "Agora não", exact: true })).toHaveCount(0);
     await expect(dialog.getByRole("button", { name: "Pular por enquanto" })).toHaveCount(0);
     await expect(
@@ -211,13 +220,13 @@ for (const viewport of [
         )
         .toBe(true);
       expect(await brandImage.evaluate((element) => getComputedStyle(element).objectFit)).toBe(
-        "contain"
+        "cover"
       );
       expect(
         await brandImage.evaluate(
           (element) => getComputedStyle(element.parentElement!).backgroundImage
         )
-      ).toBe("none");
+      ).toContain("radial-gradient");
       await dialog.screenshot({
         path: testInfo.outputPath(`identity-${index}-${viewport.name}.png`),
       });

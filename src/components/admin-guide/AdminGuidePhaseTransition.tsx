@@ -27,9 +27,14 @@ export default function AdminGuidePhaseTransition({
         : "Sua pelada está configurada! 🎉⚽";
   return (
     <section className="space-y-5 py-2 text-white" aria-labelledby="guide-transition-title">
-      <p className="text-sm font-semibold text-yellow-300">
-        {kind === "CELEBRATION" ? "Parte 1 concluída · 4 de 4 etapas" : "Parte 2 — Entre em campo"}
-      </p>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="rounded-full border border-amber-200/20 bg-amber-200/[0.07] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-200">
+          Fase {kind === "CELEBRATION" ? "1" : "2"}
+        </span>
+        <span className="text-xs text-zinc-400">
+          {kind === "CELEBRATION" ? "Preparação concluída · 4 de 4 etapas" : "Entre em campo"}
+        </span>
+      </div>
       <h2 id="guide-transition-title" className="text-2xl font-bold leading-snug">
         {title}
       </h2>

@@ -184,7 +184,7 @@ export default function AdminGuideResourcesSection({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => {
-                          if (guide.pedagogicalState.welcomeSeenAt && !viewed && !updating)
+                          if (!viewed && !updating)
                             void update({ action: "RESOURCE_VIEWED", resourceId: video.id });
                         }}
                         className="mt-2 inline-block rounded-lg border border-yellow-400/50 px-3 py-2 font-semibold text-yellow-200 hover:bg-yellow-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"

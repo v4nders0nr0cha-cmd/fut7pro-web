@@ -165,11 +165,11 @@ beforeEach(() => {
     })),
   };
 });
-it("keeps the main welcome summary clean with eight steps and a personal greeting", () => {
+it("keeps the main summary clean with four visible steps and eight in the overall progress", () => {
   render(<AdminOnboarding />);
   expect(screen.getByText("Olá, Ana! Bem-vindo ao Fut7Pro!")).toBeInTheDocument();
   expect(screen.getByText(/13% concluído/)).toBeInTheDocument();
-  expect(screen.getAllByRole("listitem")).toHaveLength(8);
+  expect(screen.getAllByRole("listitem")).toHaveLength(4);
   expect(screen.queryByText(guide.tenant.publicUrl)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "WhatsApp" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Copiar convite" })).not.toBeInTheDocument();
@@ -222,10 +222,10 @@ it("opening external channels and manual form does not complete recruitment", ()
   expect(update).not.toHaveBeenCalled();
 });
 
-it("starts guidance without offering per-step deferral", async () => {
+it("offers a single invitation action without a competing start button", () => {
   render(<AdminOnboarding />);
-  fireEvent.click(screen.getByRole("button", { name: "Começar guia" }));
-  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_SEEN" }));
+  expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Começar guia" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Pular por enquanto" })).not.toBeInTheDocument();
 });
 it("X closes temporarily without leaving a dashboard card", async () => {
@@ -313,7 +313,7 @@ it("opens a separate invitation panel and restores the clean summary on return",
   expect(update).not.toHaveBeenCalled();
 });
 
-it.each([2, 3, 4, 5, 6, 7])(
+it.each([2, 3])(
   "keeps step %s readable while preventing action ahead of its prerequisites",
   (index) => {
     render(<AdminOnboarding />);
@@ -344,7 +344,7 @@ it.each([2, 3, 4, 5, 6, 7])("unlocks step %s only after all predecessors complet
 it("future stages stay readable without offering skip or unlocking their action", () => {
   render(<AdminOnboarding />);
   expect(screen.queryByRole("button", { name: "Pular por enquanto" })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Ver próxima etapa" }));
+  fireEvent.click(screen.getByRole("button", { name: "Defina os dias e horários" }));
   expect(screen.getByRole("button", { name: /^Continuar$/ })).toBeDisabled();
   expect(update).not.toHaveBeenCalled();
 });
@@ -364,7 +364,8 @@ it("responds to prerequisite completion received from the server", () => {
 });
 
 it("keeps later actions locked when an earlier prerequisite is missing despite later records", () => {
-  guide.tasks[4].completed = true;
+  guide.tasks.slice(0, 4).forEach((task: any) => (task.completed = true));
+  guide.tasks[5].completed = true;
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Publique o Time Campeão do Dia" }));
   expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
@@ -380,7 +381,7 @@ it("preserves permissions after prerequisites complete", () => {
 
 it("navigation to the next explanation does not write to the backend", () => {
   render(<AdminOnboarding />);
-  fireEvent.click(screen.getByRole("button", { name: "Ver próxima etapa" }));
+  fireEvent.click(screen.getByRole("button", { name: "Defina os dias e horários" }));
   expect(screen.getByRole("heading", { name: "Defina os dias e horários" })).toBeVisible();
   expect(update).not.toHaveBeenCalled();
 });
@@ -408,7 +409,7 @@ it("offers a newly unlocked football milestone during the same login", async () 
   eligiblePlayers = 9;
   const initial = render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
-  expect(screen.getByText(/faltam 1/)).toBeVisible();
+  expect(screen.getByText(/9 de 10 atletas elegíveis/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Sobre o Guia Interativo" }));
   expect(screen.getByRole("heading", { name: "Como funciona o Guia Interativo?" })).toBeVisible();
   update.mockImplementation(async ({ action }) => {
@@ -428,8 +429,9 @@ it("uses neutral, proportional branding and contextual return copy", () => {
   guide.pedagogicalState.welcomePresentedAt = "2026-11-18T12:00:00Z";
   const view = render(<AdminOnboarding />);
   const logo = screen.getByRole("img", { name: `Escudo de ${guide.tenant.name}` });
-  expect(logo).toHaveClass("object-contain");
-  expect(logo.parentElement).toHaveClass("bg-[#23262b]");
+  expect(logo).toHaveClass("object-cover", "scale-[1.35]");
+  expect(logo.style.maskImage).toContain("radial-gradient");
+  expect(logo.parentElement).toHaveClass("bg-[#24272d]");
   expect(screen.getByText(/Bom ter você de volta, professor/)).toBeVisible();
   guide.tasks.slice(0, 4).forEach((task: any) => (task.completed = true));
   eligiblePlayers = 9;
@@ -542,3 +544,43 @@ it("does not consume the final celebration during an operational navigation in f
   await screen.findByRole("heading", { name: "Guia concluído!" });
   expect(update).toHaveBeenCalledWith({ action: "COMPLETION_PRESENTED" });
 });
+
+it("shows only the active phase and places its list before the selected explanation", () => {
+  const view = render(<AdminOnboarding initialStep="CHAMPION_PUBLISHED" />);
+  const list = screen.getByRole("list", { name: "Etapas de Prepare seu grupo" });
+  expect(list.querySelectorAll("li")).toHaveLength(4);
+  expect(
+    screen.queryByRole("button", { name: "Publique o Time Campeão do Dia" })
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText("Ver próxima etapa")).not.toBeInTheDocument();
+  expect(screen.queryByText("Parte 1 — Prepare seu grupo")).not.toBeInTheDocument();
+  const details = screen.getByRole("region", { name: "Traga seus primeiros jogadores" });
+  expect(list.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  guide.tasks.slice(0, 4).forEach((task: any) => (task.completed = true));
+  eligiblePlayers = 9;
+  view.rerender(<AdminOnboarding />);
+  expect(screen.queryByRole("list", { name: "Etapas de Entre em campo" })).not.toBeInTheDocument();
+  expect(screen.getByText(/9 de 10 atletas elegíveis/)).toBeVisible();
+  eligiblePlayers = 10;
+  view.rerender(<AdminOnboarding />);
+  expect(
+    screen.getByRole("list", { name: "Etapas de Entre em campo" }).querySelectorAll("li")
+  ).toHaveLength(4);
+  expect(
+    screen.queryByRole("list", { name: "Etapas de Prepare seu grupo" })
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Avalie o nível dos atletas" })).toBeVisible();
+});
+
+it.each([5, 6, 7])(
+  "keeps football step %s consultable without bypassing preceding sports work",
+  (index) => {
+    guide.tasks.slice(0, 4).forEach((task: any) => (task.completed = true));
+    render(<AdminOnboarding />);
+    fireEvent.click(screen.getByRole("button", { name: guide.tasks[index].title }));
+    expect(screen.getByRole("heading", { name: guide.tasks[index].title })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+    expect(screen.getByText("Conclua as etapas anteriores para liberar esta ação.")).toBeVisible();
+    expect(update).not.toHaveBeenCalled();
+  }
+);
