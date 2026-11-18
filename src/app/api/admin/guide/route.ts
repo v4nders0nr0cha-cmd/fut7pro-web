@@ -14,6 +14,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const ACTION_FIELDS: Record<string, string[]> = {
+  REWARD_CLAIM: [],
+  REWARD_PRESENTED: [],
   PREPARATION_CELEBRATED: [],
   FOOTBALL_INVITE_PRESENTED: [],
   FOOTBALL_INVITE_DEFERRED: [],

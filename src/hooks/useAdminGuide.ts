@@ -82,6 +82,7 @@ export function useAdminGuide() {
               readResponse<{
                 pedagogicalState?: AdminGuideData["pedagogicalState"];
                 claimed?: boolean;
+                reward?: AdminGuideData["reward"];
               }>(response)
             );
           let result;
@@ -90,9 +91,14 @@ export function useAdminGuide() {
           } catch (cause) {
             if (
               (cause as GuideError).status !== 409 ||
-              !["STEP_SKIPPED", "PREPARATION_CELEBRATED", "FOOTBALL_INVITE_PRESENTED"].includes(
-                action.action
-              )
+              ![
+                "STEP_SKIPPED",
+                "PREPARATION_CELEBRATED",
+                "FOOTBALL_INVITE_PRESENTED",
+                "WELCOME_PRESENTED",
+                "REWARD_PRESENTED",
+                "REWARD_CLAIM",
+              ].includes(action.action)
             )
               throw cause;
             const fresh = await mutate();
@@ -112,15 +118,27 @@ export function useAdminGuide() {
           if (result.pedagogicalState)
             await mutate(
               (current) =>
-                current ? { ...current, pedagogicalState: result.pedagogicalState! } : current,
+                current
+                  ? {
+                      ...current,
+                      pedagogicalState: result.pedagogicalState!,
+                      ...(result.reward ? { reward: result.reward } : {}),
+                    }
+                  : current,
               { revalidate: false }
             );
           // The PATCH is confirmed. A failed read must not report that it failed to save.
           const fresh = await mutate().catch(() => undefined);
           if (fresh) currentQueue.revision = fresh.pedagogicalState.revision;
+          if (action.action === "REWARD_CLAIM") return result.reward?.granted === true;
           return (
             result.claimed !== false ||
-            !["PREPARATION_CELEBRATED", "FOOTBALL_INVITE_PRESENTED"].includes(action.action)
+            ![
+              "PREPARATION_CELEBRATED",
+              "FOOTBALL_INVITE_PRESENTED",
+              "WELCOME_PRESENTED",
+              "REWARD_PRESENTED",
+            ].includes(action.action)
           );
         } catch (cause) {
           if (scope !== scopeRef.current) return false;

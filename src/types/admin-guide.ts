@@ -1,4 +1,6 @@
 export type AdminGuideAction =
+  | "REWARD_CLAIM"
+  | "REWARD_PRESENTED"
   | "PREPARATION_CELEBRATED"
   | "FOOTBALL_INVITE_PRESENTED"
   | "FOOTBALL_INVITE_DEFERRED"
@@ -19,6 +21,7 @@ export type AdminGuideAction =
 
 export type AdminGuidePedagogicalState = {
   revision: number;
+  rewardPresentedAt?: string;
   completedTaskIds?: string[];
   preparationCelebratedAt?: string;
   footballInvitePresentedAt?: string;
@@ -62,6 +65,14 @@ export type AdminGuidePhase = {
 };
 
 export type AdminGuideData = {
+  reward?: {
+    granted: boolean;
+    eligible: boolean;
+    days: number;
+    grantedAt: string | null;
+    trialEnd: string | null;
+    reason: string | null;
+  };
   phases?: { preparation: AdminGuidePhase; football: AdminGuidePhase };
   eligibility?: {
     eligiblePlayers: number;
@@ -101,6 +112,8 @@ export type AdminGuideData = {
 export type AdminGuidePatch =
   | {
       action:
+        | "REWARD_CLAIM"
+        | "REWARD_PRESENTED"
         | "PREPARATION_CELEBRATED"
         | "FOOTBALL_INVITE_PRESENTED"
         | "FOOTBALL_INVITE_DEFERRED"

@@ -32,7 +32,14 @@ for (const viewport of [
       "Registre os resultados",
       "Publique o Time Campeão do Dia",
     ];
-    const state = {
+    const state: {
+      revision: number;
+      knownTips: string[];
+      dismissedTips: string[];
+      snoozedTips: Record<string, string>;
+      viewedResources: string[];
+      welcomePresentedAt?: string;
+    } = {
       revision: 1,
       knownTips: [],
       dismissedTips: [],
@@ -101,6 +108,8 @@ for (const viewport of [
     await page.route("**/api/admin/guide", async (route) => {
       if (route.request().method() === "PATCH") {
         state.revision++;
+        if (route.request().postDataJSON().action === "WELCOME_PRESENTED")
+          state.welcomePresentedAt = new Date().toISOString();
         await route.fulfill({ json: { pedagogicalState: state } });
       } else await route.fulfill({ json: guide });
     });
@@ -131,6 +140,50 @@ for (const viewport of [
       await expect(dialog.getByRole("button", { name: "Fechar modal" })).toBeInViewport();
     };
     await fits();
+    await expect(dialog.getByRole("button", { name: "Agora não", exact: true })).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: "Pular por enquanto" })).toHaveCount(0);
+    await expect(
+      dialog.getByRole("button", { name: "Não mostrar este Guia novamente" })
+    ).toBeVisible();
+    const logos = [
+      "/images/logos/logo_fut7pro.png",
+      `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><circle cx="80" cy="80" r="75" fill="#e32929"/><text x="80" y="98" text-anchor="middle" font-size="50" fill="white">F7</text></svg>')}`,
+      `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="220" height="140"><rect width="220" height="140" fill="#1677c8"/><text x="110" y="88" text-anchor="middle" font-size="50" fill="white">F7</text></svg>')}`,
+    ];
+    for (const [index, src] of logos.entries()) {
+      await brandImage.evaluate((element: HTMLImageElement, url) => {
+        element.removeAttribute("srcset");
+        element.src = url;
+      }, src);
+      await expect
+        .poll(() =>
+          brandImage.evaluate(
+            (element: HTMLImageElement) => element.complete && element.naturalWidth > 0
+          )
+        )
+        .toBe(true);
+      expect(await brandImage.evaluate((element) => getComputedStyle(element).objectFit)).toBe(
+        "contain"
+      );
+      expect(
+        await brandImage.evaluate(
+          (element) => getComputedStyle(element.parentElement!).backgroundImage
+        )
+      ).toBe("none");
+      await dialog.screenshot({
+        path: testInfo.outputPath(`identity-${index}-${viewport.name}.png`),
+      });
+    }
+    await brandImage.evaluate((element: HTMLImageElement) => {
+      element.src = "/images/avatar_padrao_admin.png";
+    });
+    await expect
+      .poll(() =>
+        brandImage.evaluate(
+          (element: HTMLImageElement) => element.complete && element.naturalWidth > 0
+        )
+      )
+      .toBe(true);
     await dialog.screenshot({ path: testInfo.outputPath(`welcome-${viewport.name}.png`) });
     await dialog.getByRole("button", { name: "Sobre o Guia Interativo" }).click();
     await expect(
@@ -162,5 +215,8 @@ for (const viewport of [
       await fits();
       await dialog.getByRole("button", { name: "Voltar às opções de convite" }).click();
     }
+    await dialog.getByRole("button", { name: "Fechar modal" }).click();
+    await expect(page.getByRole("button", { name: "Continuar guia", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("complementary", { name: "Guia Fut7Pro" })).toHaveCount(0);
   });
 }

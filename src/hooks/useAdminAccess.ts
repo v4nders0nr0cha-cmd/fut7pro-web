@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { BILLING_CHANGED, type BillingChangedDetail } from "@/lib/billing-events";
 import useSWR from "swr";
 import type {
   ActiveCompensation,
@@ -117,6 +119,18 @@ export function useAdminAccess(options: UseAdminAccessOptions = {}) {
       keepPreviousData: true,
     }
   );
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const detail = (event as CustomEvent<BillingChangedDetail>).detail;
+      if (
+        detail &&
+        (tenantScopeKey ? detail.slug === tenantScopeKey : detail.tenantId === data?.tenant?.id)
+      )
+        void mutate();
+    };
+    window.addEventListener(BILLING_CHANGED, changed);
+    return () => window.removeEventListener(BILLING_CHANGED, changed);
+  }, [tenantScopeKey, data?.tenant?.id, mutate]);
   const isBootLoading = enabled ? !data && (isLoading || isValidating) : false;
 
   return {

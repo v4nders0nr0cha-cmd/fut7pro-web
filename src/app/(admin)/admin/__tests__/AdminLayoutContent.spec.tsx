@@ -1,3 +1,7 @@
+jest.mock("@/components/admin-guide/AdminGuideRewardNotice", () => ({
+  __esModule: true,
+  default: () => null,
+}));
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminLayoutContent from "../AdminLayoutContent";
 import { useState } from "react";

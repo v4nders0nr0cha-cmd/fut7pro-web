@@ -12,7 +12,7 @@ import {
   FaBirthdayCake,
 } from "react-icons/fa";
 import BannerNotificacoes from "@/components/admin/BannerNotificacoes";
-import AdminGuideCard from "@/components/admin-guide/AdminGuideCard";
+import AdminGuidePresenter from "@/components/admin-guide/AdminGuidePresenter";
 import CardTimeCampeaoDoDia from "@/components/admin/CardTimeCampeaoDoDia";
 import CardCicloPlano from "@/components/admin/CardCicloPlano";
 import CardPlanoAtual from "@/components/admin/CardPlanoAtual";
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
             </Link>
           </div>
         </section>
-        <AdminGuideCard />
+        <AdminGuidePresenter />
 
         <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-2">
           <div className="relative">

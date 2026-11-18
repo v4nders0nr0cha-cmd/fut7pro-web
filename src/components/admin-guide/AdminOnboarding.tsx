@@ -23,19 +23,22 @@ const secondary =
 export default function AdminOnboarding({
   onClose,
   initialStep,
+  firstPresentation = false,
 }: {
   onClose?: (permanentlyDismissed?: boolean) => void;
   initialStep?: string;
+  firstPresentation?: boolean;
 }) {
   const { guide, updating, update, actionError, error, retry } = useAdminGuide();
   const { data: session } = useSession();
-  const returning = Boolean(
-    guide?.pedagogicalState.welcomePresentedAt || guide?.pedagogicalState.welcomeSeenAt
-  );
+  const returning =
+    !firstPresentation &&
+    Boolean(guide?.pedagogicalState.welcomePresentedAt || guide?.pedagogicalState.welcomeSeenAt);
   const [selected, setSelected] = useState<string | undefined>(initialStep);
-  const [deferredMessage, setDeferredMessage] = useState("");
+  const [confirmDismiss, setConfirmDismiss] = useState(false);
   const [invitationOpen, setInvitationOpen] = useState(false);
   const invitationButtonRef = useRef<HTMLButtonElement>(null);
+  const dismissButtonRef = useRef<HTMLButtonElement>(null);
   if (!guide) return <p role="status">Carregando seus primeiros passos...</p>;
   const tasks = ONBOARDING_IDS.flatMap((id) => guide.tasks.filter((task) => task.id === id));
   const active =
@@ -55,7 +58,6 @@ export default function AdminOnboarding({
   const firstName = session?.user?.name?.trim().split(/\s+/)[0] || "organizador";
   const select = (id: string) => {
     setSelected(id);
-    setDeferredMessage("");
   };
   const destination = guideDestination(guide, active);
   const next = tasks[tasks.indexOf(active) + 1];
@@ -79,7 +81,7 @@ export default function AdminOnboarding({
   return (
     <div className="grid min-w-0 gap-4 text-white md:gap-6 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)]">
       <aside className="min-w-0 text-center md:border-r md:border-white/15 md:pr-6">
-        <div className="relative mx-auto flex h-16 max-w-44 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-200/30 via-yellow-600/15 to-zinc-900 md:h-40 md:max-w-64">
+        <div className="relative mx-auto flex h-16 max-w-44 items-center justify-center rounded-2xl border border-white/10 bg-[#23262b] md:h-40 md:max-w-64">
           {guide.tenant.logoUrl ? (
             <Image
               unoptimized
@@ -109,12 +111,21 @@ export default function AdminOnboarding({
             : `Olá, ${firstName}! Bem-vindo ao Fut7Pro!`}
         </h2>
         <p className="mt-2 break-words text-sm text-zinc-300 md:mt-3">
-          Seu grupo <strong className="text-yellow-300">{guide.tenant.name}</strong> já está ativo!
-          Vamos dar os primeiros passos juntos?
-          <span className="hidden md:inline">
-            {" "}
-            O guia interativo ajuda você a configurar e utilizar a plataforma.
-          </span>
+          {guide.phases?.preparation.complete ? (
+            guide.eligibility?.footballUnlocked ? (
+              "A galera já está chegando! Vamos avaliar os atletas e preparar sua primeira rodada?"
+            ) : (
+              "Sua pelada já está configurada! Agora falta reunir a galera para começarmos a próxima fase."
+            )
+          ) : returning ? (
+            "Bom ter você de volta, professor! ⚽ Vamos continuar de onde paramos e deixar sua pelada pronta para entrar em campo?"
+          ) : (
+            <>
+              Seu grupo <strong className="text-yellow-300">{guide.tenant.name}</strong> já está no
+              ar! Vamos dar os primeiros passos juntos e preparar tudo para a galera começar a
+              jogar?
+            </>
+          )}
         </p>
         {!started && (
           <button
@@ -129,20 +140,58 @@ export default function AdminOnboarding({
           </button>
         )}
         {onClose && (
-          <div className="mt-2 flex flex-wrap md:mt-5 justify-center gap-3 text-xs text-zinc-300">
-            <button className="min-h-11" onClick={() => onClose()}>
-              Agora não
+          <div className="mt-4 border-t border-white/10 pt-2">
+            <button
+              ref={dismissButtonRef}
+              disabled={updating}
+              className="min-h-11 text-xs text-red-300/90 underline decoration-red-300/30 underline-offset-4"
+              onClick={() => setConfirmDismiss(true)}
+            >
+              Não mostrar este Guia novamente
+            </button>
+          </div>
+        )}
+        {confirmDismiss && (
+          <section
+            role="alertdialog"
+            aria-modal="false"
+            aria-labelledby="guide-dismiss-title"
+            className="mt-3 space-y-3 rounded-xl border border-white/15 bg-[#23262b] p-4 text-left"
+          >
+            <h3 id="guide-dismiss-title" className="font-semibold">
+              Deseja deixar de receber este guia?
+            </h3>
+            <p className="text-sm text-zinc-300">
+              O Guia Interativo não aparecerá mais automaticamente para você neste grupo.
+            </p>
+            <p className="text-sm text-zinc-300">
+              Se quiser acessá-lo novamente, ele continuará disponível no menu do seu perfil, em
+              Ajuda e orientação → Guia Interativo.
+            </p>
+            <button
+              autoFocus
+              className={secondary}
+              disabled={updating}
+              onClick={() => {
+                setConfirmDismiss(false);
+                dismissButtonRef.current?.focus();
+              }}
+            >
+              Manter o guia
             </button>
             <button
+              className="ml-2 min-h-11 text-sm text-red-300 underline"
               disabled={updating}
-              className="min-h-11"
               onClick={async () => {
-                if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) onClose(true);
+                if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) {
+                  setConfirmDismiss(false);
+                  onClose?.(true);
+                }
               }}
             >
               Não mostrar novamente
             </button>
-          </div>
+          </section>
         )}
       </aside>
       <section className="min-w-0 space-y-4" aria-label="Primeiros passos do grupo">
@@ -218,11 +267,6 @@ export default function AdminOnboarding({
                   : "Continuar"}
             </button>
           )}
-          {deferredMessage && (
-            <p role="status" className="text-sm text-yellow-200">
-              {deferredMessage}
-            </p>
-          )}
           {!actionUnlocked && (
             <p id="onboarding-action-locked" className="text-sm text-zinc-300">
               {onboardingBlockMessage(guide, active.id)}
@@ -240,21 +284,6 @@ export default function AdminOnboarding({
               onClick={() => select(next.id)}
             >
               Ver próxima etapa
-            </button>
-          )}
-          {!active.completed && (
-            <button
-              type="button"
-              className="ml-2 min-h-11 text-sm text-zinc-300 underline disabled:opacity-50"
-              disabled={updating}
-              onClick={async () => {
-                if (await update({ action: "STEP_SKIPPED", tipId: active.id })) {
-                  if (next) select(next.id);
-                  else setDeferredMessage("Etapa adiada. Retome quando quiser.");
-                }
-              }}
-            >
-              Pular por enquanto
             </button>
           )}
         </section>
@@ -331,6 +360,14 @@ export default function AdminOnboarding({
             </section>
           );
         })}
+        {guide.reward?.granted && (
+          <p className="rounded-xl border border-yellow-400/25 p-3 text-sm text-yellow-200">
+            Conquista do guia: +{guide.reward.days} dias de Fut7Pro concedidos ao grupo.
+            {guide.reward.trialEnd
+              ? ` Término atual do teste: ${new Date(guide.reward.trialEnd).toLocaleDateString("pt-BR", { timeZone: "America/Fortaleza" })}.`
+              : ""}
+          </p>
+        )}
         {guide.activationProgress.complete && (
           <p role="status" className="text-emerald-300">
             Primeiros passos concluídos! Continue organizando os próximos jogos.

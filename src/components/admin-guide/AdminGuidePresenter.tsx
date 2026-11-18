@@ -8,13 +8,14 @@ import AdminGuidePhaseTransition, { type GuideTransitionKind } from "./AdminGuid
 import AdminGuideDialog from "./AdminGuideDialog";
 
 type GuideView = "STEPS" | "INVITATION" | GuideTransitionKind;
-export default function AdminGuideCard() {
-  const { guide, updating, update, actionError } = useAdminGuide();
+export default function AdminGuidePresenter() {
+  const { guide, updating, update } = useAdminGuide();
   const { data: session } = useSession();
   const loginId = (session?.user as { onboardingLoginId?: string } | undefined)?.onboardingLoginId;
   const [openScope, setOpenScope] = useState<string | null>(null);
   const [view, setView] = useState<GuideView>("STEPS");
   const invitationOrigin = useRef<GuideTransitionKind>("CELEBRATION");
+  const [firstWelcome, setFirstWelcome] = useState(false);
   const [initialStep, setInitialStep] = useState<string>();
   const offeredLogin = useRef("");
   const preparationClaim = useRef("");
@@ -46,7 +47,9 @@ export default function AdminGuideCard() {
       ? "CELEBRATION"
       : guide.transition?.footballInvitationPending
         ? "FOOTBALL_INVITE"
-        : !guide.phases?.preparation.complete
+        : !guide.phases?.preparation.complete &&
+            !guide.pedagogicalState.welcomePresentedAt &&
+            !guide.pedagogicalState.welcomeSeenAt
           ? "STEPS"
           : null;
     if (!candidate) return;
@@ -66,6 +69,11 @@ export default function AdminGuideCard() {
       )
         return;
       if (!alive.current || currentScope.current !== scope) return;
+      if (candidate === "STEPS") {
+        if (!(await update({ action: "WELCOME_PRESENTED" }))) return;
+        if (!alive.current || currentScope.current !== scope) return;
+        setFirstWelcome(true);
+      }
       try {
         sessionStorage.setItem(`onboarding-offered:${scope}`, offerKey);
       } catch {
@@ -110,8 +118,6 @@ export default function AdminGuideCard() {
         (view === "INVITATION" && invitationOrigin.current === "FOOTBALL_INVITE"))
     )
       void update({ action: "FOOTBALL_INVITE_DEFERRED" });
-    else if (!permanent && !guide.pedagogicalState.welcomePresentedAt)
-      void update({ action: "WELCOME_PRESENTED" });
   };
   const startFootball = async () => {
     if (await update({ action: "FOOTBALL_STARTED" })) {
@@ -125,44 +131,12 @@ export default function AdminGuideCard() {
   };
   return (
     <>
-      {!open && (
-        <aside
-          aria-label="Guia Fut7Pro"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#23272F] p-4 text-white"
-        >
-          <p className="text-sm">
-            {guide.phases?.preparation.complete
-              ? guide.eligibility?.footballUnlocked
-                ? "Parte 2 liberada. Hora de entrar em campo!"
-                : `${guide.eligibility?.eligiblePlayers ?? 0} de ${guide.eligibility?.minimumPlayers ?? 10} atletas para a próxima fase.`
-              : `${guide.activationProgress.completed} de ${guide.activationProgress.total} primeiros passos concluídos.`}
-          </p>
-          <button
-            onClick={() => {
-              setView("STEPS");
-              setOpenScope(scope);
-            }}
-            className="min-h-11 rounded-lg border border-yellow-400/40 px-4 text-yellow-200"
-          >
-            Continuar guia
-          </button>
-          <button
-            disabled={updating}
-            onClick={() => void update({ action: "DASHBOARD_INVITE_DISMISSED" })}
-            className="min-h-11 text-sm text-zinc-300"
-          >
-            Não mostrar novamente
-          </button>
-          {actionError && (
-            <p role="alert">Não foi possível salvar sua preferência. Tente novamente.</p>
-          )}
-        </aside>
-      )}
       <AdminGuideDialog open={open} onClose={() => close()}>
         {view === "STEPS" ? (
           <AdminOnboarding
             key={`${scope}:${initialStep ?? ""}`}
             initialStep={initialStep}
+            firstPresentation={firstWelcome}
             onClose={close}
           />
         ) : view === "INVITATION" ? (

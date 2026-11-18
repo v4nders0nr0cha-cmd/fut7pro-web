@@ -311,3 +311,22 @@ it("keeps a confirmed write when its subsequent progress read fails", async () =
   expect(result.current.actionError).toBeNull();
   expect(result.current.guide?.pedagogicalState.revision).toBe(3);
 });
+
+it("requires an explicit granted response when claiming the commercial reward", async () => {
+  (global.fetch as jest.Mock).mockImplementation(async (_url, options?: RequestInit) =>
+    options?.method === "PATCH"
+      ? {
+          ok: true,
+          json: async () => ({
+            pedagogicalState: makeGuide(activeSlug, 3).pedagogicalState,
+            reward: { granted: false, eligible: false },
+          }),
+        }
+      : { ok: true, json: async () => makeGuide(activeSlug, 2) }
+  );
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide).toBeTruthy());
+  await act(async () =>
+    expect(await result.current.update({ action: "REWARD_CLAIM" })).toBe(false)
+  );
+});

@@ -23,6 +23,7 @@ export default function AdminGuidePreparationNotice() {
     if (
       !guide?.transition?.preparationCelebrationPending ||
       guide.activationProgress.complete ||
+      guide.pedagogicalState.dashboardInviteDismissedAt ||
       !scope ||
       requested.current === scope
     )

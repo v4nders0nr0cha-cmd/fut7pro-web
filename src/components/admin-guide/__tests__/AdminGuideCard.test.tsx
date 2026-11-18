@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminOnboarding from "../AdminOnboarding";
-import AdminGuideCard from "../AdminGuideCard";
+import AdminGuidePresenter from "../AdminGuidePresenter";
 const update = jest.fn().mockResolvedValue(true);
 const copy = jest.fn().mockResolvedValue(undefined);
 let guide: any;
@@ -210,25 +210,32 @@ it("opening external channels and manual form does not complete recruitment", ()
   expect(update).not.toHaveBeenCalled();
 });
 
-it("starts guidance and skipping persists selection without completion", async () => {
+it("starts guidance without offering per-step deferral", async () => {
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Começar guia" }));
   await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_SEEN" }));
-  fireEvent.click(screen.getByRole("button", { name: "Pular por enquanto" }));
-  await waitFor(() =>
-    expect(update).toHaveBeenCalledWith({ action: "STEP_SKIPPED", tipId: "ACTIVE_PLAYERS" })
-  );
+  expect(screen.queryByRole("button", { name: "Pular por enquanto" })).not.toBeInTheDocument();
 });
-
-it("X closes temporarily and permanent dismissal saves only on explicit action", async () => {
-  render(<AdminGuideCard />);
+it("X closes temporarily without leaving a dashboard card", async () => {
+  render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   update.mockClear();
   fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(update).toHaveBeenCalledWith({ action: "WELCOME_PRESENTED" });
+  expect(screen.queryByRole("button", { name: "Continuar guia" })).not.toBeInTheDocument();
   expect(update).not.toHaveBeenCalledWith({ action: "DASHBOARD_INVITE_DISMISSED" });
-  fireEvent.click(screen.getByRole("button", { name: "Não mostrar novamente" }));
+});
+it("requires confirmation before permanent dismissal and permits cancelling", async () => {
+  render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  update.mockClear();
+  fireEvent.click(screen.getByRole("button", { name: "Não mostrar este Guia novamente" }));
+  expect(screen.getByRole("alertdialog")).toBeVisible();
+  expect(update).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Manter o guia" }));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Não mostrar este Guia novamente" }));
+  fireEvent.click(screen.getByRole("button", { name: "Não mostrar novamente", exact: true }));
   await waitFor(() =>
     expect(update).toHaveBeenCalledWith({ action: "DASHBOARD_INVITE_DISMISSED" })
   );
@@ -236,7 +243,7 @@ it("X closes temporarily and permanent dismissal saves only on explicit action",
 
 it("manual opening remains available after permanent dismissal", () => {
   guide.pedagogicalState.dashboardInviteDismissedAt = "2026-11-17T12:00:00Z";
-  const { unmount } = render(<AdminGuideCard />);
+  const { unmount } = render(<AdminGuidePresenter />);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   unmount();
   render(<AdminOnboarding />);
@@ -256,17 +263,15 @@ it("updates the return greeting when asynchronous guide data arrives", () => {
   expect(screen.getByText("Bem-vindo de volta, Ana!")).toBeInTheDocument();
 });
 
-it("offers again after a new authenticated login in the same tab", async () => {
-  const view = render(<AdminGuideCard />);
+it("does not insist on the welcome after another authenticated login", async () => {
+  const view = render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
   view.unmount();
-  const sameLogin = render(<AdminGuideCard />);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  sameLogin.unmount();
+  guide.pedagogicalState.welcomePresentedAt = "2026-11-18T12:00:00Z";
   loginId = "login-2";
-  render(<AdminGuideCard />);
-  await screen.findByRole("dialog");
+  render(<AdminGuidePresenter />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
 it("opens a separate invitation panel and restores the clean summary on return", async () => {
@@ -323,12 +328,12 @@ it.each([2, 3, 4, 5, 6, 7])("unlocks step %s only after all predecessors complet
   );
 });
 
-it("skipping recruitment preserves its pending state and does not unlock teams", async () => {
+it("future stages stay readable without offering skip or unlocking their action", () => {
   render(<AdminOnboarding />);
-  fireEvent.click(screen.getByRole("button", { name: "Pular por enquanto" }));
-  await waitFor(() => expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled());
-  expect(update).toHaveBeenCalledWith({ action: "STEP_SKIPPED", tipId: "ACTIVE_PLAYERS" });
-  expect(guide.tasks[1].completed).toBe(false);
+  expect(screen.queryByRole("button", { name: "Pular por enquanto" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Ver próxima etapa" }));
+  expect(screen.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+  expect(update).not.toHaveBeenCalled();
 });
 
 it("responds to prerequisite completion received from the server", () => {
@@ -367,7 +372,7 @@ it("navigation to the next explanation does not write to the backend", () => {
   expect(update).not.toHaveBeenCalled();
 });
 it("the information icon explains both phases and returns to the guide", async () => {
-  render(<AdminGuideCard />);
+  render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   fireEvent.click(screen.getByRole("button", { name: "Sobre o Guia Interativo" }));
   expect(screen.getByRole("heading", { name: "Como funciona o Guia Interativo?" })).toBeVisible();
@@ -377,7 +382,7 @@ it("the information icon explains both phases and returns to the guide", async (
 it("celebrates preparation once and shows how many athletes are missing", async () => {
   guide.tasks.slice(0, 4).forEach((task) => (task.completed = true));
   eligiblePlayers = 7;
-  render(<AdminGuideCard />);
+  render(<AdminGuidePresenter />);
   await screen.findByRole("heading", { name: "Sua pelada está configurada! 🎉⚽" });
   expect(screen.getByText(/7 de 10 atletas cadastrados/)).toBeVisible();
   expect(update).toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" });
@@ -388,16 +393,33 @@ it("offers football on a new login after enough players join", async () => {
   guide.tasks.slice(0, 4).forEach((task) => (task.completed = true));
   guide.pedagogicalState.preparationCelebratedAt = "2026-11-17T00:00:00Z";
   eligiblePlayers = 9;
-  const initial = render(<AdminGuideCard />);
+  const initial = render(<AdminGuidePresenter />);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   eligiblePlayers = 10;
-  initial.rerender(<AdminGuideCard />);
+  initial.rerender(<AdminGuidePresenter />);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   initial.unmount();
   loginId = "login-2";
-  render(<AdminGuideCard />);
+  render(<AdminGuidePresenter />);
   await screen.findByRole("heading", { name: /A galera está chegando/ });
   fireEvent.click(screen.getByRole("button", { name: "Começar a Parte 2" }));
   await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "FOOTBALL_STARTED" }));
   await screen.findByRole("heading", { name: "Avalie o nível dos atletas" });
+});
+
+it("uses neutral, proportional branding and contextual return copy", () => {
+  guide.tenant.logoUrl = "https://fixture.invalid/transparent.png";
+  guide.pedagogicalState.welcomePresentedAt = "2026-11-18T12:00:00Z";
+  const view = render(<AdminOnboarding />);
+  const logo = screen.getByRole("img", { name: `Escudo de ${guide.tenant.name}` });
+  expect(logo).toHaveClass("object-contain");
+  expect(logo.parentElement).toHaveClass("bg-[#23262b]");
+  expect(screen.getByText(/Bom ter você de volta, professor/)).toBeVisible();
+  guide.tasks.slice(0, 4).forEach((task: any) => (task.completed = true));
+  eligiblePlayers = 9;
+  view.rerender(<AdminOnboarding />);
+  expect(screen.getByText(/Sua pelada já está configurada/)).toBeVisible();
+  eligiblePlayers = 10;
+  view.rerender(<AdminOnboarding />);
+  expect(screen.getByText(/A galera já está chegando!/)).toBeVisible();
 });
