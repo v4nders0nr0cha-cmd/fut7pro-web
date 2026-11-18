@@ -118,11 +118,36 @@ function show(guide = makeGuide()) {
   return render(<AdminGuideFirstMatchSection guide={guide} updating={false} update={update} />);
 }
 
-it("permite ler as modalidades antes de Começar sem gravar preferências", () => {
+it("permite escolher modalidade e mensalistas sem o botão Começar removido", () => {
   show(makeGuide({ started: false }));
-  expect(screen.getByText(/Escolhas ficam disponíveis após clicar em Começar/)).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Escolher Sorteio Inteligente" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Decidir depois" })).toBeDisabled();
+  expect(
+    screen.queryByText(/Escolhas ficam disponíveis após clicar em Começar/)
+  ).not.toBeInTheDocument();
+  const mode = screen.getByRole("button", { name: "Escolher Sorteio Inteligente" });
+  const monthly = screen.getByRole("button", { name: "Decidir depois" });
+  expect(mode).toBeEnabled();
+  expect(monthly).toBeEnabled();
+  fireEvent.click(mode);
+  expect(update).toHaveBeenCalledWith({
+    action: "FIRST_MATCH_MODE_SELECTED",
+    mode: "INTELLIGENT_DRAW",
+  });
+  fireEvent.click(monthly);
+  expect(update).toHaveBeenCalledWith({
+    action: "MONTHLY_MODEL_SELECTED",
+    monthlyModel: "DECIDE_LATER",
+  });
+});
+
+it("respeita a permissão da etapa opcional de mensalistas sem exigir Começar", () => {
+  const guide = makeGuide({ started: false });
+  guide.tasks = guide.tasks.map((task) =>
+    task.id === "MONTHLY_MODEL" ? { ...task, canAct: false } : task
+  );
+  show(guide);
+  const button = screen.getByRole("button", { name: "Decidir depois" });
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
   expect(update).not.toHaveBeenCalled();
 });
 

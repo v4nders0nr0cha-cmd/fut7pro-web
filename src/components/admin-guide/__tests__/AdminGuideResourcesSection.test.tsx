@@ -10,6 +10,7 @@ function makeGuide({
   communication = true,
   complete = false,
   viewedResources = [],
+  started = true,
 }: {
   slug?: string;
   role?: string;
@@ -18,6 +19,7 @@ function makeGuide({
   communication?: boolean;
   complete?: boolean;
   viewedResources?: string[];
+  started?: boolean;
 } = {}): AdminGuideData {
   return {
     guideVersion: 1,
@@ -30,7 +32,7 @@ function makeGuide({
     },
     pedagogicalState: {
       revision: 0,
-      welcomeSeenAt: "2026-11-10T00:00:00Z",
+      welcomeSeenAt: started ? "2026-11-10T00:00:00Z" : undefined,
       knownTips: [],
       dismissedTips: [],
       snoozedTips: {},
@@ -199,6 +201,22 @@ it("registra vídeos somente após clique, sem impedir a abertura por falha no P
   });
   expect(videos[0]).toHaveAttribute("href", "https://youtu.be/3uQGCjk19Uk");
   expect(screen.queryByText("Material já acessado")).not.toBeInTheDocument();
+});
+
+it("registra acesso a tutorial mesmo sem o antigo marcador Começar", () => {
+  render(
+    <AdminGuideResourcesSection
+      guide={makeGuide({ started: false })}
+      updating={false}
+      update={update}
+    />
+  );
+  const link = screen.getAllByRole("link", { name: "Assistir tutorial (YouTube, nova aba)" })[0];
+  fireEvent.click(link);
+  expect(update).toHaveBeenCalledWith({
+    action: "RESOURCE_VIEWED",
+    resourceId: "VIDEO_SORTEIO_INTELIGENTE",
+  });
 });
 
 it("mostra apenas acessos confirmados e evita PATCH duplicado", () => {

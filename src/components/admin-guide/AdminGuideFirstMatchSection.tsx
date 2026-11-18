@@ -56,10 +56,7 @@ export default function AdminGuideFirstMatchSection({
   const levelCoverage = count(guide, "athleteLevelCoverage");
   const matchDestination = matchTask ? guideDestination(guide, matchTask) : null;
   const canChooseMode = Boolean(
-    guide.pedagogicalState.welcomeSeenAt &&
-      matchTask?.applicable &&
-      matchTask.canAct &&
-      guide.capabilities.manageMatchesAndResults
+    matchTask?.applicable && matchTask.canAct && guide.capabilities.manageMatchesAndResults
   );
   const teamDestination = teamTask ? guideDestination(guide, teamTask) : null;
   const levelDestination = levelTask ? guideDestination(guide, levelTask) : null;
@@ -83,12 +80,6 @@ export default function AdminGuideFirstMatchSection({
         </p>
       </div>
 
-      {!guide.pedagogicalState.welcomeSeenAt && (
-        <p className="text-sm text-yellow-200">
-          Escolhas ficam disponíveis após clicar em Começar. Você pode consultar o conteúdo antes
-          disso.
-        </p>
-      )}
       <div className="grid gap-3 xl:grid-cols-2">
         {MODES.map((option) => {
           const selected = mode === option.mode;
@@ -201,9 +192,7 @@ export default function AdminGuideFirstMatchSection({
                   type="button"
                   aria-pressed={monthlyModel === choice.value}
                   disabled={
-                    updating ||
-                    !guide.pedagogicalState.welcomeSeenAt ||
-                    monthlyModel === choice.value
+                    updating || !monthlyTask.canAct || monthlyModel === choice.value
                   }
                   onClick={() =>
                     void update({ action: "MONTHLY_MODEL_SELECTED", monthlyModel: choice.value })
