@@ -495,7 +495,7 @@ it("keeps completed explanations clickable and advances a selected pending step 
   guide.tasks.slice(0, 3).forEach((task) => (task.completed = true));
   const view = render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Cadastre os times", exact: true }));
-  fireEvent.click(screen.getByRole("button", { name: "Defina os dias e horários", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: /Defina os dias e horários$/ }));
   expect(
     screen.getByRole("heading", { name: "Defina os dias e horários", exact: true })
   ).toBeVisible();
