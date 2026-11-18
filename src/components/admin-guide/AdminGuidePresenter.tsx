@@ -41,6 +41,7 @@ export default function AdminGuidePresenter() {
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [manualScope, setManualScope] = useState("");
   const leaving = useRef("");
+  const navigating = useRef("");
   const recorded = useRef(new Set<string>());
   const invitationOrigin = useRef<GuideTransitionKind>("CELEBRATION");
   const manual = Boolean(
@@ -54,6 +55,7 @@ export default function AdminGuidePresenter() {
       setPresentation(null);
       setManualScope("");
       leaving.current = "";
+      navigating.current = "";
       return;
     }
     if (!scope) return;
@@ -82,6 +84,7 @@ export default function AdminGuidePresenter() {
     if (!manual) manualRef.current = "";
     if (manual && manualRef.current !== scope) {
       leaving.current = "";
+      navigating.current = "";
       manualRef.current = scope;
       setManualScope(scope);
       router.replace("/admin/dashboard", { scroll: false });
@@ -140,6 +143,7 @@ export default function AdminGuidePresenter() {
     setManualScope("");
   };
   const navigate = () => {
+    navigating.current = scope;
     leaving.current = scope;
     setPresentation(null);
   };
@@ -154,6 +158,7 @@ export default function AdminGuidePresenter() {
       <AdminGuideRewardNotice
         allowPresentation={
           pathname === "/admin/dashboard" &&
+          navigating.current !== scope &&
           ready === scope &&
           (manual || manualScope === scope || !permanent)
         }

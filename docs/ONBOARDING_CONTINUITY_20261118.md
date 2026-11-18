@@ -18,7 +18,7 @@ As duas URLs de times usam exatamente a mesma página, useTimes, API, payload e 
 
 Contexto acrescenta guiaOrigem=dashboard ou pagina. O legado sem origem retorna à página completa. Continuar guia/Voltar ao guia vindo do modal retorna à Dashboard com pedido explícito de retomada e slug do grupo. O pedido é validado contra o grupo atual e removido da URL, permitindo consulta manual mesmo com X/dispensa permanente sem apagar preferências nem reativar futuras aberturas automáticas. Não depende de history.back.
 
-O painel de times mostra contagem real antes da conclusão e orientação concluída após confirmação do backend. Não redireciona ao salvar. Mostrar Novo Time focaliza o botão operacional existente. A revalidação do painel não remonta o formulário. A navegação do hub de criação mantém o contexto ao escolher Clássica ou Sorteio.
+O painel de times mostra contagem real antes da conclusão e orientação concluída após confirmação do backend. Não redireciona ao salvar. Após confirmação de pelo menos dois ativos, explica que o mínimo não limita o cadastro e oferece Cadastrar outro time, que aciona o botão Novo Time existente. Mostrar Novo Time focaliza esse mesmo botão operacional. A revalidação do painel não remonta o formulário. A navegação do hub de criação mantém o contexto ao escolher Clássica ou Sorteio.
 
 | Etapa           | Página real / salvamento                                   | Atualização e conclusão                                                                                   |
 | --------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |

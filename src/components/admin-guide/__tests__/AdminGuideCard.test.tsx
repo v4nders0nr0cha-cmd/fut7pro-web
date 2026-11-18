@@ -509,3 +509,30 @@ it("keeps completed explanations clickable and advances a selected pending step 
   view.rerender(<AdminOnboarding />);
   expect(screen.getByRole("heading", { name: "Avalie o nível dos atletas" })).toBeVisible();
 });
+
+it("does not consume the final celebration during an operational navigation in flight", async () => {
+  guide.tasks.slice(0, 7).forEach((task) => (task.completed = true));
+  guide.pedagogicalState.preparationCelebratedAt = "2026-11-17T00:00:00Z";
+  guide.pedagogicalState.footballInvitePresentedAt = "2026-11-17T00:00:00Z";
+  guide.pedagogicalState.footballStartedAt = "2026-11-17T00:00:00Z";
+  const view = render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  const link = screen.getByRole("link", { name: "Continuar" });
+  link.addEventListener("click", (event) => event.preventDefault());
+  fireEvent.click(link);
+  guide = {
+    ...guide,
+    tasks: guide.tasks.map((task) => ({ ...task, completed: true })),
+    activationProgress: { completed: 8, total: 8, percentage: 100, complete: true },
+    reward: { eligible: false, granted: false },
+  };
+  view.rerender(<AdminGuidePresenter />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(update).not.toHaveBeenCalledWith({ action: "COMPLETION_PRESENTED" });
+  pathname = "/admin/partidas/time-campeao-do-dia";
+  view.rerender(<AdminGuidePresenter />);
+  pathname = "/admin/dashboard";
+  view.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("heading", { name: "Guia concluído!" });
+  expect(update).toHaveBeenCalledWith({ action: "COMPLETION_PRESENTED" });
+});

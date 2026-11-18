@@ -86,7 +86,12 @@ it("uses real team counts, preserves an open form, and returns to the originatin
   guide.operationalState.activeOfficialTeams = 2;
   guide.tasks[0].completed = true;
   view.rerender(<Page />);
-  expect(screen.getByRole("heading", { name: "Etapa concluída" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Etapa concluída!" })).toBeVisible();
+  expect(
+    screen.getByText("Você já cadastrou os dois times necessários para concluir esta etapa!")
+  ).toBeVisible();
+  expect(screen.getByText(/Se sua pelada utiliza mais equipes/)).toBeVisible();
+  expect(screen.getByRole("button", { name: "Cadastrar outro time" })).toBeVisible();
   expect(screen.getByRole("textbox", { name: "Nome em edição" })).toHaveValue(
     "Time ainda em edição"
   );

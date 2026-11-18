@@ -37,11 +37,22 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   ).toBeVisible();
   await guide.getByRole("link", { name: "Continuar", exact: true }).click();
   await addTeam(page, "Time Verde");
-  await expect(page.getByRole("heading", { name: "Etapa concluída", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Etapa concluída!", exact: true })).toBeVisible();
   await expect(page).toHaveURL(/criar-times/);
   await expect(guide).toHaveCount(0);
-  // Revalidating the surrounding guide must not remount an unfinished real form.
-  await page.getByRole("button", { name: "Novo Time", exact: true }).first().click();
+  await expect(
+    page.getByText("Você já cadastrou os dois times necessários para concluir esta etapa!", {
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Se sua pelada utiliza mais equipes, aproveite para cadastrar os demais times que participam dos jogos. Assim, tudo fica organizado desde o início.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  // The new contextual action opens the existing form; revalidation preserves it.
+  await page.getByRole("button", { name: "Cadastrar outro time", exact: true }).click();
   await form.getByLabel("Nome do time").fill("Rascunho preservado");
   await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
   await expect(form.getByLabel("Nome do time")).toHaveValue("Rascunho preservado");
@@ -176,6 +187,8 @@ for (const reward of [false, true])
         })
       ).toBeVisible();
       await guide.getByRole("link", { name: "Continuar", exact: true }).click();
+      const destination = fixture.snapshot().tasks.find((task) => task.id === id)!.route;
+      await expect(page).toHaveURL((url) => url.pathname === destination);
       await expect(guide).toHaveCount(0);
       fixture.completed.add(id);
       if (id === "CHAMPION_PUBLISHED") fixture.setRewardEligible(reward);

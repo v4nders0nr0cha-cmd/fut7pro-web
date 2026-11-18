@@ -73,7 +73,11 @@ export default function AdminGuideContext() {
         : task.id === "OFFICIAL_TEAMS"
           ? "Novo Time"
           : null;
-  const showAction = () => {
+  const completedTeams =
+    task.id === "OFFICIAL_TEAMS" &&
+    task.completed &&
+    Number(guide?.operationalState.activeOfficialTeams) >= 2;
+  const showAction = (openForm = false) => {
     const target = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(
       (button) =>
         button.textContent?.trim() === targetLabel &&
@@ -82,6 +86,7 @@ export default function AdminGuideContext() {
     );
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
     target?.focus({ preventScroll: true });
+    if (openForm) target?.click();
   };
   return (
     <aside
@@ -89,17 +94,40 @@ export default function AdminGuideContext() {
       aria-label="Orientação do guia"
     >
       <h2 className="font-bold text-yellow-200">
-        {task.completed ? "Etapa concluída" : task.title}
-      </h2>
-      <p className="mt-2">
         {task.completed
           ? task.id === "OFFICIAL_TEAMS"
-            ? "Seus times oficiais já estão cadastrados. Você pode continuar organizando os times ou avançar para os próximos passos."
-            : "Esta etapa foi concluída. Você pode continuar nesta página ou avançar para os próximos passos."
-          : task.id === "ACTIVE_PLAYERS"
-            ? "Clique em Cadastrar Jogador, preencha o perfil e salve. Abrir o formulário mantém a etapa pendente até o cadastro ser concluído."
-            : STEP_HELP[task.id]}
-      </p>
+            ? "Etapa concluída!"
+            : "Etapa concluída"
+          : task.title}
+      </h2>
+      {completedTeams ? (
+        <div className="mt-2 space-y-2">
+          <p>Você já cadastrou os dois times necessários para concluir esta etapa!</p>
+          <p>
+            Se sua pelada utiliza mais equipes, aproveite para cadastrar os demais times que
+            participam dos jogos. Assim, tudo fica organizado desde o início.
+          </p>
+        </div>
+      ) : (
+        <p className="mt-2">
+          {task.completed
+            ? task.id === "OFFICIAL_TEAMS"
+              ? "Seus times oficiais já estão cadastrados. Você pode continuar organizando os times ou avançar para os próximos passos."
+              : "Esta etapa foi concluída. Você pode continuar nesta página ou avançar para os próximos passos."
+            : task.id === "ACTIVE_PLAYERS"
+              ? "Clique em Cadastrar Jogador, preencha o perfil e salve. Abrir o formulário mantém a etapa pendente até o cadastro ser concluído."
+              : STEP_HELP[task.id]}
+        </p>
+      )}
+      {completedTeams && (
+        <button
+          type="button"
+          onClick={() => showAction(true)}
+          className="mr-4 mt-3 min-h-11 rounded-lg border border-yellow-400/40 px-3 text-yellow-200"
+        >
+          Cadastrar outro time
+        </button>
+      )}
       {!task.completed &&
         task.id === "OFFICIAL_TEAMS" &&
         typeof guide?.operationalState.activeOfficialTeams === "number" && (
@@ -118,7 +146,7 @@ export default function AdminGuideContext() {
       {!task.completed && targetLabel && (
         <button
           type="button"
-          onClick={showAction}
+          onClick={() => showAction()}
           className="mr-4 mt-3 min-h-11 rounded-lg border border-yellow-400/40 px-3 text-yellow-200"
         >
           Mostrar {targetLabel}
