@@ -284,7 +284,6 @@ it("X closes temporarily without leaving a dashboard card", async () => {
 it("requires confirmation before permanent dismissal and permits cancelling", async () => {
   render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
-  update.mockClear();
   await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_PRESENTED" }));
   update.mockClear();
   fireEvent.click(screen.getByRole("button", { name: "Não mostrar este Guia novamente" }));

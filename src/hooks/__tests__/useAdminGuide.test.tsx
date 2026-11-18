@@ -46,6 +46,36 @@ beforeEach(() => {
   global.fetch = jest.fn();
 });
 
+it("encerra uma leitura sem resposta e permite tentar novamente", async () => {
+  jest.useFakeTimers();
+  try {
+    (global.fetch as jest.Mock)
+      .mockImplementationOnce(
+        (_url: string, options: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            options.signal?.addEventListener("abort", () =>
+              reject(new DOMException("Tempo de leitura excedido", "AbortError"))
+            );
+          })
+      )
+      .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a") });
+    const { result, unmount } = renderHook(() => useAdminGuide(), { wrapper });
+    await act(async () => {
+      jest.advanceTimersByTime(15_000);
+    });
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error?.name).toBe("AbortError");
+    await act(async () => {
+      await result.current.retry();
+    });
+    expect(result.current.guide?.tenant.slug).toBe("pelada-a");
+    expect(result.current.error).toBeNull();
+    unmount();
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
 it("isola o cache por pelada e ignora resposta antiga após a troca", async () => {
   let resolveOld!: (response: Response) => void;
   (global.fetch as jest.Mock)
