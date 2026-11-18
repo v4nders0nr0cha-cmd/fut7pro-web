@@ -56,7 +56,10 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await form.getByLabel("Nome do time").fill("Rascunho preservado");
   await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
   await expect(form.getByLabel("Nome do time")).toHaveValue("Rascunho preservado");
-  await form.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await form.getByRole("button", { name: "Adicionar time", exact: true }).click();
+  await expect(form).not.toBeVisible();
+  expect(fixture.teams).toHaveLength(3);
+  await expect(page.getByRole("heading", { name: "Etapa concluída!", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Continuar guia", exact: true }).click();
   await expect(
     guide.getByRole("heading", { name: "Sua pelada está configurada! 🎉⚽" })
