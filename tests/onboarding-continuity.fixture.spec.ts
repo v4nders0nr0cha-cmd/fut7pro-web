@@ -51,7 +51,9 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
       { exact: true }
     )
   ).toBeVisible();
-  await expect(page.getByText("Time adicionado", { exact: true })).toBeHidden();
+  await expect(page.getByText("Time adicionado", { exact: true })).toHaveCount(0, {
+    timeout: 15_000,
+  });
   await page
     .getByRole("complementary", { name: "Orientação do guia" })
     .screenshot({ path: info.outputPath("teams-complete-minimum.png") });
