@@ -2,11 +2,16 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminHelpLauncher from "../AdminHelpLauncher";
 import { buildFut7ProOfficialWhatsAppUrl } from "@/config/fut7pro-contact";
 
-const retry = jest.fn();
+const retry = jest.fn().mockResolvedValue(undefined);
+let mockGuide: any;
+beforeEach(() => {
+  mockGuide = { tenant: { id: "t1", slug: "grupo" }, administrator: { membershipId: "m1" } };
+});
 jest.mock("@/hooks/useAdminGuide", () => ({
   useAdminGuide: () => ({
-    guide: { tenant: { id: "t1", slug: "grupo" }, administrator: { membershipId: "m1" } },
+    guide: mockGuide,
     retry,
+    error: mockGuide ? null : new Error("indisponível"),
   }),
 }));
 
@@ -37,4 +42,19 @@ it("abre apenas os três destinos de ajuda e devolve o foco com Escape", async (
   fireEvent.keyDown(menu, { key: "Escape" });
   expect(trigger).toHaveFocus();
   expect(trigger).toHaveAttribute("aria-expanded", "false");
+});
+
+it("permite repetir uma leitura com falha e foca o acesso quando os dados chegam", async () => {
+  mockGuide = null;
+  retry.mockRejectedValueOnce(new Error("indisponível"));
+  const view = render(<AdminHelpLauncher />);
+  fireEvent.click(screen.getByRole("button", { name: "Ajuda Fut7Pro" }));
+  const pending = screen.getByRole("button", { name: /Guia Interativo/ });
+  await waitFor(() => expect(pending).toHaveFocus());
+  fireEvent.click(pending);
+  await waitFor(() => expect(retry).toHaveBeenCalled());
+  expect(screen.getByText("Não foi possível carregar. Tente novamente.")).toBeVisible();
+  mockGuide = { tenant: { id: "t1", slug: "grupo" }, administrator: { membershipId: "m1" } };
+  view.rerender(<AdminHelpLauncher />);
+  await waitFor(() => expect(screen.getByRole("link", { name: /Guia Interativo/ })).toHaveFocus());
 });

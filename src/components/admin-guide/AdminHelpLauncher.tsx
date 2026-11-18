@@ -34,6 +34,7 @@ const destinations = [
 export default function AdminHelpLauncher() {
   const { guide, retry, error } = useAdminGuide();
   const pathname = usePathname();
+  const guideAvailable = Boolean(guide);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -47,7 +48,7 @@ export default function AdminHelpLauncher() {
     };
     document.addEventListener("pointerdown", onOutside);
     return () => document.removeEventListener("pointerdown", onOutside);
-  }, [open]);
+  }, [open, guideAvailable]);
 
   return (
     <div
@@ -77,7 +78,7 @@ export default function AdminHelpLauncher() {
               <button
                 key={label}
                 type="button"
-                onClick={() => void retry()}
+                onClick={() => void retry().catch(() => undefined)}
                 className="flex min-h-12 w-full items-start gap-3 rounded-lg px-3 py-2 text-left hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
               >
                 <Icon size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-yellow-300" />
