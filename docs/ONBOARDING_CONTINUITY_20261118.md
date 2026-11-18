@@ -60,3 +60,7 @@ O modal apresenta progresso geral, uma lista de quatro etapas da fase liberada e
 A identidade usa o escudo como cover ampliado, centralizado, com máscara radial, composição em luminosidade e vinheta sobre grafite com luz âmbar discreta. A imagem original não é alterada nem enviada a serviços; transparência compõe sobre o próprio fundo do banner. Avatar permanece independente do recorte. Sem logo, há composição decorativa de troféu no mesmo fundo.
 
 Os cenários visuais verificam logos transparente, colorida e marca existente em desktop, celular e largura de 320px, a ordem lista/detalhes e quatro etapas visíveis. O percurso de continuidade registra também a fase esportiva desbloqueada. Apresentador, histórico de login, preferências, conclusão por dados persistidos, regras comerciais, backend e Creator ficam intactos nesta rodada visual.
+
+### Entrega incremental
+
+O proprietário mesclou os PRs #257, #189 e #132 em 18/11/2026 entre 15:15 e 15:16 UTC. O refinamento visual foi implementado depois, na mesma branch do frontend, e segue isolado no PR #258 em rascunho. O diff incremental se limita ao componente de apresentação, testes e esta documentação; backend e Creator não foram modificados nesta rodada. Nenhum merge de PR, migração ou deploy manual foi executado pelo agente durante este refinamento.
