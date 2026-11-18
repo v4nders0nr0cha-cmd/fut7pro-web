@@ -1,18 +1,31 @@
 import { expect, test } from "@playwright/test";
 
-// This UI fixture runs only over local HTTP. WebKit otherwise upgrades local
-// assets to HTTPS under the production CSP. Security-header tests stay separate.
-test.use({ bypassCSP: true });
-
 // Uses the existing local authentication fixture; never accesses production data.
 for (const viewport of [
   { name: "desktop", width: 1280, height: 800 },
   { name: "mobile", width: 390, height: 844 },
   { name: "narrow", width: 320, height: 640 },
 ]) {
-  test(`guide and invitation fit ${viewport.name}`, async ({ page }, testInfo) => {
+  test(`guide and invitation fit ${viewport.name}`, async ({ page, browserName }, testInfo) => {
     test.setTimeout(180_000);
     expect(process.env.ADMIN_SMOKE_FIXTURE).toBe("1");
+    // WebKit upgrades loopback assets under the HTTPS-only production directive.
+    // Adapt only this local HTTP fixture; preserve all other CSP directives and
+    // leave the application/security-header tests unchanged.
+    if (browserName === "webkit") {
+      await page.route(/^http:\/\/127\.0\.0\.1:3000\/admin(?:\/|$)/, async (route) => {
+        if (!route.request().isNavigationRequest()) return route.fallback();
+        const response = await route.fetch();
+        const headers = { ...response.headers() };
+        if (headers["content-security-policy"])
+          headers["content-security-policy"] = headers["content-security-policy"]
+            .split(";")
+            .filter((directive) => directive.trim() !== "upgrade-insecure-requests")
+            .join(";");
+        delete headers["strict-transport-security"];
+        await route.fulfill({ response, headers });
+      });
+    }
     await page.setViewportSize(viewport);
     await page.addInitScript(() => localStorage.setItem("cookie-consent", "accepted"));
     await page.route(/^https:\/\/api\.fut7pro\.com\.br(?:\/|$)/, (route) => route.abort());
