@@ -133,6 +133,15 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096 --require ./tests/admin/deny-production-api.cjs
         run: pnpm build
 
+      - name: Measure guide opening (controlled baseline)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
+          GUIDE_PERF_MODE: legacy
+        run: pnpm exec playwright test tests/guide-opening-performance.fixture.spec.ts --project=chromium --workers=1 --reporter=line --output=test-results/guide-performance-baseline
+
       - name: Run admin smoke (mandatory)
         env:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
