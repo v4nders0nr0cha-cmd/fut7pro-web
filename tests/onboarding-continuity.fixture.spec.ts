@@ -92,14 +92,17 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await expect(guide.getByRole("list", { name: "Etapas de Prepare seu grupo" })).toHaveCount(0);
   await guide.screenshot({ path: info.outputPath("active-football-phase.png") });
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
-  const accessAfterRefresh = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/admin/access"
-  );
-  await page.reload();
-  const accessResponse = await accessAfterRefresh;
-  expect(accessResponse.ok(), await accessResponse.text()).toBe(true);
-  expect(await accessResponse.json()).toMatchObject({ allowed: true });
-  await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
+  const reloadDashboard = async () => {
+    const accessAfterRefresh = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/admin/access"
+    );
+    await page.reload();
+    const accessResponse = await accessAfterRefresh;
+    expect(accessResponse.ok(), await accessResponse.text()).toBe(true);
+    expect(await accessResponse.json()).toMatchObject({ allowed: true });
+    await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
+  };
+  await reloadDashboard();
   await expect(guide).toHaveCount(0);
   expect(
     await page.evaluate(() =>
@@ -130,13 +133,13 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await guide.getByRole("button", { name: "Não mostrar este Guia novamente", exact: true }).click();
   await guide.getByRole("button", { name: "Não mostrar novamente", exact: true }).click();
   await expect(guide).toHaveCount(0);
-  await page.reload();
+  await reloadDashboard();
   await expect(guide).toHaveCount(0);
   await page.goto(`${teamsPage}?guia=OFFICIAL_TEAMS&guiaOrigem=dashboard`);
   await page.getByRole("link", { name: "Continuar guia", exact: true }).click();
   await expect(guide).toBeVisible();
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
-  await page.reload();
+  await reloadDashboard();
   await expect(guide).toHaveCount(0);
   for (const post of fixture.posts) {
     expect(new URL(post.url).searchParams.has("guia")).toBe(false);
