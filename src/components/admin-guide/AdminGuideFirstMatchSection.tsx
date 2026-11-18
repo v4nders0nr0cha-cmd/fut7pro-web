@@ -191,9 +191,7 @@ export default function AdminGuideFirstMatchSection({
                   key={choice.value}
                   type="button"
                   aria-pressed={monthlyModel === choice.value}
-                  disabled={
-                    updating || !monthlyTask.canAct || monthlyModel === choice.value
-                  }
+                  disabled={updating || !monthlyTask.canAct || monthlyModel === choice.value}
                   onClick={() =>
                     void update({ action: "MONTHLY_MODEL_SELECTED", monthlyModel: choice.value })
                   }
