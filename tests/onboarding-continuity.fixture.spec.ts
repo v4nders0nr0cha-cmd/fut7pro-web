@@ -72,10 +72,13 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   ).toBeVisible();
   await expect(guide.getByText(/9 de 10 atletas cadastrados/)).toBeVisible();
   await guide.getByRole("button", { name: "Agora não", exact: true }).click();
+  await expect(guide.getByText(/9 de 10 atletas elegíveis/)).toBeVisible();
   await expect(
-    guide.getByRole("heading", { name: "Avalie o nível dos atletas", exact: true })
-  ).toBeVisible();
-  await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+    guide.getByRole("button", { name: "Avalie o nível dos atletas", exact: true })
+  ).toHaveCount(0);
+  await expect(
+    guide.getByRole("list", { name: "Etapas de Prepare seu grupo" }).locator("li")
+  ).toHaveCount(4);
   fixture.setEligible(10);
   await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
   await expect(guide.getByRole("heading", { name: /A galera está chegando/ })).toBeVisible();
@@ -83,6 +86,11 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await expect(
     guide.getByRole("heading", { name: "Avalie o nível dos atletas", exact: true })
   ).toBeVisible();
+  await expect(
+    guide.getByRole("list", { name: "Etapas de Entre em campo" }).locator("li")
+  ).toHaveCount(4);
+  await expect(guide.getByRole("list", { name: "Etapas de Prepare seu grupo" })).toHaveCount(0);
+  await guide.screenshot({ path: info.outputPath("active-football-phase.png") });
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
   const accessAfterRefresh = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/admin/access"

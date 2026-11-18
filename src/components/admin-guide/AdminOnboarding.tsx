@@ -43,6 +43,12 @@ export default function AdminOnboarding({
     !firstPresentation &&
     Boolean(guide?.pedagogicalState.welcomePresentedAt || guide?.pedagogicalState.welcomeSeenAt);
   const [selected, setSelected] = useState<string | undefined>(initialStep);
+  const footballActive = Boolean(guide?.eligibility?.footballUnlocked);
+  const previousPhase = useRef(footballActive);
+  useEffect(() => {
+    if (previousPhase.current !== footballActive) setSelected(undefined);
+    previousPhase.current = footballActive;
+  }, [footballActive]);
   const [confirmDismiss, setConfirmDismiss] = useState(false);
   const [invitationOpen, setInvitationOpen] = useState(false);
   const invitationButtonRef = useRef<HTMLButtonElement>(null);
@@ -60,16 +66,20 @@ export default function AdminOnboarding({
   }, [selected, selectedCompleted]);
   if (!guide) return <p role="status">Carregando seus primeiros passos...</p>;
   const tasks = ONBOARDING_IDS.flatMap((id) => guide.tasks.filter((task) => task.id === id));
+  const phaseIds = footballActive ? FOOTBALL_IDS : PREPARATION_IDS;
+  const phaseTasks = phaseIds.flatMap((id) => tasks.filter((task) => task.id === id));
+  const phaseTitle = footballActive ? "Entre em campo" : "Prepare seu grupo";
+  const waitingForPlayers = Boolean(guide.phases?.preparation.complete && !footballActive);
   const active =
-    tasks.find((item) => item.id === selected) ?? tasks.find((item) => !item.completed) ?? tasks[0];
+    phaseTasks.find((item) => item.id === selected) ??
+    phaseTasks.find((item) => !item.completed) ??
+    phaseTasks[phaseTasks.length - 1];
   if (!active) return null;
-  const started = Boolean(guide.pedagogicalState.welcomeSeenAt);
   const firstName = session?.user?.name?.trim().split(/\s+/)[0] || "organizador";
   const select = (id: string) => {
     setSelected(id);
   };
   const destination = guideDestination(guide, active);
-  const next = tasks[tasks.indexOf(active) + 1];
   const actionUnlocked = isOnboardingActionUnlocked(
     guide.tasks,
     active.id,
@@ -92,19 +102,40 @@ export default function AdminOnboarding({
   return (
     <div className="grid min-w-0 gap-4 text-white md:gap-6 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)]">
       <aside className="min-w-0 text-center md:border-r md:border-white/15 md:pr-6">
-        <div className="relative mx-auto flex h-16 max-w-44 items-center justify-center rounded-2xl border border-white/10 bg-[#23262b] md:h-40 md:max-w-64">
-          {guide.tenant.logoUrl ? (
-            <Image
-              unoptimized
-              src={guide.tenant.logoUrl}
-              alt={`Escudo de ${guide.tenant.name}`}
-              width={120}
-              height={120}
-              className="h-14 w-14 object-contain md:h-24 md:w-24"
+        <div className="relative mx-auto max-w-sm md:max-w-none">
+          <div
+            className="relative h-20 overflow-hidden rounded-2xl border border-white/10 bg-[#24272d] md:h-36"
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse at 35% 10%, rgba(211,172,87,0.18), transparent 70%), linear-gradient(135deg, #30343b, #1d2026)",
+            }}
+          >
+            {guide.tenant.logoUrl ? (
+              <Image
+                unoptimized
+                src={guide.tenant.logoUrl}
+                alt={`Escudo de ${guide.tenant.name}`}
+                fill
+                sizes="(min-width: 768px) 250px, 400px"
+                className="object-cover object-[center_43%] scale-[1.35] opacity-80 mix-blend-luminosity saturate-50 contrast-110"
+                style={{
+                  maskImage:
+                    "radial-gradient(ellipse 75% 100% at 50% 42%, black 20%, transparent 80%)",
+                  WebkitMaskImage:
+                    "radial-gradient(ellipse 75% 100% at 50% 42%, black 20%, transparent 80%)",
+                }}
+              />
+            ) : (
+              <Trophy
+                className="absolute -bottom-4 left-1/2 h-28 w-28 -translate-x-1/2 -rotate-12 text-amber-200/25 md:h-40 md:w-40"
+                aria-hidden="true"
+              />
+            )}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1d2026]/75 via-transparent to-[#1d2026]/10 shadow-[inset_0_0_35px_rgba(20,22,27,0.45)]"
             />
-          ) : (
-            <Trophy className="h-10 w-10 text-yellow-300 md:h-16 md:w-16" aria-hidden="true" />
-          )}
+          </div>
           {session?.user?.image && (
             <Image
               unoptimized
@@ -112,11 +143,11 @@ export default function AdminOnboarding({
               alt="Sua foto de perfil"
               width={68}
               height={68}
-              className="absolute -bottom-3 h-10 w-10 md:-bottom-6 md:h-16 md:w-16 rounded-full border-2 border-yellow-400 object-cover"
+              className="absolute -bottom-4 left-1/2 h-12 w-12 -translate-x-1/2 rounded-full border-2 border-amber-300 object-cover shadow-[0_0_0_5px_#111214] md:-bottom-6 md:h-16 md:w-16"
             />
           )}
         </div>
-        <h2 className="mt-4 text-lg font-bold md:mt-8 md:text-xl">
+        <h2 className="mt-6 text-lg font-bold md:mt-9 md:text-xl">
           {returning
             ? `Bem-vindo de volta, ${firstName}!`
             : `Olá, ${firstName}! Bem-vindo ao Fut7Pro!`}
@@ -138,18 +169,6 @@ export default function AdminOnboarding({
             </>
           )}
         </p>
-        {!started && (
-          <button
-            className={`${primary} mt-4`}
-            disabled={updating}
-            onClick={async () => {
-              if (await update({ action: "WELCOME_SEEN" }))
-                setSelected(tasks.find((item) => !item.completed)?.id);
-            }}
-          >
-            Começar guia
-          </button>
-        )}
         {onClose && (
           <div className="mt-4 border-t border-white/10 pt-2">
             <button
@@ -226,13 +245,77 @@ export default function AdminOnboarding({
             />
           </div>
         </div>
+        <section aria-label={phaseTitle}>
+          <div className="mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200/80">
+              Fase {footballActive ? "2" : "1"}
+            </span>
+            <h3 className="mt-0.5 text-base font-semibold">{phaseTitle}</h3>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+              {footballActive
+                ? "Avalie a galera, organize a rodada e dê início à história do grupo."
+                : "Deixe sua pelada pronta para começar, um passo de cada vez."}
+            </p>
+          </div>
+          <ol className="space-y-1" aria-label={`Etapas de ${phaseTitle}`}>
+            {phaseTasks.map((item, index) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  aria-current={active.id === item.id ? "step" : undefined}
+                  onClick={() => select(item.id)}
+                  className={`group flex min-h-11 w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 ${
+                    active.id === item.id
+                      ? "border-amber-200/20 bg-amber-200/[0.07] text-amber-100"
+                      : "border-transparent text-zinc-300 hover:bg-white/5"
+                  }`}
+                >
+                  <span className="w-3 shrink-0 text-xs text-zinc-500" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  {item.completed ? (
+                    <CheckCircle2
+                      size={18}
+                      className="shrink-0 text-emerald-400"
+                      aria-label="Concluída"
+                    />
+                  ) : (
+                    <Circle
+                      size={18}
+                      className={`shrink-0 ${active.id === item.id ? "text-amber-200" : "text-zinc-600"}`}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className={item.completed ? "text-zinc-400" : ""}>{item.title}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </section>
         <section
-          className="space-y-3 rounded-xl border border-white/15 bg-black/20 p-4"
+          className="space-y-3 rounded-xl border border-white/10 bg-[#202329]/70 p-4"
           aria-label={active.title}
         >
           <h3 className="text-lg font-bold">{active.title}</h3>
           <p className="text-sm text-zinc-300">{STEP_HELP[active.id]}</p>
-          {active.id === "ACTIVE_PLAYERS" ? (
+          {waitingForPlayers ? (
+            <div className="border-t border-white/10 pt-3">
+              <p className="text-xs leading-relaxed text-zinc-400">
+                Preparação concluída · {guide.eligibility?.eligiblePlayers} de{" "}
+                {guide.eligibility?.minimumPlayers} atletas elegíveis. Reúna a galera para liberar a
+                fase esportiva.
+              </p>
+              <button
+                ref={invitationButtonRef}
+                type="button"
+                className={`${primary} mt-3`}
+                disabled={updating}
+                onClick={() => setInvitationOpen(true)}
+              >
+                Convidar mais jogadores
+              </button>
+            </div>
+          ) : active.id === "ACTIVE_PLAYERS" ? (
             <button
               ref={invitationButtonRef}
               type="button"
@@ -291,89 +374,7 @@ export default function AdminOnboarding({
               Esta ação depende de outro administrador autorizado do grupo.
             </p>
           )}
-          {next && (
-            <button
-              type="button"
-              className="ml-2 min-h-11 text-sm text-zinc-300 underline"
-              onClick={() => select(next.id)}
-            >
-              Ver próxima etapa
-            </button>
-          )}
         </section>
-        {[
-          { key: "preparation", ids: PREPARATION_IDS, title: "Parte 1 — Prepare seu grupo" },
-          { key: "football", ids: FOOTBALL_IDS, title: "Parte 2 — Entre em campo" },
-        ].map((phase) => {
-          const progress = guide.phases?.[phase.key as "preparation" | "football"];
-          return (
-            <section
-              key={phase.key}
-              aria-label={phase.title}
-              className="rounded-xl border border-white/10 p-3"
-            >
-              <h3 className="font-bold">{phase.title}</h3>
-              <p className="mt-1 text-xs text-zinc-300">
-                {progress
-                  ? `${progress.completed} de ${progress.total} etapas concluídas`
-                  : "Preparando esta fase..."}
-              </p>
-              {progress && (
-                <div
-                  role="progressbar"
-                  aria-label={`Progresso da ${phase.title}`}
-                  aria-valuenow={progress.percentage}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  className="my-2 h-1.5 overflow-hidden rounded-full bg-white/15"
-                >
-                  <div
-                    className="h-full bg-yellow-400"
-                    style={{ width: `${progress.percentage}%` }}
-                  />
-                </div>
-              )}
-              {phase.key === "football" &&
-                guide.eligibility &&
-                !guide.eligibility.footballUnlocked && (
-                  <p className="my-2 text-xs text-yellow-200">
-                    {guide.eligibility.preparationComplete
-                      ? "Aguardando atletas"
-                      : "Conclua a Parte 1"}{" "}
-                    · {guide.eligibility.eligiblePlayers} de {guide.eligibility.minimumPlayers}{" "}
-                    atletas · faltam {guide.eligibility.missingPlayers}
-                  </p>
-                )}
-              <ol className="space-y-1">
-                {phase.ids.map((id, index) => {
-                  const item = tasks.find((task) => task.id === id);
-                  if (!item) return null;
-                  return (
-                    <li key={item.id}>
-                      <button
-                        aria-current={active.id === item.id ? "step" : undefined}
-                        onClick={() => select(item.id)}
-                        className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm ${active.id === item.id ? "bg-white/10 text-yellow-200" : "hover:bg-white/5"}`}
-                      >
-                        <span aria-hidden="true">{index + 1}</span>
-                        {item.completed ? (
-                          <CheckCircle2
-                            size={19}
-                            className="shrink-0 text-emerald-400"
-                            aria-label="Concluída"
-                          />
-                        ) : (
-                          <Circle size={19} className="shrink-0 text-zinc-500" aria-hidden="true" />
-                        )}
-                        <span className={item.completed ? "text-zinc-400" : ""}>{item.title}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
-          );
-        })}
         {guide.reward?.granted && (
           <p className="rounded-xl border border-yellow-400/25 p-3 text-sm text-yellow-200">
             Conquista do guia: +{guide.reward.days} dias de Fut7Pro concedidos ao grupo.

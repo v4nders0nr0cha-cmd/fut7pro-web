@@ -52,3 +52,11 @@ CI e identificadores finais ficam nas descrições dos PRs #257 e #189. Creator 
 ### Ambiente de navegador
 
 A regressão longa encontrou um encerramento nativo do WebKit após refresh e navegação na versão 1.56.1. A reprodução ocorreu no mesmo ponto em duas execuções do mesmo commit. O mantenedor documentou a falha de recarregamento e sua correção na 1.57: https://github.com/microsoft/playwright/issues/37766 . A ferramenta de testes e as imagens correspondentes de CI passam para 1.57.0, com os dois lockfiles sincronizados. Os mesmos percursos e assertions são mantidos, incluindo refresh e navegação direta; nenhum teste foi ignorado ou relaxado. Essa atualização afeta o ambiente de verificação, não a aplicação em produção.
+
+## Refinamento visual de 18/11 — fase ativa e identidade
+
+O modal apresenta progresso geral, uma lista de quatro etapas da fase liberada e, abaixo, os detalhes selecionados com ação principal. Chip FASE 1/FASE 2 e título separados substituem os cabeçalhos literais com travessão. As oito etapas continuam no contrato e na contagem geral; a fase esportiva só aparece com footballUnlocked confirmado. Durante a espera por atletas, mantém a preparação e uma orientação curta de convite. Etapas futuras da fase visível continuam consultáveis com ações bloqueadas pelos critérios existentes. Não há Ver próxima etapa nem botão de início concorrendo com a ação principal.
+
+A identidade usa o escudo como cover ampliado, centralizado, com máscara radial, composição em luminosidade e vinheta sobre grafite com luz âmbar discreta. A imagem original não é alterada nem enviada a serviços; transparência compõe sobre o próprio fundo do banner. Avatar permanece independente do recorte. Sem logo, há composição decorativa de troféu no mesmo fundo.
+
+Os cenários visuais verificam logos transparente, colorida e marca existente em desktop, celular e largura de 320px, a ordem lista/detalhes e quatro etapas visíveis. O percurso de continuidade registra também a fase esportiva desbloqueada. Apresentador, histórico de login, preferências, conclusão por dados persistidos, regras comerciais, backend e Creator ficam intactos nesta rodada visual.
