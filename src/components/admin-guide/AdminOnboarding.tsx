@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCircle2, Circle, Trophy } from "lucide-react";
+import { CheckCircle2, Circle, ExternalLink, Trophy } from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import {
   ONBOARDING_IDS,
@@ -184,60 +184,6 @@ export default function AdminOnboarding({
             </>
           )}
         </p>
-        {onClose && (
-          <div className="mt-4 border-t border-white/10 pt-2">
-            <button
-              ref={dismissButtonRef}
-              disabled={updating || !actionsReady}
-              className="min-h-11 text-xs text-red-300/90 underline decoration-red-300/30 underline-offset-4"
-              onClick={() => setConfirmDismiss(true)}
-            >
-              Não mostrar este Guia novamente
-            </button>
-          </div>
-        )}
-        {confirmDismiss && (
-          <section
-            role="alertdialog"
-            aria-modal="false"
-            aria-labelledby="guide-dismiss-title"
-            className="mt-3 space-y-3 rounded-xl border border-white/15 bg-[#23262b] p-4 text-left"
-          >
-            <h3 id="guide-dismiss-title" className="font-semibold">
-              Deseja deixar de receber este guia?
-            </h3>
-            <p className="text-sm text-zinc-300">
-              O Guia Interativo não aparecerá mais automaticamente para você neste grupo.
-            </p>
-            <p className="text-sm text-zinc-300">
-              Se quiser acessá-lo novamente, ele continuará disponível no menu do seu perfil, em
-              Ajuda e orientação → Guia Interativo.
-            </p>
-            <button
-              autoFocus
-              className={secondary}
-              disabled={updating || !actionsReady}
-              onClick={() => {
-                setConfirmDismiss(false);
-                dismissButtonRef.current?.focus();
-              }}
-            >
-              Manter o guia
-            </button>
-            <button
-              className="ml-2 min-h-11 text-sm text-red-300 underline"
-              disabled={updating || !actionsReady}
-              onClick={async () => {
-                if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) {
-                  setConfirmDismiss(false);
-                  onClose?.(true);
-                }
-              }}
-            >
-              Não mostrar novamente
-            </button>
-          </section>
-        )}
       </aside>
       <section className="min-w-0 space-y-4" aria-label="Primeiros passos do grupo">
         <div>
@@ -342,7 +288,10 @@ export default function AdminOnboarding({
                   ? destination
                   : contextualGuideHref(destination, active.id, origin)
               }
+              target={active.id === "ACCOUNT_READY" ? "_blank" : undefined}
+              rel={active.id === "ACCOUNT_READY" ? "noopener noreferrer" : undefined}
               onClick={() => {
+                if (active.id === "ACCOUNT_READY") return;
                 onNavigate?.();
                 if (FOOTBALL_IDS.includes(active.id) && !guide.pedagogicalState.footballStartedAt)
                   void update({ action: "FOOTBALL_STARTED" });
@@ -354,6 +303,9 @@ export default function AdminOnboarding({
                 : active.completed
                   ? "Consultar funcionalidade"
                   : "Continuar"}
+              {active.id === "ACCOUNT_READY" && (
+                <ExternalLink size={14} className="ml-2 shrink-0" aria-hidden="true" />
+              )}
             </Link>
           ) : (
             <button
@@ -409,6 +361,63 @@ export default function AdminOnboarding({
           </p>
         )}
       </section>
+      {onClose && (
+        <footer
+          className="border-t border-white/10 pt-3 text-center md:col-span-2"
+          aria-label="Preferências do guia"
+        >
+          <button
+            ref={dismissButtonRef}
+            disabled={updating || !actionsReady}
+            className="min-h-11 text-xs text-zinc-400 underline decoration-white/20 hover:text-zinc-200 underline-offset-4"
+            onClick={() => setConfirmDismiss(true)}
+          >
+            Não mostrar este Guia novamente
+          </button>
+          {confirmDismiss && (
+            <section
+              role="alertdialog"
+              aria-modal="false"
+              aria-labelledby="guide-dismiss-title"
+              className="mt-3 space-y-3 rounded-xl border border-white/15 bg-[#23262b] p-4 text-left"
+            >
+              <h3 id="guide-dismiss-title" className="font-semibold">
+                Deseja deixar de receber este guia?
+              </h3>
+              <p className="text-sm text-zinc-300">
+                O Guia Interativo não aparecerá mais automaticamente para você neste grupo.
+              </p>
+              <p className="text-sm text-zinc-300">
+                Se quiser acessá-lo novamente, ele continuará disponível no menu do seu perfil, em
+                Ajuda e orientação → Guia Interativo.
+              </p>
+              <button
+                autoFocus
+                className={secondary}
+                disabled={updating || !actionsReady}
+                onClick={() => {
+                  setConfirmDismiss(false);
+                  dismissButtonRef.current?.focus();
+                }}
+              >
+                Manter o guia
+              </button>
+              <button
+                className="ml-2 min-h-11 text-sm text-red-300 underline"
+                disabled={updating || !actionsReady}
+                onClick={async () => {
+                  if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) {
+                    setConfirmDismiss(false);
+                    onClose?.(true);
+                  }
+                }}
+              >
+                Não mostrar novamente
+              </button>
+            </section>
+          )}
+        </footer>
+      )}
     </div>
   );
 }

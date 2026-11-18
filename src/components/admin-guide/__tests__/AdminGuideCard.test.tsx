@@ -220,6 +220,33 @@ it("keeps the main summary clean with four visible steps and eight in the overal
   expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeEnabled();
 });
 
+it("places dismissal after both columns and keeps it absent from the full-page guide", () => {
+  const { unmount } = render(<AdminOnboarding onClose={jest.fn()} />);
+  const dismiss = screen.getByRole("button", { name: "Não mostrar este Guia novamente" });
+  const footer = dismiss.closest("footer")!;
+  expect(footer).toHaveClass("md:col-span-2");
+  expect(footer.previousElementSibling).toHaveAttribute("aria-label", "Primeiros passos do grupo");
+  expect(footer.parentElement?.querySelector("aside")).not.toContainElement(dismiss);
+  unmount();
+  render(<AdminOnboarding />);
+  expect(screen.queryByRole("button", { name: "Não mostrar este Guia novamente" })).toBeNull();
+});
+
+it("opens the validated public site in another tab without navigating or writing progress", () => {
+  const onNavigate = jest.fn();
+  render(<AdminOnboarding onNavigate={onNavigate} />);
+  fireEvent.click(screen.getByRole("button", { name: /Conta criada e site no ar/ }));
+  const link = screen.getByRole("link", { name: "Ver site do grupo" });
+  expect(link).toHaveAttribute("href", "/pelada");
+  expect(link).toHaveAttribute("target", "_blank");
+  expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  fireEvent.click(link);
+  expect(onNavigate).not.toHaveBeenCalled();
+  expect(update).not.toHaveBeenCalled();
+  expect(guide.activationProgress.completed).toBe(1);
+});
+
 it("only records successful clipboard writes", async () => {
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));

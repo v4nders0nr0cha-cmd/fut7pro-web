@@ -173,7 +173,7 @@ jobs:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
           PLAYWRIGHT_WEB_SERVER: "1"
           PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
-        run: pnpm exec playwright test tests/onboarding-two-phases.fixture.spec.ts tests/onboarding-continuity.fixture.spec.ts tests/guide-quick-access.fixture.spec.ts tests/guide-immediate-open.fixture.spec.ts tests/guide-opening-performance.fixture.spec.ts --project=mobile-iphone --grep "fit mobile|contextual team creation|quick guide access mobile 390|immediate guide cold loading mobile390|guide opening performance mobile" --workers=1 --reporter=line --output=test-results/onboarding-webkit
+        run: pnpm exec playwright test tests/onboarding-two-phases.fixture.spec.ts tests/onboarding-continuity.fixture.spec.ts tests/guide-quick-access.fixture.spec.ts tests/guide-immediate-open.fixture.spec.ts tests/guide-opening-performance.fixture.spec.ts --project=mobile-iphone --grep "fit mobile|contextual team creation|quick guide access mobile 390|immediate guide cold loading mobile390|guide opening performance mobile|guide footer and public site mobile 390" --workers=1 --reporter=line --output=test-results/onboarding-webkit
 
       - name: Upload Playwright artifacts
         if: always()

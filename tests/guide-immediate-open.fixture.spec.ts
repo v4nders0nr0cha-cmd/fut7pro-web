@@ -141,6 +141,9 @@ for (const viewport of [
     ).toBeVisible();
     await expect(second.dialog.getByRole("link", { name: "Continuar", exact: true })).toBeEnabled();
     expect(
+      await second.dialog.locator(".overflow-y-auto").evaluate((element) => element.scrollTop)
+    ).toBe(0);
+    expect(
       await second.dialog.evaluate((element) => element === (window as any).__guideDialog)
     ).toBe(true);
     await expect(

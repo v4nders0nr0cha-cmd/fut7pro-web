@@ -162,3 +162,89 @@ for (const viewport of [
     await expect(guide).toHaveCount(0);
   });
 }
+for (const viewport of [
+  { name: "desktop", width: 1280, height: 800 },
+  { name: "mobile 320", width: 320, height: 640 },
+  { name: "mobile 390", width: 390, height: 844 },
+]) {
+  test(`guide footer and public site ${viewport.name}`, async ({ page, context }, info) => {
+    await page.setViewportSize(viewport);
+    const fixture = await installGuide(page);
+    fixture.state.welcomePresentedAt = "2026-11-18T00:00:00Z";
+    await context.route("**/grupo-fixture", (route) =>
+      route.fulfill({
+        contentType: "text/html",
+        body: "<title>Site público do grupo</title><h1>Grupo Fixture</h1>",
+      })
+    );
+    await login(page);
+    const dialog = page.getByRole("dialog", { name });
+    await expect(
+      dialog.getByRole("heading", { name: "Cadastre os times", exact: true })
+    ).toBeVisible();
+    const scroller = dialog.locator(".overflow-y-auto");
+    expect(await scroller.evaluate((el) => el.scrollTop)).toBe(0);
+    const banner = await dialog.locator("aside").boundingBox();
+    const body = await scroller.boundingBox();
+    expect(banner!.y).toBeGreaterThanOrEqual(body!.y);
+    await dialog.screenshot({ path: info.outputPath(`initial-${viewport.width}.png`) });
+    const footer = dialog.locator('footer[aria-label="Preferências do guia"]');
+    const footerBox = (await footer.boundingBox())!;
+    const columns = [
+      dialog.locator("aside"),
+      dialog.locator('section[aria-label="Primeiros passos do grupo"]'),
+    ];
+    for (const column of columns) {
+      const box = (await column.boundingBox())!;
+      expect(footerBox.y).toBeGreaterThanOrEqual(box.y + box.height);
+    }
+    expect(await footer.evaluate((el) => getComputedStyle(el).position)).toBe("static");
+    const adminUrl = page.url();
+    const documentOrigin = await page.evaluate(() => performance.timeOrigin);
+    await dialog.getByRole("button", { name: /Conta criada e site no ar/ }).click();
+    const link = dialog.getByRole("link", { name: "Ver site do grupo", exact: true });
+    await expect(link).toHaveAttribute("href", "/grupo-fixture");
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    await page.waitForLoadState("networkidle");
+    const actions = [...fixture.actions];
+    const progress = fixture.snapshot().activationProgress;
+    const popupPromise = page.waitForEvent("popup");
+    await link.click();
+    const popup = await popupPromise;
+    await popup.waitForLoadState("domcontentloaded");
+    await expect(popup).toHaveURL(/\/grupo-fixture$/);
+    expect(await popup.evaluate(() => window.opener === null)).toBe(true);
+    await popup.close();
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(adminUrl);
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
+    expect(fixture.actions).toEqual(actions);
+    expect(fixture.snapshot().activationProgress).toEqual(progress);
+    const dismiss = footer.getByRole("button", {
+      name: "Não mostrar este Guia novamente",
+      exact: true,
+    });
+    await dismiss.scrollIntoViewIfNeeded();
+    await dialog.screenshot({ path: info.outputPath(`footer-${viewport.width}.png`) });
+    await dismiss.click();
+    await expect(dialog.getByRole("alertdialog")).toBeVisible();
+    await dialog.getByRole("button", { name: "Manter o guia", exact: true }).click();
+    await expect(dismiss).toBeFocused();
+    await dialog.getByRole("button", { name: "Fechar modal", exact: true }).click();
+    if (viewport.name === "desktop") await floatingGuide(page);
+    else await page.getByRole("button", { name: "Abrir Guia Interativo", exact: true }).click();
+    await expect(
+      dialog.getByRole("heading", { name: "Cadastre os times", exact: true })
+    ).toBeVisible();
+    expect(await scroller.evaluate((el) => el.scrollTop)).toBe(0);
+    await dialog.screenshot({ path: info.outputPath(`reopened-${viewport.width}.png`) });
+    console.log(
+      "GUIDE_INITIAL_SCROLL",
+      JSON.stringify({
+        viewport: viewport.width,
+        scrollTop: await scroller.evaluate((el) => el.scrollTop),
+      })
+    );
+  });
+}
