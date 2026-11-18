@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+// This UI fixture runs only over local HTTP. WebKit otherwise upgrades local
+// assets to HTTPS under the production CSP. Security-header tests stay separate.
+test.use({ bypassCSP: true });
+
 // Uses the existing local authentication fixture; never accesses production data.
 for (const viewport of [
   { name: "desktop", width: 1280, height: 800 },
@@ -140,6 +144,7 @@ for (const viewport of [
       await route.fulfill({ response, json: session });
     });
     await page.goto("/admin/login");
+    await expect(page.locator("main")).toHaveCSS("background-color", "rgb(11, 15, 22)");
     await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
     await page.getByRole("button", { name: "Entrar com senha" }).click();
     await page.getByTestId("admin-login-password").fill("fixture-only-password");
