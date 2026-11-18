@@ -90,6 +90,10 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
     guide.getByRole("list", { name: "Etapas de Entre em campo" }).locator("li")
   ).toHaveCount(4);
   await expect(guide.getByRole("list", { name: "Etapas de Prepare seu grupo" })).toHaveCount(0);
+  if (info.project.name === "chromium")
+    await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toBeInViewport({
+      ratio: 1,
+    });
   await guide.screenshot({ path: info.outputPath("active-football-phase.png") });
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
   const reloadDashboard = async () => {

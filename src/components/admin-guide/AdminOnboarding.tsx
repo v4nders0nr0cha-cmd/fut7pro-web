@@ -9,7 +9,6 @@ import {
   ONBOARDING_IDS,
   PREPARATION_IDS,
   FOOTBALL_IDS,
-  STEP_HELP,
   isOnboardingActionUnlocked,
   onboardingBlockMessage,
 } from "@/lib/admin-onboarding";
@@ -19,6 +18,20 @@ import {
   type GuideOrigin,
   guideDestination,
 } from "@/lib/admin-guide-navigation";
+
+const STEP_SUMMARY: Record<string, string> = {
+  ACCOUNT_READY: "Sua conta está pronta e o site do grupo já pode receber a galera.",
+  ACTIVE_PLAYERS: "Compartilhe o link do grupo para os atletas entrarem e montarem seus perfis.",
+  SCHEDULE: "Escolha o dia e o horário dos jogos e salve a rotina do grupo.",
+  OFFICIAL_TEAMS:
+    "Cadastre as equipes que participam dos jogos. Dois times são o mínimo para começar.",
+  ATHLETE_LEVELS:
+    "Avalie habilidade e físico dos atletas para ajudar a montar times mais equilibrados.",
+  FIRST_MATCHDAY:
+    "Escolha entre o sorteio e a partida clássica e prepare a primeira rodada do grupo.",
+  RESULTS_RECORDED: "Registre placares, gols e assistências. Revise os dados e finalize a rodada.",
+  CHAMPION_PUBLISHED: "Confira a rodada finalizada e publique o time que conquistou o dia.",
+};
 
 const primary =
   "inline-flex min-h-11 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 font-semibold text-black hover:bg-yellow-300 disabled:opacity-50";
@@ -297,7 +310,7 @@ export default function AdminOnboarding({
           aria-label={active.title}
         >
           <h3 className="text-lg font-bold">{active.title}</h3>
-          <p className="text-sm text-zinc-300">{STEP_HELP[active.id]}</p>
+          <p className="text-sm text-zinc-300">{STEP_SUMMARY[active.id]}</p>
           {waitingForPlayers && (
             <p className="border-t border-white/10 pt-3 text-xs leading-relaxed text-zinc-400">
               Preparação concluída · {guide.eligibility?.eligiblePlayers} de{" "}
