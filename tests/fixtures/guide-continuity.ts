@@ -196,11 +196,20 @@ export async function login(page: Page) {
   await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 90_000 });
 }
 export async function signOut(page: Page) {
-  await page.getByRole("button", { name: /Abrir menu do perfil/ }).click();
-  await page
-    .getByLabel("Menu do perfil", { exact: true })
-    .getByRole("button", { name: "Sair da conta", exact: true })
-    .click();
+  if ((page.viewportSize()?.width ?? 1280) < 1024) {
+    await page.getByRole("link", { name: "Abrir Mais", exact: true }).click();
+    await expect(page).toHaveURL(/\/admin\/mais/);
+    await page
+      .getByRole("region", { name: "Conta", exact: true })
+      .getByRole("button", { name: "Sair da conta", exact: true })
+      .click();
+  } else {
+    await page.getByRole("button", { name: /Abrir menu do perfil/ }).click();
+    await page
+      .getByLabel("Menu do perfil", { exact: true })
+      .getByRole("button", { name: "Sair da conta", exact: true })
+      .click();
+  }
   await page.waitForURL(/\/admin\/login(?:\?|$)/, { waitUntil: "load", timeout: 90_000 });
   await expect(page.getByTestId("admin-login-email")).toBeVisible();
 }
