@@ -54,6 +54,7 @@ export default function AdminGuidePresenter() {
       setReady("");
       setPresentation(null);
       setManualScope("");
+      manualRef.current = "";
       leaving.current = "";
       navigating.current = "";
       return;

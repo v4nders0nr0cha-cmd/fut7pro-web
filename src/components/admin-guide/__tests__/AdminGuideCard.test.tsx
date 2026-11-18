@@ -459,6 +459,12 @@ it("keeps X across Dashboard remounts in the same login, but allows an explicit 
   second.rerender(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   expect(replace).toHaveBeenCalledWith("/admin/dashboard", { scroll: false });
+  pathname = "/admin/partidas/criar-times";
+  second.rerender(<AdminGuidePresenter />);
+  pathname = "/admin/dashboard";
+  second.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  await waitFor(() => expect(replace).toHaveBeenCalledTimes(2));
 });
 it("selects the next real pending task on return rather than a completed historical selection", async () => {
   guide.tasks.slice(0, 3).forEach((task) => (task.completed = true));

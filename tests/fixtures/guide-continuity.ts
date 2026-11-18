@@ -197,7 +197,10 @@ export async function login(page: Page) {
 }
 export async function signOut(page: Page) {
   await page.getByRole("button", { name: /Abrir menu do perfil/ }).click();
-  await page.getByRole("button", { name: "Sair da conta", exact: true }).click();
+  await page
+    .getByLabel("Menu do perfil", { exact: true })
+    .getByRole("button", { name: "Sair da conta", exact: true })
+    .click();
   await page.waitForURL(/\/admin\/login(?:\?|$)/, { waitUntil: "load", timeout: 90_000 });
   await expect(page.getByTestId("admin-login-email")).toBeVisible();
 }
