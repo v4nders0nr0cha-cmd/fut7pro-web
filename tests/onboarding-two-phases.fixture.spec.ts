@@ -160,9 +160,11 @@ for (const viewport of [
       console.error("Local UI asset diagnostics", JSON.stringify({ assetDiagnostics, styles }));
       throw error;
     }
-    await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
     await page.getByRole("button", { name: "Entrar com senha" }).click();
+    await expect(page.getByTestId("admin-login-password")).toBeVisible();
+    await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
     await page.getByTestId("admin-login-password").fill("fixture-only-password");
+    await expect(page.getByTestId("admin-login-email")).toHaveValue("presidente@fixture.invalid");
     await page.getByTestId("admin-login-submit").click();
     await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 90_000 });
     const dialog = page.getByRole("dialog", { name: "Guia Interativo Fut7Pro" });

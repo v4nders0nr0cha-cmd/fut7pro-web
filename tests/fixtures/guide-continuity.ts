@@ -186,9 +186,12 @@ export async function installGuide(page: Page) {
 }
 export async function login(page: Page) {
   await page.goto("/admin/login");
-  await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
+  // Choosing the mode proves client hydration before filling controlled fields.
   await page.getByRole("button", { name: "Entrar com senha", exact: true }).click();
+  await expect(page.getByTestId("admin-login-password")).toBeVisible();
+  await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
   await page.getByTestId("admin-login-password").fill("fixture-only-password");
+  await expect(page.getByTestId("admin-login-email")).toHaveValue("presidente@fixture.invalid");
   await page.getByTestId("admin-login-submit").click();
   await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 90_000 });
 }
