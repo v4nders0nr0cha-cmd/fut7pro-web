@@ -140,9 +140,14 @@ export default function AdminGuidePresenter() {
     leaving.current = scope;
     setPresentation(null);
   };
-  const steps = () => setPresentation({ scope, view: "STEPS", first: false });
+  const steps = () =>
+    setPresentation({
+      scope,
+      view: "STEPS",
+      first: !guide.pedagogicalState.welcomePresentedAt && !guide.pedagogicalState.welcomeSeenAt,
+    });
   return (
-    <AdminGuideDialog open={visible} onClose={() => close()}>
+    <AdminGuideDialog key={`${scope}:${presentation?.view}`} open={visible} onClose={() => close()}>
       {presentation?.view === "STEPS" ? (
         <AdminOnboarding
           key={scope}

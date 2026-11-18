@@ -65,7 +65,7 @@ export default function AdminGuideRewardNotice({
     setClosedScope(scope);
   };
   return (
-    <AdminGuideDialog open={open} onClose={close}>
+    <AdminGuideDialog key={confirmed ? "reward" : "completion"} open={open} onClose={close}>
       <section className="space-y-5 text-white" aria-labelledby="guide-reward-title">
         <h2 id="guide-reward-title" className="text-2xl font-bold">
           {confirmed ? "Você entrou para o jogo! 🏆" : "Guia concluído!"}

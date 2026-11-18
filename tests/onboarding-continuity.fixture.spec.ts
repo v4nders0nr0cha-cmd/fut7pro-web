@@ -122,9 +122,10 @@ test("teams saved through the sidebar have the same conclusion and full-page gui
   // Navigation away, unlike X, must not suspend the next Dashboard presentation.
   await guide.getByRole("link", { name: "Continuar", exact: true }).click();
   const openTeamsFromSidebar = async () => {
-    const toggle = page.getByTestId("admin-sidebar-toggle-partidas");
+    const sidebar = page.getByTestId("admin-sidebar-desktop");
+    const toggle = sidebar.getByTestId("admin-sidebar-toggle-partidas");
     if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
-    await page.getByRole("link", { name: "Gerenciar Times", exact: true }).click();
+    await sidebar.getByRole("link", { name: "Gerenciar Times", exact: true }).click();
     await expect(page).toHaveURL(/\/admin\/partidas\/criar-times$/);
   };
   await openTeamsFromSidebar();

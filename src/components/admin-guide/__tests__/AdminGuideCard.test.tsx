@@ -409,6 +409,13 @@ it("offers a newly unlocked football milestone during the same login", async () 
   const initial = render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   expect(screen.getByText(/faltam 1/)).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Sobre o Guia Interativo" }));
+  expect(screen.getByRole("heading", { name: "Como funciona o Guia Interativo?" })).toBeVisible();
+  update.mockImplementation(async ({ action }) => {
+    if (action === "FOOTBALL_INVITE_PRESENTED")
+      expect(screen.getByRole("heading", { name: /A galera está chegando/ })).toBeVisible();
+    return true;
+  });
   eligiblePlayers = 10;
   initial.rerender(<AdminGuidePresenter />);
   await screen.findByRole("heading", { name: /A galera está chegando/ });
@@ -494,15 +501,11 @@ it("isolates temporary closing by group, administrator and real login", async ()
 it("keeps completed explanations clickable and advances a selected pending step only when it really completes", () => {
   guide.tasks.slice(0, 3).forEach((task) => (task.completed = true));
   const view = render(<AdminOnboarding />);
-  fireEvent.click(screen.getByRole("button", { name: "Cadastre os times", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Cadastre os times" }));
   fireEvent.click(screen.getByRole("button", { name: /Defina os dias e horários$/ }));
-  expect(
-    screen.getByRole("heading", { name: "Defina os dias e horários", exact: true })
-  ).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "Cadastre os times", exact: true }));
+  expect(screen.getByRole("heading", { name: "Defina os dias e horários" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Cadastre os times" }));
   guide.tasks[3].completed = true;
   view.rerender(<AdminOnboarding />);
-  expect(
-    screen.getByRole("heading", { name: "Avalie o nível dos atletas", exact: true })
-  ).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Avalie o nível dos atletas" })).toBeVisible();
 });
