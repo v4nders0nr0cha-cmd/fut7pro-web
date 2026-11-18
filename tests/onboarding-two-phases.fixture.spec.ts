@@ -143,8 +143,33 @@ for (const viewport of [
       if (session?.user) session.user.image = "/images/avatar_padrao_admin.png";
       await route.fulfill({ response, json: session });
     });
+    const assetDiagnostics: string[] = [];
+    page.on("requestfailed", (request) => {
+      if (request.url().includes("/_next/"))
+        assetDiagnostics.push(`${request.url()} ${request.failure()?.errorText}`);
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error") assetDiagnostics.push(message.text());
+    });
     await page.goto("/admin/login");
-    await expect(page.locator("main")).toHaveCSS("background-color", "rgb(11, 15, 22)");
+    try {
+      await expect(page.locator("main")).toHaveCSS("background-color", "rgb(11, 15, 22)");
+    } catch (error) {
+      const styles = await page.evaluate(() => ({
+        links: [...document.querySelectorAll('link[rel="stylesheet"]')].map(
+          (link) => link.outerHTML
+        ),
+        sheets: [...document.styleSheets].map((sheet) => {
+          try {
+            return { href: sheet.href, rules: sheet.cssRules.length };
+          } catch (error) {
+            return { href: sheet.href, error: String(error) };
+          }
+        }),
+      }));
+      console.error("Local UI asset diagnostics", JSON.stringify({ assetDiagnostics, styles }));
+      throw error;
+    }
     await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
     await page.getByRole("button", { name: "Entrar com senha" }).click();
     await page.getByTestId("admin-login-password").fill("fixture-only-password");
