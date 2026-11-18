@@ -39,6 +39,7 @@ for (const viewport of [
       snoozedTips: Record<string, string>;
       viewedResources: string[];
       welcomePresentedAt?: string;
+      rewardPresentedAt?: string;
     } = {
       revision: 1,
       knownTips: [],
@@ -48,6 +49,14 @@ for (const viewport of [
     };
     const guide = {
       guideVersion: 3,
+      reward: {
+        granted: false,
+        eligible: false,
+        days: 10,
+        grantedAt: null as string | null,
+        trialEnd: null as string | null,
+        reason: null as string | null,
+      },
       tenant: {
         id: "fixture-tenant",
         slug: "grupo-fixture",
@@ -110,8 +119,25 @@ for (const viewport of [
         state.revision++;
         if (route.request().postDataJSON().action === "WELCOME_PRESENTED")
           state.welcomePresentedAt = new Date().toISOString();
-        await route.fulfill({ json: { pedagogicalState: state } });
+        const action = route.request().postDataJSON().action;
+        if (action === "REWARD_CLAIM")
+          guide.reward = {
+            granted: true,
+            eligible: false,
+            days: 10,
+            grantedAt: new Date().toISOString(),
+            trialEnd: "2099-01-20T18:00:00Z",
+            reason: null,
+          };
+        if (action === "REWARD_PRESENTED") state.rewardPresentedAt = new Date().toISOString();
+        await route.fulfill({ json: { pedagogicalState: state, reward: guide.reward } });
       } else await route.fulfill({ json: guide });
+    });
+    await page.route("**/api/auth/session", async (route) => {
+      const response = await route.fetch();
+      const session = await response.json();
+      if (session?.user) session.user.image = "/images/avatar_padrao_admin.png";
+      await route.fulfill({ response, json: session });
     });
     await page.goto("/admin/login");
     await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
@@ -218,5 +244,33 @@ for (const viewport of [
     await dialog.getByRole("button", { name: "Fechar modal" }).click();
     await expect(page.getByRole("button", { name: "Continuar guia", exact: true })).toHaveCount(0);
     await expect(page.getByRole("complementary", { name: "Guia Fut7Pro" })).toHaveCount(0);
+    guide.tasks.forEach((task) => {
+      task.completed = true;
+    });
+    guide.activationProgress = { completed: 8, total: 8, percentage: 100, complete: true };
+    guide.phases.preparation = {
+      ...guide.phases.preparation,
+      completed: 4,
+      percentage: 100,
+      complete: true,
+    };
+    guide.phases.football = {
+      ...guide.phases.football,
+      completed: 4,
+      percentage: 100,
+      complete: true,
+      unlocked: true,
+    };
+    guide.reward.eligible = true;
+    await page.reload();
+    await expect(page.getByText("+10 DIAS DE FUT7PRO", { exact: true })).toBeVisible();
+    await dialog.screenshot({ path: testInfo.outputPath(`reward-${viewport.name}.png`) });
+    await page.getByRole("button", { name: "Continuar aproveitando o Fut7Pro" }).click();
+    await expect(dialog).toHaveCount(0);
+    await page.goto("/admin/guia-fut7pro");
+    await expect(
+      page.getByText(/Conquista do guia: \+10 dias de Fut7Pro concedidos ao grupo/)
+    ).toBeVisible();
+    await expect(dialog).toHaveCount(0);
   });
 }

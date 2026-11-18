@@ -235,7 +235,7 @@ it("requires confirmation before permanent dismissal and permits cancelling", as
   fireEvent.click(screen.getByRole("button", { name: "Manter o guia" }));
   expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Não mostrar este Guia novamente" }));
-  fireEvent.click(screen.getByRole("button", { name: "Não mostrar novamente", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: /^Não mostrar novamente$/ }));
   await waitFor(() =>
     expect(update).toHaveBeenCalledWith({ action: "DASHBOARD_INVITE_DISMISSED" })
   );
@@ -332,7 +332,7 @@ it("future stages stay readable without offering skip or unlocking their action"
   render(<AdminOnboarding />);
   expect(screen.queryByRole("button", { name: "Pular por enquanto" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Ver próxima etapa" }));
-  expect(screen.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+  expect(screen.getByRole("button", { name: /^Continuar$/ })).toBeDisabled();
   expect(update).not.toHaveBeenCalled();
 });
 
