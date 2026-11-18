@@ -166,84 +166,6 @@ export default function AdminOnboarding({
             />
           </div>
         </div>
-        {[
-          { key: "preparation", ids: PREPARATION_IDS, title: "Parte 1 — Prepare seu grupo" },
-          { key: "football", ids: FOOTBALL_IDS, title: "Parte 2 — Entre em campo" },
-        ].map((phase) => {
-          const progress = guide.phases?.[phase.key as "preparation" | "football"];
-          return (
-            <section
-              key={phase.key}
-              aria-label={phase.title}
-              className="rounded-xl border border-white/10 p-3"
-            >
-              <h3 className="font-bold">{phase.title}</h3>
-              <p className="mt-1 text-xs text-zinc-300">
-                {progress
-                  ? `${progress.completed} de ${progress.total} etapas concluídas`
-                  : "Preparando esta fase..."}
-              </p>
-              {progress && (
-                <div
-                  role="progressbar"
-                  aria-label={`Progresso da ${phase.title}`}
-                  aria-valuenow={progress.percentage}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  className="my-2 h-1.5 overflow-hidden rounded-full bg-white/15"
-                >
-                  <div
-                    className="h-full bg-yellow-400"
-                    style={{ width: `${progress.percentage}%` }}
-                  />
-                </div>
-              )}
-              {phase.key === "football" &&
-                guide.eligibility &&
-                !guide.eligibility.footballUnlocked && (
-                  <p className="my-2 text-xs text-yellow-200">
-                    {guide.eligibility.preparationComplete
-                      ? "Aguardando atletas"
-                      : "Conclua a Parte 1"}{" "}
-                    · {guide.eligibility.eligiblePlayers} de {guide.eligibility.minimumPlayers}{" "}
-                    atletas · faltam {guide.eligibility.missingPlayers}
-                  </p>
-                )}
-              <ol className="space-y-1">
-                {phase.ids.map((id, index) => {
-                  const item = tasks.find((task) => task.id === id);
-                  if (!item) return null;
-                  return (
-                    <li key={item.id}>
-                      <button
-                        aria-current={active.id === item.id ? "step" : undefined}
-                        onClick={() => select(item.id)}
-                        className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm ${active.id === item.id ? "bg-white/10 text-yellow-200" : "hover:bg-white/5"}`}
-                      >
-                        <span aria-hidden="true">{index + 1}</span>
-                        {item.completed ? (
-                          <CheckCircle2
-                            size={19}
-                            className="shrink-0 text-emerald-400"
-                            aria-label="Concluída"
-                          />
-                        ) : (
-                          <Circle size={19} className="shrink-0 text-zinc-500" aria-hidden="true" />
-                        )}
-                        <span className={item.completed ? "text-zinc-400" : ""}>{item.title}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
-          );
-        })}
-        {guide.activationProgress.complete && (
-          <p role="status" className="text-emerald-300">
-            Primeiros passos concluídos! Continue organizando os próximos jogos.
-          </p>
-        )}
         <section
           className="space-y-3 rounded-xl border border-white/15 bg-black/20 p-4"
           aria-label={active.title}
@@ -336,6 +258,84 @@ export default function AdminOnboarding({
             </button>
           )}
         </section>
+        {[
+          { key: "preparation", ids: PREPARATION_IDS, title: "Parte 1 — Prepare seu grupo" },
+          { key: "football", ids: FOOTBALL_IDS, title: "Parte 2 — Entre em campo" },
+        ].map((phase) => {
+          const progress = guide.phases?.[phase.key as "preparation" | "football"];
+          return (
+            <section
+              key={phase.key}
+              aria-label={phase.title}
+              className="rounded-xl border border-white/10 p-3"
+            >
+              <h3 className="font-bold">{phase.title}</h3>
+              <p className="mt-1 text-xs text-zinc-300">
+                {progress
+                  ? `${progress.completed} de ${progress.total} etapas concluídas`
+                  : "Preparando esta fase..."}
+              </p>
+              {progress && (
+                <div
+                  role="progressbar"
+                  aria-label={`Progresso da ${phase.title}`}
+                  aria-valuenow={progress.percentage}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  className="my-2 h-1.5 overflow-hidden rounded-full bg-white/15"
+                >
+                  <div
+                    className="h-full bg-yellow-400"
+                    style={{ width: `${progress.percentage}%` }}
+                  />
+                </div>
+              )}
+              {phase.key === "football" &&
+                guide.eligibility &&
+                !guide.eligibility.footballUnlocked && (
+                  <p className="my-2 text-xs text-yellow-200">
+                    {guide.eligibility.preparationComplete
+                      ? "Aguardando atletas"
+                      : "Conclua a Parte 1"}{" "}
+                    · {guide.eligibility.eligiblePlayers} de {guide.eligibility.minimumPlayers}{" "}
+                    atletas · faltam {guide.eligibility.missingPlayers}
+                  </p>
+                )}
+              <ol className="space-y-1">
+                {phase.ids.map((id, index) => {
+                  const item = tasks.find((task) => task.id === id);
+                  if (!item) return null;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        aria-current={active.id === item.id ? "step" : undefined}
+                        onClick={() => select(item.id)}
+                        className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm ${active.id === item.id ? "bg-white/10 text-yellow-200" : "hover:bg-white/5"}`}
+                      >
+                        <span aria-hidden="true">{index + 1}</span>
+                        {item.completed ? (
+                          <CheckCircle2
+                            size={19}
+                            className="shrink-0 text-emerald-400"
+                            aria-label="Concluída"
+                          />
+                        ) : (
+                          <Circle size={19} className="shrink-0 text-zinc-500" aria-hidden="true" />
+                        )}
+                        <span className={item.completed ? "text-zinc-400" : ""}>{item.title}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          );
+        })}
+        {guide.activationProgress.complete && (
+          <p role="status" className="text-emerald-300">
+            Primeiros passos concluídos! Continue organizando os próximos jogos.
+          </p>
+        )}
         {error && (
           <p role="status" className="text-sm text-yellow-200">
             Não foi possível atualizar a exibição do progresso.{" "}

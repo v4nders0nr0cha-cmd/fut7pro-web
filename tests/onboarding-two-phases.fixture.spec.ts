@@ -112,6 +112,16 @@ for (const viewport of [
     await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 90_000 });
     const dialog = page.getByRole("dialog", { name: "Guia Interativo Fut7Pro" });
     await expect(dialog).toBeVisible({ timeout: 60_000 });
+    const brandImage = dialog.locator("aside img").first();
+    await expect
+      .poll(
+        () =>
+          brandImage.evaluate(
+            (element: HTMLImageElement) => element.complete && element.naturalWidth > 0
+          ),
+        { timeout: 60_000 }
+      )
+      .toBe(true);
     const fits = async () => {
       const box = await dialog.boundingBox();
       expect(box!.x).toBeGreaterThanOrEqual(0);
@@ -134,6 +144,15 @@ for (const viewport of [
       const preview = dialog.getByRole("button", { name: `Ampliar imagem do ${channel}` });
       await preview.scrollIntoViewIfNeeded();
       const img = preview.locator("img");
+      await expect
+        .poll(
+          () =>
+            img.evaluate(
+              (element: HTMLImageElement) => element.complete && element.naturalWidth > 0
+            ),
+          { timeout: 60_000 }
+        )
+        .toBe(true);
       expect((await img.boundingBox())!.height).toBeLessThanOrEqual(
         viewport.width < 640 ? 260 : 380
       );
