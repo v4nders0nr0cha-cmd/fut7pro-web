@@ -1,3 +1,7 @@
+jest.mock("@/components/admin-guide/AdminGuideAccessHint", () => ({
+  __esModule: true,
+  default: () => null,
+}));
 jest.mock("@/components/admin-guide/AdminGuidePresenter", () => ({
   __esModule: true,
   default: () => null,

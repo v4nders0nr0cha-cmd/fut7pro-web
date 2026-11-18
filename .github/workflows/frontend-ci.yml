@@ -154,6 +154,8 @@ jobs:
           echo "NEXT_PUBLIC_API_URL=https://api-staging.fut7pro.com" >> .env.local
 
       - name: Analyze bundle
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm run analyze
 
       - name: Upload bundle analysis

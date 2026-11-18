@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminOnboarding from "../AdminOnboarding";
 import AdminGuidePresenter from "../AdminGuidePresenter";
 const update = jest.fn().mockResolvedValue(true);
@@ -104,11 +104,11 @@ jest.mock("next/image", () => ({
 }));
 jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
   __esModule: true,
-  default: ({ open, children, onClose, icon }: any) =>
+  default: ({ open, children, onClose, onCloseButton, icon }: any) =>
     open ? (
       <div role="dialog">
         {icon}
-        <button onClick={onClose}>Fechar modal</button>
+        <button onClick={onCloseButton ?? onClose}>Fechar modal</button>
         {children}
       </div>
     ) : null,
@@ -124,6 +124,7 @@ beforeEach(() => {
   Object.defineProperty(navigator, "clipboard", { value: { writeText: copy }, configurable: true });
   copy.mockResolvedValue(undefined);
   update.mockResolvedValue(true);
+  retry.mockImplementation(() => Promise.resolve(guide));
   guide = {
     tenant: {
       id: "group",
@@ -418,6 +419,7 @@ it("offers a newly unlocked football milestone during the same login", async () 
     return true;
   });
   eligiblePlayers = 10;
+  guide = { ...guide };
   initial.rerender(<AdminGuidePresenter />);
   await screen.findByRole("heading", { name: /A galera está chegando/ });
   fireEvent.click(screen.getByRole("button", { name: "Começar a Parte 2" }));
@@ -584,3 +586,71 @@ it.each([5, 6, 7])(
     expect(update).not.toHaveBeenCalled();
   }
 );
+
+it("refreshes before manual reopening and does not change permanent dismissal", async () => {
+  guide.pedagogicalState.dashboardInviteDismissedAt = "2026-11-18";
+  guide.pedagogicalState.welcomePresentedAt = "2026-11-18";
+  const view = render(<AdminGuidePresenter />);
+  await waitFor(() => expect(retry).toHaveBeenCalledTimes(1));
+  let finish!: (value: any) => void;
+  retry.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+  );
+  search = "retomarGuia=1&grupoGuia=pelada";
+  view.rerender(<AdminGuidePresenter />);
+  await waitFor(() => expect(retry).toHaveBeenCalledTimes(2));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  guide.tasks.slice(0, 3).forEach((task: any) => (task.completed = true));
+  finish(guide);
+  await screen.findByRole("heading", { name: "Cadastre os times" });
+  expect(guide.pedagogicalState.dashboardInviteDismissedAt).toBe("2026-11-18");
+  expect(update).not.toHaveBeenCalledWith({ action: "DASHBOARD_INVITE_DISMISSED" });
+});
+it("keeps the Dashboard usable if the manual progress read fails", async () => {
+  guide.pedagogicalState.dashboardInviteDismissedAt = "2026-11-18";
+  const view = render(<AdminGuidePresenter />);
+  await waitFor(() => expect(retry).toHaveBeenCalledTimes(1));
+  retry.mockRejectedValueOnce(new Error("unavailable"));
+  search = "retomarGuia=1&grupoGuia=pelada";
+  view.rerender(<AdminGuidePresenter />);
+  await screen.findByText(/Não foi possível abrir o guia/);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(replace).toHaveBeenCalledWith("/admin/dashboard", { scroll: false });
+  search = "";
+  view.rerender(<AdminGuidePresenter />);
+  search = "retomarGuia=1&grupoGuia=pelada";
+  view.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+});
+
+it("does not let an earlier automatic read display stale progress during a manual request", async () => {
+  let automatic!: (value: any) => void;
+  let manualRead!: (value: any) => void;
+  retry.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        automatic = resolve;
+      })
+  );
+  retry.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        manualRead = resolve;
+      })
+  );
+  const view = render(<AdminGuidePresenter />);
+  search = "retomarGuia=1&grupoGuia=pelada";
+  view.rerender(<AdminGuidePresenter />);
+  await waitFor(() => expect(retry).toHaveBeenCalledTimes(2));
+  await act(async () => {
+    automatic(guide);
+  });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await act(async () => {
+    manualRead(guide);
+  });
+  await screen.findByRole("dialog");
+});
