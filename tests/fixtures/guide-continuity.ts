@@ -185,7 +185,7 @@ export async function installGuide(page: Page) {
   };
 }
 export async function login(page: Page) {
-  await page.goto("/admin/login");
+  if (new URL(page.url()).pathname !== "/admin/login") await page.goto("/admin/login");
   // Choosing the mode proves client hydration before filling controlled fields.
   await page.getByRole("button", { name: "Entrar com senha", exact: true }).click();
   await expect(page.getByTestId("admin-login-password")).toBeVisible();
@@ -196,15 +196,12 @@ export async function login(page: Page) {
   await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 90_000 });
 }
 export async function signOut(page: Page) {
-  await page.evaluate(async () => {
-    const { csrfToken } = await fetch("/api/auth/csrf").then((response) => response.json());
-    await fetch("/api/auth/signout", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ csrfToken, callbackUrl: "/admin/login", json: "true" }),
-    });
-  });
+  await page.getByRole("button", { name: /Abrir menu do perfil/ }).click();
+  await page.getByRole("button", { name: "Sair da conta", exact: true }).click();
+  await page.waitForURL(/\/admin\/login(?:\?|$)/, { waitUntil: "load", timeout: 90_000 });
+  await expect(page.getByTestId("admin-login-email")).toBeVisible();
 }
+
 export async function addTeam(page: Page, name: string) {
   await page.getByRole("button", { name: "Novo Time", exact: true }).first().click();
   const form = page.getByRole("dialog", { name: "Adicionar time", exact: true });
