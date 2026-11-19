@@ -5,10 +5,11 @@ let guide: AdminGuideData;
 const update = jest.fn();
 const onBack = jest.fn();
 const onContinue = jest.fn();
-function panel() {
+function panel(mode?: "onboarding" | "reinvite") {
   return (
     <AdminGuideInvitationPanel
       guide={guide}
+      mode={mode}
       updating={false}
       update={update}
       onBack={onBack}
@@ -148,6 +149,28 @@ it("resumes an unconfirmed intent after remount and isolates it by administrator
   expect(screen.getByRole("heading", { name: "Traga seus primeiros jogadores" })).toBeVisible();
   expect(screen.queryByText("Etapa concluída!")).toBeNull();
 });
+it("reinvites after completion without reopening the milestone or writing onboarding progress", async () => {
+  guide.tasks.forEach((task) => (task.completed = true));
+  guide.actionAvailability = { ACTIVE_PLAYERS: { allowed: false, reason: "PREVIOUS_STEPS" } };
+  sessionStorage.setItem("guide-invitation:v2:group:admin", "INSTAGRAM");
+  render(panel("reinvite"));
+  expect(screen.getByRole("heading", { name: "Convidar mais jogadores" })).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "Etapa concluída!" })).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Conseguiu compartilhar o convite?" })).toBeNull();
+  expect(screen.getByRole("link", { name: "Compartilhar no WhatsApp" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Copiar convite" }));
+  await screen.findByText(/Convite copiado! Envie a mensagem aos jogadores/);
+  expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+  expect(update).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("link", { name: "Compartilhar no WhatsApp" }));
+  expect(screen.getByText(/Abra o aplicativo e compartilhe o convite/)).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "Etapa concluída!" })).toBeNull();
+  expect(guide.tasks.find((task) => task.id === "ACTIVE_PLAYERS")?.completed).toBe(true);
+  expect(update).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Voltar à Fase 2" }));
+  expect(onBack).toHaveBeenCalledTimes(1);
+});
+
 it("respects historical completion, registration permissions and already used channels", () => {
   guide.tasks.forEach((t) => (t.completed = true));
   guide.capabilities.managePlayers = false;
