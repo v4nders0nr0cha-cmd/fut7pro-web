@@ -4,7 +4,6 @@ import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import useSWR from "swr";
 import type { Time } from "@/types/time";
 
-const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
 const DEFAULT_COR = "#FFD700";
 
 type TeamStatusFilter = "active" | "archived" | "all";
@@ -46,10 +45,10 @@ function slugify(value: string) {
     .replace(/(^-|-$)+/g, "");
 }
 
-function normalizeTime(raw: any): Time {
+export function normalizeTime(raw: any): Time {
   const nome = raw?.nome || raw?.name || raw?.title || "Time";
   const slug = raw?.slug || slugify(nome) || raw?.id || "time";
-  const logo = raw?.logo || raw?.logoUrl || DEFAULT_LOGO;
+  const logo = raw?.logoUrl !== undefined ? raw.logoUrl : raw?.logo ?? null;
   const cor = raw?.cor || raw?.color || DEFAULT_COR;
 
   return {
@@ -58,7 +57,7 @@ function normalizeTime(raw: any): Time {
     name: raw?.name,
     slug,
     logo,
-    logoUrl: raw?.logoUrl ?? raw?.logo,
+    logoUrl: logo,
     cor,
     color: raw?.color,
     corSecundaria: raw?.corSecundaria || raw?.secondaryColor,
@@ -110,7 +109,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
     const payload = {
       name: time.nome || time.name || "Novo Time",
       color: time.cor || time.color || DEFAULT_COR,
-      logoUrl: time.logo || time.logoUrl || DEFAULT_LOGO,
+      logoUrl: time.logoUrl !== undefined ? time.logoUrl : time.logo ?? null,
     };
 
     const res = await fetch(`/api/times${search}`, {
@@ -134,7 +133,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
     const payload = {
       name: time.nome || time.name || "Time",
       color: time.cor || time.color || DEFAULT_COR,
-      logoUrl: time.logo || time.logoUrl || DEFAULT_LOGO,
+      logoUrl: time.logoUrl !== undefined ? time.logoUrl : time.logo ?? null,
     };
 
     const res = await fetch(`/api/times/${time.id}${search}`, {

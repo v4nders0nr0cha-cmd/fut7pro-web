@@ -303,4 +303,54 @@ describe("GerenciarTimesPage", () => {
     expect(within(dialog).queryByText("Plano Médio")).not.toBeInTheDocument();
     expect(within(dialog).queryByText("Plano Master")).not.toBeInTheDocument();
   });
+
+  it("cadastra sem logo com identidade automática e envia null", async () => {
+    render(<GerenciarTimesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Novo Time" }));
+    expect(screen.getByText(/Opcional. Se não enviar uma logo/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Nome do time"), { target: { value: "Time amarelo" } });
+    expect(screen.getByRole("img", { name: /Time Time amarelo, sem logo enviada/ })).toHaveTextContent("TA");
+    fireEvent.change(screen.getByLabelText("Cor do time"), { target: { value: "#ff0000" } });
+    expect(screen.getByRole("img", { name: /Time Time amarelo, sem logo enviada/ })).toHaveStyle({
+      backgroundColor: "#ff0000",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar time" }));
+    await waitFor(() => expect(addTime).toHaveBeenCalledWith(expect.objectContaining({
+      nome: "Time amarelo", logoUrl: null, logo: null, cor: "#ff0000",
+    })));
+  });
+
+  it("preserva a logo real ao editar o nome e permite removê-la", async () => {
+    render(<GerenciarTimesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Editar Academia Performance Sobral" }));
+    expect(screen.getByRole("img", { name: "Logo do time Academia Performance Sobral" }))
+      .toHaveAttribute("src", "/images/times/time_padrao_02.png");
+    fireEvent.change(screen.getByLabelText("Nome do time"), { target: { value: "Academia Sobral" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    await waitFor(() => expect(updateTime).toHaveBeenCalledWith(expect.objectContaining({
+      nome: "Academia Sobral", logoUrl: "/images/times/time_padrao_02.png",
+    })));
+  });
+
+  it("remove explicitamente a logo e salva null", async () => {
+    render(<GerenciarTimesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Editar Academia Performance Sobral" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remover logo" }));
+    expect(screen.getByRole("img", { name: /sem logo enviada/ })).toHaveTextContent("AS");
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    await waitFor(() => expect(updateTime).toHaveBeenCalledWith(expect.objectContaining({
+      logoUrl: null, logo: null,
+    })));
+  });
+
+  it("não restaura Hawks ao editar nome de time legado", async () => {
+    render(<GerenciarTimesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Editar Casa do Gamer" }));
+    expect(screen.getByRole("img", { name: /sem logo enviada/ })).toHaveTextContent("CG");
+    expect(screen.queryByRole("button", { name: "Remover logo" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    await waitFor(() => expect(updateTime).toHaveBeenCalledWith(expect.objectContaining({
+      logoUrl: "/images/times/time_padrao_01.png",
+    })));
+  });
 });

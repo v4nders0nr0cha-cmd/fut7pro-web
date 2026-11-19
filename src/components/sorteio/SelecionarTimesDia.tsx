@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+import { TeamBadge } from "@/components/teams/TeamBadge";
 import type { Time } from "@/types/time";
 
 interface Props {
@@ -100,7 +100,7 @@ export default function SelecionarTimesDia({
               disabled={disableAll || !podeMarcar}
               tabIndex={disableAll ? -1 : 0}
             >
-              <Image src={time.logo} alt={`Logo do ${time.nome}`} width={32} height={32} />
+              <TeamBadge name={time.nome} color={time.cor} logo={time.logo} size={32} />
               {time.nome}
               {checked && <span className="ml-1 text-green-500 text-lg">✔</span>}
             </button>
@@ -157,7 +157,7 @@ export default function SelecionarTimesDia({
                     onClick={() => podeMarcar && toggleTime(time.id)}
                     disabled={disableAll || !podeMarcar}
                   >
-                    <Image src={time.logo} alt={`Logo do ${time.nome}`} width={28} height={28} />
+                    <TeamBadge name={time.nome} color={time.cor} logo={time.logo} size={28} />
                     {time.nome}
                     {checked && <span className="ml-1 text-green-500 text-lg">✔</span>}
                   </button>

@@ -1,5 +1,5 @@
 // src/components/admin/TimesDoDiaGrid.tsx
-import Image from "next/image";
+import { TeamBadge } from "@/components/teams/TeamBadge";
 import type { Time, Jogador } from "@/types/interfaces";
 
 // Interface específica para jogador com dados adicionais
@@ -34,12 +34,7 @@ export default function TimesDoDiaGrid({ times }: { times: TimeCompleto[] }) {
           }}
         >
           <div className="flex items-center gap-2 px-5 pt-3 pb-2">
-            <Image
-              src={time.logo || "/images/times/time_padrao_01.png"}
-              alt={`Logo ${time.nome}`}
-              width={28}
-              height={28}
-            />
+            <TeamBadge name={time.nome} color={time.cor} logo={time.logo} size={28} />
             <span className="text-xl font-bold text-white tracking-wide">{time.nome}</span>
           </div>
           <ul className="px-5 pb-4">

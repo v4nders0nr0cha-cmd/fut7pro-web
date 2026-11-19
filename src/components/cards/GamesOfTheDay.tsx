@@ -3,7 +3,7 @@
 import GameCard from "./GameCard";
 import type { JogoDoDia } from "@/hooks/useJogosDoDia";
 import Link from "next/link";
-import { teamLogoMap, logoPadrao } from "@/config/teamLogoMap";
+
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 interface GamesOfTheDayProps {
@@ -45,11 +45,13 @@ export default function GamesOfTheDay({
               key={jogo.id}
               teamA={{
                 name: jogo.timeA,
-                logo: jogo.logoTimeA || teamLogoMap[jogo.timeA] || logoPadrao,
+                logo: jogo.logoTimeA,
+                color: jogo.corTimeA,
               }}
               teamB={{
                 name: jogo.timeB,
-                logo: jogo.logoTimeB || teamLogoMap[jogo.timeB] || logoPadrao,
+                logo: jogo.logoTimeB,
+                color: jogo.corTimeB,
               }}
               score={`${jogo.golsTimeA} - ${jogo.golsTimeB}`}
             />

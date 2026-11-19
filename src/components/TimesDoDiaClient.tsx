@@ -10,7 +10,6 @@ import { useAboutPublic } from "@/hooks/useAbout";
 import { useFooterConfigAdmin, useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import type { PublicMatch, TimeDoDia } from "@/types/partida";
 
-const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
 const DEFAULT_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_COLOR = "#facc15";
 const INTERVALO_TROCA_SEG = 85;
@@ -110,7 +109,7 @@ function buildTimesDoDia(matches: PublicMatch[]) {
       timesMap.set(teamId, {
         id: teamId,
         nome: team.name || "Time",
-        logo: team.logoUrl || DEFAULT_LOGO,
+        logo: team.logoUrl || "",
         cor: team.color || DEFAULT_COLOR,
         jogadores: [],
         stats: { pontos: 0, saldo: 0, gols: 0 },
@@ -338,11 +337,11 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
 
   const confrontosDetalhados = useMemo(() => {
     if (!confrontos.length) return [];
-    const timeLogoMap = new Map<string, string>();
+    const timeIdentityMap = new Map<string, { logo: string; cor: string }>();
     times.forEach((time) => {
       const key = time?.nome?.trim().toLowerCase();
       if (key) {
-        timeLogoMap.set(key, time.logo || DEFAULT_LOGO);
+        timeIdentityMap.set(key, { logo: time.logo || "", cor: time.cor || DEFAULT_COLOR });
       }
     });
     return confrontos.map((confronto) => {
@@ -350,8 +349,10 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
       const keyB = confronto.timeB?.trim().toLowerCase();
       return {
         ...confronto,
-        logoA: (keyA && timeLogoMap.get(keyA)) || DEFAULT_LOGO,
-        logoB: (keyB && timeLogoMap.get(keyB)) || DEFAULT_LOGO,
+        logoA: (keyA && timeIdentityMap.get(keyA)?.logo) || "",
+        logoB: (keyB && timeIdentityMap.get(keyB)?.logo) || "",
+        corA: (keyA && timeIdentityMap.get(keyA)?.cor) || DEFAULT_COLOR,
+        corB: (keyB && timeIdentityMap.get(keyB)?.cor) || DEFAULT_COLOR,
       };
     });
   }, [confrontos, times]);

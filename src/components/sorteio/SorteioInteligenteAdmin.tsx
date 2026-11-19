@@ -27,7 +27,7 @@ import { useRacha } from "@/context/RachaContext";
 import { useTimes } from "@/hooks/useTimes";
 import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
 import { useCriticalSessionRefresh } from "@/hooks/useCriticalSessionRefresh";
-import { logoPadrao } from "@/config/teamLogoMap";
+
 import EditorTabelaConfrontos, {
   validarTabelaConfrontos,
 } from "@/components/sorteio/EditorTabelaConfrontos";
@@ -478,7 +478,8 @@ export default function SorteioInteligenteAdmin() {
       timesSelecionadosDetalhes.map((time) => ({
         id: time.id,
         nome: time.nome,
-        logo: time.logo || logoPadrao,
+        logo: time.logo || "",
+        cor: time.cor || time.color,
       })),
     [timesSelecionadosDetalhes]
   );
@@ -817,7 +818,8 @@ export default function SorteioInteligenteAdmin() {
   const normalizarTime = (time: any): Time => ({
     id: time.id,
     nome: time.nome || (time as any).name || "Time",
-    logo: time.logo || (time as any).logoUrl || logoPadrao,
+    logo: time.logo || (time as any).logoUrl || "",
+    cor: time.cor || time.color,
   });
 
   async function handleSortearTimes() {
@@ -838,7 +840,8 @@ export default function SorteioInteligenteAdmin() {
     const timesNormalizados = timesParaSorteio.map((time) => ({
       id: time.id,
       nome: time.nome || (time as any).name || "Time",
-      logo: time.logo || (time as any).logoUrl || logoPadrao,
+      logo: time.logo || (time as any).logoUrl || "",
+      cor: time.cor || time.color,
     }));
 
     setLoadingSorteio(true);

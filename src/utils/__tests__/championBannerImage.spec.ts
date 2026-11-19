@@ -20,4 +20,7 @@ describe("resolveChampionBannerImage", () => {
 
     expect(result.image).toBe("https://cdn/logo.png");
   });
+  it("não usa Hawks como banner do campeão sem logo", () => {
+    expect(resolveChampionBannerImage({ logoUrl: "/images/times/time_padrao_01.png", defaultImage: "/default.jpg" }).image).toBe("/default.jpg");
+  });
 });

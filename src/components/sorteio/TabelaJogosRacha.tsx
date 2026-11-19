@@ -1,7 +1,7 @@
 // src/components/sorteio/TabelaJogosRacha.tsx
 "use client";
 
-import Image from "next/image";
+import { TeamBadge } from "@/components/teams/TeamBadge";
 import type { JogoConfronto } from "@/utils/sorteioUtils";
 
 export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) {
@@ -46,25 +46,11 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                           <div className="flex items-center justify-end gap-2 min-w-0">
                             <span className="truncate font-medium">{jogo.timeA.nome}</span>
-                            <Image
-                              src={jogo.timeA.logo}
-                              alt={jogo.timeA.nome}
-                              width={26}
-                              height={26}
-                              className="rounded shrink-0"
-                              style={{ objectFit: "cover" }}
-                            />
+                            <TeamBadge name={jogo.timeA.nome} color={jogo.timeA.cor} logo={jogo.timeA.logo} size={26} />
                           </div>
                           <span className="text-yellow-400 font-bold text-base">x</span>
                           <div className="flex items-center justify-start gap-2 min-w-0">
-                            <Image
-                              src={jogo.timeB.logo}
-                              alt={jogo.timeB.nome}
-                              width={26}
-                              height={26}
-                              className="rounded shrink-0"
-                              style={{ objectFit: "cover" }}
-                            />
+                            <TeamBadge name={jogo.timeB.nome} color={jogo.timeB.cor} logo={jogo.timeB.logo} size={26} />
                             <span className="truncate font-medium">{jogo.timeB.nome}</span>
                           </div>
                         </div>
@@ -103,14 +89,7 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Image
-                      src={jogo.timeA.logo}
-                      alt={jogo.timeA.nome}
-                      width={26}
-                      height={26}
-                      className="rounded shrink-0"
-                      style={{ objectFit: "cover" }}
-                    />
+                    <TeamBadge name={jogo.timeA.nome} color={jogo.timeA.cor} logo={jogo.timeA.logo} size={26} />
                     <span className="truncate text-sm font-semibold">{jogo.timeA.nome}</span>
                   </div>
                   <span className="text-yellow-400 font-bold text-sm">x</span>
@@ -118,14 +97,7 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
                     <span className="truncate text-sm font-semibold text-right">
                       {jogo.timeB.nome}
                     </span>
-                    <Image
-                      src={jogo.timeB.logo}
-                      alt={jogo.timeB.nome}
-                      width={26}
-                      height={26}
-                      className="rounded shrink-0"
-                      style={{ objectFit: "cover" }}
-                    />
+                    <TeamBadge name={jogo.timeB.nome} color={jogo.timeB.cor} logo={jogo.timeB.logo} size={26} />
                   </div>
                 </div>
               </div>

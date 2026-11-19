@@ -16,7 +16,6 @@ import type { TeamRankingEntry } from "@/hooks/usePublicTeamRankings";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
-const DEFAULT_TEAM_IMAGE = "/images/times/time_padrao_01.png";
 const SUCCESS_TITLE = "Temporada finalizada com sucesso!";
 const SUCCESS_MESSAGE =
   "Obrigado por mais um ano de racha. As premia\u00e7\u00f5es foram aplicadas nos perfis dos campe\u00f5es e os rankings j\u00e1 est\u00e3o prontos para o pr\u00f3ximo ano. Boa virada e que venha uma temporada ainda mais braba!";
@@ -196,7 +195,8 @@ export default function OsCampeoesAdminPage() {
         titulo: "Campeão do Ano",
         nome: topTime?.nome ?? "Time em processamento",
         valor: topTime ? `${topTime.pontos} pontos` : "Em processamento",
-        image: safeImage(topTime?.logo, DEFAULT_TEAM_IMAGE),
+        image: topTime?.logo ?? null,
+        teamColor: topTime?.cor ?? null,
         icone: "/images/icons/trofeu-de-ouro.png",
         href: `/estatisticas/classificacao-dos-times?year=${anoBase}`,
         temporario: parcial,

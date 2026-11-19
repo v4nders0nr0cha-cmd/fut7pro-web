@@ -17,7 +17,7 @@ export function resolveChampionBannerImage({
   isLoading = false,
 }: ChampionBannerImageInput) {
   const realBannerImage = normalizeImageUrl(bannerUrl);
-  const fallbackTeamImage = normalizeImageUrl(logoUrl);
+  const fallbackTeamImage = logoUrl === "/images/times/time_padrao_01.png" ? null : normalizeImageUrl(logoUrl);
   const isImageLoading = !realBannerImage && !fallbackTeamImage && isLoading;
 
   return {
