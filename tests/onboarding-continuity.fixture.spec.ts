@@ -68,8 +68,11 @@ test("contextual team creation resumes the current page, persists X by real logi
   await expect(
     guide.getByRole("list", { name: "Etapas de Entre em campo" }).locator("li")
   ).toHaveCount(4);
+  await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toHaveCount(0);
+  await guide.getByRole("button", { name: "Avalie o nível dos atletas", exact: true }).click();
   await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
   await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toHaveCount(0);
+  await guide.getByRole("button", { name: "Recolher orientação", exact: true }).click();
   await guide.screenshot({ path: info.outputPath("locked-football-phase.png") });
   await guide.getByRole("button", { name: "Rever etapas da Fase 1", exact: true }).click();
   await expect(
@@ -276,7 +279,23 @@ for (const width of [1280, 390, 320]) {
     const phase = guide.getByRole("list", { name: "Etapas de Entre em campo" });
     await expect(phase.locator("li")).toHaveCount(4);
     await expect(guide.getByText("0 / 10", { exact: true })).toBeVisible();
-    await expect(guide.getByText(/Faltam 10 para começar/)).toBeVisible();
+    await expect(guide.getByText(/Faltam 10 atletas para liberar/)).toBeVisible();
+    const indicator = guide.getByRole("region", {
+      name: "Requisito para liberar a Fase 2",
+      exact: true,
+    });
+    const indicatorBox = (await indicator.boundingBox())!;
+    const listBox = (await phase.boundingBox())!;
+    expect(indicatorBox.y + indicatorBox.height).toBeLessThanOrEqual(listBox.y);
+    expect(indicatorBox.height).toBeLessThanOrEqual(width >= 1024 ? 104 : 128);
+    await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toHaveCount(0);
+    if (width >= 1024) {
+      await expect(indicator).toBeInViewport({ ratio: 1 });
+      await expect(
+        indicator.getByRole("button", { name: "Convidar jogadores", exact: true })
+      ).toBeInViewport({ ratio: 1 });
+    }
+
     for (const title of [
       "Avalie o nível dos atletas",
       "Prepare a primeira rodada",
@@ -313,12 +332,14 @@ for (const width of [1280, 390, 320]) {
     await reopen();
     expect(fixture.actions).not.toContain("PREPARATION_CELEBRATED");
     expect(fixture.actions).not.toContain("FOOTBALL_STARTED");
-    await guide.getByRole("button", { name: "Avalie o nível dos atletas", exact: true }).click();
+    await expect(
+      guide.getByRole("heading", { name: "Avalie o nível dos atletas", exact: true })
+    ).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true
     );
     await guide.screenshot({ path: info.outputPath(`phase-two-locked-${width}.png`) });
-    await guide.getByRole("button", { name: "Convidar mais jogadores", exact: true }).click();
+    await guide.getByRole("button", { name: "Convidar jogadores", exact: true }).click();
     await expect(
       guide.getByRole("heading", { name: "Etapa concluída!", exact: true })
     ).toBeVisible();
@@ -330,11 +351,11 @@ for (const width of [1280, 390, 320]) {
     fixture.setEligible(9);
     await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
     await expect(guide.getByText("9 / 10", { exact: true })).toBeVisible();
-    await expect(guide.getByText(/Falta 1 para começar/)).toBeVisible();
+    await expect(guide.getByText(/Falta 1 atleta para liberar/)).toBeVisible();
     fixture.setEligible(10);
     await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
     await expect(
-      guide.getByRole("region", { name: "Jogadores necessários", exact: true })
+      guide.getByRole("region", { name: "Requisito para liberar a Fase 2", exact: true })
     ).toHaveCount(0);
     await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toHaveAttribute(
       "href",

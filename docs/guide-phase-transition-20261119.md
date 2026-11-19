@@ -30,3 +30,13 @@ Os testes de componente/apresentador cobrem preparação incompleta, comemoraç�
 O percurso de navegador já existente passou a verificar a Fase 2 bloqueada após a comemoração, em vez de exigir o retorno à preparação. Novos percursos com preparação anteriormente concluída verificam reabertura e refresh com zero atletas, consulta das quatro etapas, revisão da Fase 1, convites sem aumento da contagem e atualização 0 → 9 → 10, em 1280, 390 e 320 px. O arquivo já integra o Admin Smoke em Chromium e a seleção de WebKit mobile.
 
 Os percursos usam autenticação e interface reais com respostas operacionais isoladas. Não alteram dados de produção e não substituem uma conferência em iPhone físico. As capturas ficam nos artefatos do Admin Smoke do PR; resultados finais devem ser consultados nos checks do commit revisado.
+
+## Indicador compacto da fase bloqueada
+
+O requisito aparece logo após o título e a descrição de “Entre em campo”, antes da lista. O painel compacto reúne cadeado fechado, quantidade restante, contador oficial, barra fina e acesso textual ao fluxo de convites. A seção grande “Jogadores necessários” foi removida do rodapé.
+
+Na apresentação inicial da fase bloqueada, o card de orientação fica recolhido para priorizar o indicador e as quatro etapas. Cada etapa continua clicável para consulta; abrir a orientação mantém a execução bloqueada. “Recolher” retorna à lista compacta e devolve o foco ao botão da etapa. Na Fase 1 e na fase esportiva liberada, a apresentação anterior dos detalhes permanece.
+
+O ajuste não altera contagem, mínimo oficial, persistência, convites, autorização ou critérios de desbloqueio. É um refinamento visual da experiência já anunciada na versão 2026.11.19.2, registrada no backend #194; não exige novo anúncio nem alteração no backend.
+
+Os testes verificam posição anterior à lista, orientação recolhida inicialmente, abertura/recolhimento com foco, ausência do bloco antigo e preservação das ações bloqueadas. Nos percursos de navegador, o indicador tem altura máxima de 104 px no desktop e 128 px nas larguras móveis testadas. No desktop, o indicador e o convite precisam estar inteiros na área visível sem rolagem.
