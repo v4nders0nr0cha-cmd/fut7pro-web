@@ -341,11 +341,15 @@ for (const width of [1280, 390, 320]) {
     await guide.screenshot({ path: info.outputPath(`phase-two-locked-${width}.png`) });
     await guide.getByRole("button", { name: "Convidar jogadores", exact: true }).click();
     await expect(
-      guide.getByRole("heading", { name: "Etapa concluída!", exact: true })
+      guide.getByRole("heading", { name: "Convidar mais jogadores", exact: true })
     ).toBeVisible();
-    await guide
-      .getByRole("button", { name: "Continuar para a próxima etapa", exact: true })
-      .click();
+    await expect(
+      guide.getByRole("heading", { name: "Etapa concluída!", exact: true })
+    ).toHaveCount(0);
+    await expect(
+      guide.getByRole("link", { name: "Compartilhar no WhatsApp", exact: true })
+    ).toHaveAttribute("href", /wa\.me/);
+    await guide.getByRole("button", { name: "Voltar à Fase 2", exact: true }).click();
     await expect(phase.locator("li")).toHaveCount(4);
     await expect(guide.getByText("0 / 10", { exact: true })).toBeVisible();
     fixture.setEligible(9);
