@@ -139,6 +139,7 @@ export default function AdminOnboarding({
     return (
       <AdminGuideInvitationPanel
         guide={guide}
+        mode={preparationComplete ? "reinvite" : "onboarding"}
         origin={origin}
         returnTo={returnTo}
         onNavigate={onNavigate}
