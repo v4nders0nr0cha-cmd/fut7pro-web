@@ -380,6 +380,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
                 guide={guide}
                 kind={view === "FOOTBALL_INVITE" ? "FOOTBALL_INVITE" : "CELEBRATION"}
                 updating={updating || !actionsReady}
+                onExplore={steps}
                 onStart={() => {
                   const target = { ...current.current };
                   void update({ action: "FOOTBALL_STARTED" }).then((saved) => {

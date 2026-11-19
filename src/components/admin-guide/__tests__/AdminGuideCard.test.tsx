@@ -1,4 +1,11 @@
-import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render as rtlRender,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import AdminOnboarding from "../AdminOnboarding";
 import { AdminGuideControllerProvider, useAdminGuideController } from "../AdminGuideController";
 import AdminGuidePresenter from "../AdminGuidePresenter";
@@ -44,6 +51,8 @@ let guideValidating = false;
 let guideError: Error | null = null;
 let loginId = "login-1";
 let eligiblePlayers = 10;
+let minimumPlayers = 10;
+let eligibilityUnavailable = false;
 function withPhases(value: any) {
   if (!value) return value;
   const preparationIds = ["ACCOUNT_READY", "ACTIVE_PLAYERS", "SCHEDULE", "OFFICIAL_TEAMS"];
@@ -70,13 +79,13 @@ function withPhases(value: any) {
   };
   const preparation = progress(preparationIds, "Parte 1 — Prepare seu grupo");
   const football = progress(footballIds, "Parte 2 — Entre em campo");
-  football.unlocked = preparation.complete && eligiblePlayers >= 10;
+  football.unlocked = preparation.complete && eligiblePlayers >= minimumPlayers;
   value.phases = { preparation, football };
   value.guideVersion = 3;
   value.eligibility = {
     eligiblePlayers,
-    minimumPlayers: 10,
-    missingPlayers: Math.max(0, 10 - eligiblePlayers),
+    minimumPlayers,
+    missingPlayers: Math.max(0, minimumPlayers - eligiblePlayers),
     preparationComplete: preparation.complete,
     footballUnlocked: football.unlocked,
   };
@@ -117,6 +126,7 @@ function withPhases(value: any) {
       !value.pedagogicalState.footballInvitePresentedAt &&
       !value.pedagogicalState.dashboardInviteDismissedAt,
   };
+  if (eligibilityUnavailable) delete value.eligibility;
   return value;
 }
 jest.mock("@/hooks/useAdminGuide", () => ({
@@ -162,6 +172,8 @@ beforeEach(() => {
   guideValidating = false;
   guideError = null;
   eligiblePlayers = 10;
+  minimumPlayers = 10;
+  eligibilityUnavailable = false;
   sessionStorage.clear();
   localStorage.clear();
   Object.defineProperty(navigator, "clipboard", { value: { writeText: copy }, configurable: true });
@@ -488,7 +500,7 @@ it("offers a newly unlocked football milestone during the same login", async () 
   eligiblePlayers = 9;
   const initial = render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
-  expect(screen.getByText(/9 de 10 atletas elegíveis/)).toBeVisible();
+  await screen.findByText("9 / 10");
   fireEvent.click(screen.getByRole("button", { name: "Sobre o Guia Interativo" }));
   expect(screen.getByRole("heading", { name: "Como funciona o Guia Interativo?" })).toBeVisible();
   update.mockImplementation(async ({ action }) => {
@@ -642,8 +654,8 @@ it("shows only the active phase and places its list before the selected explanat
   guide.tasks.slice(0, 4).forEach((task: any) => (task.completed = true));
   eligiblePlayers = 9;
   view.rerender(<AdminOnboarding />);
-  expect(screen.queryByRole("list", { name: "Etapas de Entre em campo" })).not.toBeInTheDocument();
-  expect(screen.getByText(/9 de 10 atletas elegíveis/)).toBeVisible();
+  expect(screen.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
+  expect(screen.getByText("9 / 10")).toBeVisible();
   eligiblePlayers = 10;
   view.rerender(<AdminOnboarding />);
   expect(
@@ -823,4 +835,170 @@ it("consumes an explicit contextual return on the originating operational page",
   fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
   expect(screen.getByRole("group", { name: "Como trazer jogadores" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Etapa concluída!" })).toBeNull();
+});
+
+function finishPreparation() {
+  guide.tasks.slice(0, 4).forEach((task: any) => (task.completed = true));
+  guide.activationProgress = { completed: 4, total: 8, percentage: 50, complete: false };
+  guide.pedagogicalState.preparationCelebratedAt = "2026-11-19T12:00:00Z";
+}
+
+it("shows sports steps 5–8 after preparation even with zero eligible athletes", () => {
+  finishPreparation();
+  eligiblePlayers = 0;
+  render(<AdminOnboarding />);
+  expect(screen.getByText("Fase 1 concluída")).toBeVisible();
+  expect(screen.getByText("0 / 10")).toBeVisible();
+  expect(screen.getByText(/Faltam 10 para começar/)).toBeVisible();
+  const list = screen.getByRole("list", { name: "Etapas de Entre em campo" });
+  expect(
+    within(list)
+      .getAllByRole("listitem")
+      .map((item) => item.textContent)
+  ).toEqual([
+    "5Avalie o nível dos atletas",
+    "6Prepare a primeira rodada",
+    "7Registre os resultados",
+    "8Publique o Time Campeão do Dia",
+  ]);
+  expect(
+    screen.getByRole("progressbar", { name: "Atletas elegíveis para a Fase 2" })
+  ).toHaveAttribute("aria-valuenow", "0");
+  expect(screen.queryByRole("list", { name: "Etapas de Prepare seu grupo" })).toBeNull();
+});
+
+it("keeps every locked sports explanation readable without executing actions", () => {
+  finishPreparation();
+  eligiblePlayers = 3;
+  render(<AdminOnboarding />);
+  for (const task of guide.tasks.slice(4)) {
+    const control = screen.getByRole("button", { name: task.title });
+    expect(control).toBeEnabled();
+    expect(control).toHaveAttribute("aria-describedby", "onboarding-step-locked");
+    fireEvent.click(control);
+    expect(screen.getByRole("heading", { name: task.title })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+    expect(screen.queryByRole("link", { name: "Continuar" })).toBeNull();
+  }
+  expect(update).not.toHaveBeenCalled();
+});
+
+it("uses the official minimum and updates counts without unlocking future actions", () => {
+  finishPreparation();
+  minimumPlayers = 12;
+  eligiblePlayers = 8;
+  const view = render(<AdminOnboarding />);
+  expect(screen.getByText("8 / 12")).toBeVisible();
+  expect(screen.getByText(/Faltam 4 para começar/)).toBeVisible();
+  eligiblePlayers = 11;
+  view.rerender(<AdminOnboarding />);
+  expect(screen.getByText("11 / 12")).toBeVisible();
+  expect(screen.getByText(/Falta 1 para começar/)).toBeVisible();
+  eligiblePlayers = 12;
+  view.rerender(<AdminOnboarding />);
+  expect(screen.queryByRole("region", { name: "Jogadores necessários" })).toBeNull();
+  expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
+    "href",
+    expect.stringContaining("ATHLETE_LEVELS")
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Registre os resultados" }));
+  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(update).not.toHaveBeenCalled();
+});
+
+it("reviews preparation locally and reopens phase two without resetting progress", () => {
+  finishPreparation();
+  eligiblePlayers = 2;
+  const view = render(<AdminOnboarding />);
+  fireEvent.click(screen.getByRole("button", { name: "Rever etapas da Fase 1" }));
+  expect(screen.getByRole("list", { name: "Etapas de Prepare seu grupo" })).toBeVisible();
+  expect(screen.getAllByLabelText("Concluída")).toHaveLength(4);
+  fireEvent.click(screen.getByRole("button", { name: /Defina os dias e horários/ }));
+  expect(screen.getByRole("heading", { name: "Defina os dias e horários" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Voltar à Fase 2" }));
+  expect(screen.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Rever etapas da Fase 1" }));
+  view.unmount();
+  render(<AdminOnboarding />);
+  expect(screen.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
+  expect(guide.tasks.slice(0, 4).every((task: any) => task.completed)).toBe(true);
+  expect(update).not.toHaveBeenCalled();
+});
+
+it("does not carry a preparation review to a different group", () => {
+  finishPreparation();
+  const view = render(<AdminOnboarding />);
+  fireEvent.click(screen.getByRole("button", { name: "Rever etapas da Fase 1" }));
+  guide = { ...guide, tenant: { ...guide.tenant, id: "other", slug: "other" } };
+  view.rerender(<AdminOnboarding />);
+  expect(screen.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
+});
+
+it.each(["loading", "missing", "error"])("does not fabricate a player count during %s", (state) => {
+  finishPreparation();
+  eligiblePlayers = 0;
+  guideValidating = state === "loading";
+  eligibilityUnavailable = state === "missing";
+  guideError = state === "error" ? new Error("offline") : null;
+  render(<AdminOnboarding />);
+  expect(screen.queryByText("0 / 10")).toBeNull();
+  expect(screen.queryByRole("progressbar", { name: "Atletas elegíveis para a Fase 2" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  if (state === "error") {
+    fireEvent.click(screen.getByRole("button", { name: "Tentar atualizar" }));
+    expect(retry).toHaveBeenCalled();
+  } else expect(screen.getByText("Atualizando a contagem de atletas...")).toBeVisible();
+});
+
+it("explores phase two from the celebration without starting sports or repeating the milestone", async () => {
+  finishPreparation();
+  delete guide.pedagogicalState.preparationCelebratedAt;
+  eligiblePlayers = 0;
+  update.mockImplementation(async ({ action }) => {
+    if (action === "PREPARATION_CELEBRATED")
+      guide.pedagogicalState.preparationCelebratedAt = "2026-11-19";
+    return true;
+  });
+  const view = render(<AdminGuidePresenter />);
+  await screen.findByRole("button", { name: "Conhecer a Fase 2" });
+  fireEvent.click(screen.getByRole("button", { name: "Conhecer a Fase 2" }));
+  await screen.findByRole("list", { name: "Etapas de Entre em campo" });
+  expect(screen.getByRole("button", { name: "Convidar mais jogadores" })).toBeEnabled();
+  expect(update).not.toHaveBeenCalledWith({ action: "FOOTBALL_STARTED" });
+  fireEvent.click(screen.getByRole("button", { name: "Rever etapas da Fase 1" }));
+  fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+  fireEvent.click(screen.getByRole("button", { name: "Abrir guia neste teste" }));
+  await screen.findByRole("list", { name: "Etapas de Entre em campo" });
+  expect(
+    update.mock.calls.filter(([value]) => value.action === "PREPARATION_CELEBRATED")
+  ).toHaveLength(1);
+  view.unmount();
+  render(<AdminGuidePresenter />);
+  fireEvent.click(screen.getByRole("button", { name: "Abrir guia neste teste" }));
+  await screen.findByRole("list", { name: "Etapas de Entre em campo" });
+  expect(screen.queryByRole("button", { name: "Conhecer a Fase 2" })).toBeNull();
+});
+
+it("opens the existing invitation flow from locked phase two and returns to the sports overview", async () => {
+  finishPreparation();
+  eligiblePlayers = 0;
+  render(<AdminOnboarding />);
+  fireEvent.click(screen.getByRole("button", { name: "Convidar mais jogadores" }));
+  expect(screen.getByRole("heading", { name: "Etapa concluída!" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Continuar para a próxima etapa" }));
+  expect(screen.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
+  await waitFor(() =>
+    expect(screen.getByRole("heading", { name: "Primeiros passos do grupo" })).toHaveFocus()
+  );
+  expect(update).not.toHaveBeenCalled();
+});
+
+it("keeps individual permissions when the sports phase is unlocked", () => {
+  finishPreparation();
+  guide.tasks[4].canAct = false;
+  render(<AdminOnboarding />);
+  expect(screen.getByRole("heading", { name: "Avalie o nível dos atletas" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(screen.getByText(/Esta ação cabe a outro responsável autorizado/)).toBeVisible();
+  expect(update).not.toHaveBeenCalled();
 });
