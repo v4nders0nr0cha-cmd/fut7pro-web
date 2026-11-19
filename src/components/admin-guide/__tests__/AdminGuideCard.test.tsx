@@ -793,7 +793,7 @@ it("continues to the real next pending task after invitation completion", async 
   view.rerender(<AdminOnboarding initialStep="ACTIVE_PLAYERS" />);
   await screen.findByRole("heading", { name: "Etapa concluída!" });
   fireEvent.click(screen.getByRole("button", { name: "Continuar para a próxima etapa" }));
-  expect(screen.getByRole("heading", { name: "Cadastre os times", exact: true })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Cadastre os times" })).toBeVisible();
 });
 it("keeps the invitation result visible before offering a newly earned phase transition", async () => {
   guide.tasks[2].completed = true;

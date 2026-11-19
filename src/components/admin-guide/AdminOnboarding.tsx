@@ -127,7 +127,10 @@ export default function AdminOnboarding({
         onBack={() => {
           onInvitationChange?.(false);
           setInvitationOpen(false);
-          window.setTimeout(() => invitationButtonRef.current?.focus(), 0);
+          window.setTimeout(
+            () => (invitationButtonRef.current ?? stepsHeadingRef.current)?.focus(),
+            0
+          );
         }}
       />
     );

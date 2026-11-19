@@ -181,15 +181,19 @@ function InvitationFlow({
     );
     setFeedback(
       saved
-        ? selected === "WHATSAPP"
-          ? "Convite copiado. Envie a mensagem no grupo antes de confirmar."
-          : "Link copiado. Adicione-o ao perfil do grupo antes de confirmar."
-        : "O conteúdo foi copiado, mas não foi possível registrar a cópia. Depois de divulgar, tente confirmar novamente."
+        ? completed
+          ? selected === "WHATSAPP"
+            ? "Convite copiado!"
+            : "Link copiado!"
+          : selected === "WHATSAPP"
+            ? "Convite copiado. Envie a mensagem no grupo antes de confirmar."
+            : "Link copiado. Adicione-o ao perfil do grupo antes de confirmar."
+        : "O conteúdo foi copiado, mas não foi possível registrar a cópia. Você pode tentar novamente."
     );
     setBusy(false);
     lock.current = false;
   };
-  const confirm = async () => {
+  const confirmSharing = async () => {
     if (!enabled || lock.current) return;
     lock.current = true;
     setBusy(true);
@@ -362,7 +366,7 @@ function InvitationFlow({
               type="button"
               className={primary}
               disabled={!enabled}
-              onClick={() => void confirm()}
+              onClick={() => void confirmSharing()}
             >
               {busy
                 ? "Salvando..."

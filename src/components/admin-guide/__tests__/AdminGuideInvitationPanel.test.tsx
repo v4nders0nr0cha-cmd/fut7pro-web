@@ -49,15 +49,12 @@ it("shows two channels, no manual registration and loads each example only on re
   expect(screen.getByRole("heading", { name: "Coloque o site no Instagram" })).toBeVisible();
   expect(screen.queryByRole("img")).toBeNull();
   expect(screen.queryByRole("link", { name: "Cadastrar jogador manualmente" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Instagram", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Instagram" }));
   fireEvent.click(screen.getByRole("button", { name: "Ver exemplo no Instagram" }));
   expect(screen.getAllByRole("img")).toHaveLength(1);
   expect(screen.getByRole("img")).toHaveAttribute("src", expect.stringContaining("instagram.webp"));
   fireEvent.click(screen.getByRole("button", { name: "Voltar às opções de convite" }));
-  expect(screen.getByRole("button", { name: "Instagram", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true"
-  );
+  expect(screen.getByRole("button", { name: "Instagram" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("button", { name: "Ver exemplo no Instagram" })).toHaveFocus();
   expect(update).not.toHaveBeenCalled();
 });
