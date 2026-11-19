@@ -7,6 +7,7 @@ import {
   dismissGuideForLogin,
 } from "@/lib/admin-guide-presentation";
 import { GUIDE_CLOSED, notifyGuideAccess } from "@/lib/admin-guide-access";
+import { guideReturnPath } from "@/lib/admin-guide-navigation";
 import { useAdminGuideController, type AdminGuideControllerValue } from "./AdminGuideController";
 import AdminOnboarding from "./AdminOnboarding";
 import AdminGuideInvitationPanel from "./AdminGuideInvitationPanel";
@@ -83,15 +84,15 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
   const requestedGroup = params?.get("grupoGuia");
   const legacyRequest = params?.get("retomarGuia") === "1";
   useEffect(() => {
-    if (pathname !== "/admin/dashboard" || !legacyRequest) {
+    if (!guideReturnPath(pathname) || !legacyRequest) {
       consumed.current = "";
       return;
     }
     if (!scope) return;
-    const command = `${scope}:${requestedGroup}`;
+    const command = `${scope}:${pathname}:${requestedGroup}`;
     if (consumed.current === command) return;
     consumed.current = command;
-    replace("/admin/dashboard", { scroll: false });
+    replace(pathname!, { scroll: false });
     if (requestedGroup === slug) openGuide();
   }, [scope, slug, pathname, legacyRequest, requestedGroup, replace, openGuide]);
 
@@ -354,6 +355,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
               <AdminOnboarding
                 key={owner}
                 origin="dashboard"
+                returnTo={manual ? (pathname ?? undefined) : undefined}
                 firstPresentation={first}
                 onClose={close}
                 onNavigate={navigate}
@@ -366,6 +368,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
                 updating={updating || !actionsReady}
                 update={update}
                 origin="dashboard"
+                returnTo={manual ? (pathname ?? undefined) : undefined}
                 onNavigate={navigate}
                 onContinue={steps}
                 onBack={() =>

@@ -1,4 +1,10 @@
-import { guideDestination, nextGuideDestination } from "../admin-guide-navigation";
+import {
+  guideDestination,
+  nextGuideDestination,
+  contextualGuideHref,
+  resumeGuideHref,
+  guideReturnPath,
+} from "../admin-guide-navigation";
 import type { AdminGuideData, AdminGuideTask } from "@/types/admin-guide";
 
 const task: AdminGuideTask = {
@@ -127,4 +133,38 @@ it("exige capacidades esportivas para resultados e publicação, inclusive no pr
       { ...results, route: "/admin/financeiro/patrocinadores" }
     )
   ).toBeNull();
+});
+
+it("preserves contextual invitation return to the actual administrative page and full-page origin", () => {
+  const href = contextualGuideHref(
+    "/admin/jogadores/listar-cadastrar",
+    "ACTIVE_PLAYERS",
+    "dashboard",
+    "/admin/partidas/criar-times"
+  );
+  const params = new URL(href, "https://app.fut7pro.test").searchParams;
+  expect(params.get("guiaRetorno")).toBe("/admin/partidas/criar-times");
+  expect(resumeGuideHref("pelada", params.get("guiaRetorno"))).toBe(
+    "/admin/partidas/criar-times?retomarGuia=1&grupoGuia=pelada"
+  );
+  expect(
+    contextualGuideHref(
+      "/admin/jogadores/listar-cadastrar",
+      "ACTIVE_PLAYERS",
+      "pagina",
+      "/admin/partidas/criar-times"
+    )
+  ).toBe("/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=pagina");
+  for (const path of [
+    "https://evil.invalid",
+    "//evil.invalid",
+    "/admin/../login",
+    "/admin/%2e%2e/login",
+    "/admin/login",
+    "/admin/rachas?external=1",
+    "/admin//example",
+  ]) {
+    expect(guideReturnPath(path)).toBeNull();
+    expect(resumeGuideHref("pelada", path)).toBe("/admin/dashboard?retomarGuia=1&grupoGuia=pelada");
+  }
 });

@@ -198,3 +198,47 @@ for (const viewport of [
     expect(await dialog.locator(".overflow-y-auto").evaluate((el) => el.scrollTop)).toBe(0);
   });
 }
+for (const viewport of [
+  { name: "desktop", width: 1280, height: 800 },
+  { name: "mobile320", width: 320, height: 640 },
+  { name: "mobile390", width: 390, height: 844 },
+]) {
+  test(`invitation manual return ${viewport.name} resumes the originating operational page`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    const fixture = await installGuide(page);
+    fixture.state.welcomePresentedAt = "2026-11-18T00:00:00Z";
+    await login(page);
+    const dialog = page.getByRole("dialog", { name: "Guia Interativo Fut7Pro" });
+    await dialog.getByRole("button", { name: "Fechar modal", exact: true }).click();
+    await page.waitForLoadState("networkidle");
+    await page.goto("/admin/partidas/criar-times");
+    await page.waitForLoadState("networkidle");
+    if (viewport.width >= 1024) {
+      await page.getByRole("button", { name: "Ajuda Fut7Pro", exact: true }).click();
+      await page
+        .getByRole("navigation", { name: "Ajuda Fut7Pro", exact: true })
+        .getByRole("button", { name: /Guia Interativo/ })
+        .click();
+    } else await page.getByRole("button", { name: "Abrir Guia Interativo", exact: true }).click();
+    await dialog.getByRole("button", { name: /Traga seus primeiros jogadores/ }).click();
+    await dialog.getByRole("button", { name: "Convidar jogadores agora", exact: true }).click();
+    const manual = dialog.getByRole("link", { name: "Cadastrar jogador manualmente", exact: true });
+    await expect(manual).toHaveAttribute(
+      "href",
+      "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard&guiaRetorno=%2Fadmin%2Fpartidas%2Fcriar-times"
+    );
+    await manual.click();
+    await expect(page).toHaveURL(/\/admin\/jogadores\/listar-cadastrar\?/);
+    await expect(dialog).toHaveCount(0);
+    const guidance = page.getByRole("complementary", { name: "Orientação do guia", exact: true });
+    await guidance.getByRole("link", { name: "Continuar guia", exact: true }).click();
+    await expect(
+      dialog.getByRole("heading", { name: "Cadastre os times", exact: true })
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/partidas\/criar-times$/);
+    await expect(dialog).toHaveCount(1);
+    expect(fixture.state.dashboardInviteDismissedAt).toBeUndefined();
+  });
+}

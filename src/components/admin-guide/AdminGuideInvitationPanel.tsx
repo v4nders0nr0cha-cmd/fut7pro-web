@@ -29,6 +29,7 @@ type Props = {
   onBack: () => void;
   onContinue?: () => void;
   origin?: GuideOrigin;
+  returnTo?: string;
   onNavigate?: () => void;
 };
 function pendingChannel(key: string, guide: AdminGuideData): Channel | null {
@@ -70,6 +71,7 @@ function InvitationFlow({
   onBack,
   onContinue = onBack,
   origin = "pagina",
+  returnTo,
   onNavigate,
 }: Props) {
   const scope = `guide-invitation:v2:${guide.tenant.id}:${guide.administrator.membershipId}`;
@@ -291,7 +293,8 @@ function InvitationFlow({
                 href={contextualGuideHref(
                   "/admin/jogadores/listar-cadastrar",
                   "ACTIVE_PLAYERS",
-                  origin
+                  origin,
+                  returnTo
                 )}
                 onClick={onNavigate}
               >

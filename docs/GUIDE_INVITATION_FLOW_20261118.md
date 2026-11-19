@@ -27,7 +27,7 @@ Uma intenção não confirmada pode ser retomada pelo registro existente de cóp
 
 Nenhuma alteração nos requisitos das demais etapas, mínimo de dez atletas, recompensa, cobrança ou Creator. Um convite não conclui as oito etapas e não concede bônus isoladamente. Conclusões e recompensas antigas permanecem.
 
-O banner, saudação, fases, rodapé de dispensa, acesso manual imediato, X por login, preferências permanentes e contexto de retorno não foram redesenhados. A origem do cadastro manual usa a propriedade existente: modal retorna pelo fluxo modal; página completa usa guiaOrigem=pagina.
+O banner, saudação, fases, rodapé de dispensa, acesso manual imediato, X por login, preferências permanentes e contexto de retorno não foram redesenhados. A origem do cadastro manual usa a propriedade existente: modal usa guiaRetorno com a página administrativa de origem validada, sem URL externa; página completa usa guiaOrigem=pagina. URLs antigas continuam retornando à Dashboard. O parâmetro de retorno é exclusivamente de navegação, sem interferir em cadastro ou conclusão.
 
 ## Verificação
 

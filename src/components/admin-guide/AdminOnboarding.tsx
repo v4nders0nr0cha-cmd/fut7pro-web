@@ -45,6 +45,7 @@ export default function AdminOnboarding({
   firstPresentation = false,
   actionsReady = true,
   onInvitationChange,
+  returnTo,
 }: {
   onClose?: (permanentlyDismissed?: boolean) => void;
   onNavigate?: () => void;
@@ -53,6 +54,7 @@ export default function AdminOnboarding({
   firstPresentation?: boolean;
   actionsReady?: boolean;
   onInvitationChange?: (open: boolean) => void;
+  returnTo?: string;
 }) {
   const { guide, updating, update, actionError, error, retry } = useAdminGuide();
   const { data: session } = useSession();
@@ -108,6 +110,7 @@ export default function AdminOnboarding({
       <AdminGuideInvitationPanel
         guide={guide}
         origin={origin}
+        returnTo={returnTo}
         onNavigate={onNavigate}
         updating={updating || !actionsReady}
         update={update}

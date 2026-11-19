@@ -541,8 +541,10 @@ it("keeps X across Dashboard remounts in the same login, but allows an explicit 
   second.rerender(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   expect(replace).toHaveBeenCalledWith("/admin/dashboard", { scroll: false });
+  search = "";
   pathname = "/admin/partidas/criar-times";
   second.rerender(<AdminGuidePresenter />);
+  search = "retomarGuia=1&grupoGuia=pelada";
   pathname = "/admin/dashboard";
   second.rerender(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
@@ -807,4 +809,18 @@ it("keeps the invitation result visible before offering a newly earned phase tra
   expect(update).not.toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" });
   fireEvent.click(screen.getByRole("button", { name: "Continuar para a próxima etapa" }));
   await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" }));
+});
+
+it("consumes an explicit contextual return on the originating operational page", async () => {
+  pathname = "/admin/partidas/criar-times";
+  search = "retomarGuia=1&grupoGuia=pelada";
+  render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  expect(replace).toHaveBeenCalledWith("/admin/partidas/criar-times", { scroll: false });
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeEnabled()
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
+  expect(screen.getByRole("group", { name: "Como trazer jogadores" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Etapa concluída!" })).toBeNull();
 });
