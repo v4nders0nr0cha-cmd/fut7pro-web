@@ -198,6 +198,8 @@ test("teams saved through the sidebar have the same conclusion and full-page gui
   expect(fixture.teams).toHaveLength(2);
   await page.goto("/admin/guia-fut7pro");
   await expect(guide).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
+  await page.getByRole("button", { name: "Rever etapas da Fase 1", exact: true }).click();
   await page.getByRole("button", { name: /Cadastre os times$/ }).click();
   await page.getByRole("link", { name: "Consultar funcionalidade", exact: true }).click();
   await expect(page).toHaveURL(/guiaOrigem=pagina/);

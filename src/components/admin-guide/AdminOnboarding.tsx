@@ -250,12 +250,14 @@ export default function AdminOnboarding({
         </div>
         <section aria-label={phaseTitle}>
           <div className="mb-3">
-            {footballActive && (
-              <p className="mb-2 text-xs font-semibold text-emerald-400">Fase 1 concluída</p>
-            )}
-            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200/80">
-              Fase {footballActive ? "2" : "1"}
-            </span>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200/80">
+                Fase {footballActive ? "2" : "1"}
+              </span>
+              {footballActive && (
+                <span className="text-[10px] font-semibold text-emerald-400">Fase 1 concluída</span>
+              )}
+            </div>
             <h3 className="mt-0.5 text-base font-semibold">{phaseTitle}</h3>
             <p className="mt-1 text-xs leading-relaxed text-zinc-400">
               {footballActive
