@@ -261,7 +261,9 @@ export default function AdminOnboarding({
             <h3 className="mt-0.5 text-base font-semibold">{phaseTitle}</h3>
             <p className="mt-1 text-xs leading-relaxed text-zinc-400">
               {footballActive
-                ? "Conheça os próximos passos para começar a organizar os jogos do seu grupo."
+                ? footballUnlocked
+                  ? "Avalie a galera, organize a rodada e dê início à história do grupo."
+                  : "Conheça os próximos passos para começar a organizar os jogos do seu grupo."
                 : "Deixe sua pelada pronta para começar, um passo de cada vez."}
             </p>
           </div>
