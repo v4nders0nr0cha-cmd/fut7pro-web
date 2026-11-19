@@ -24,6 +24,8 @@ type Channel = (typeof channels)[number];
 type View = "OPTIONS" | "CONFIRM" | "DONE" | "EXAMPLE";
 type Props = {
   guide: AdminGuideData;
+  /** A divulgação inicial conclui uma etapa; convites posteriores não alteram essa conquista. */
+  mode?: "onboarding" | "reinvite";
   updating: boolean;
   update: (action: AdminGuidePatch) => Promise<boolean>;
   onBack: () => void;
@@ -59,13 +61,14 @@ function pendingChannel(key: string, guide: AdminGuideData): Channel | null {
 export default function AdminGuideInvitationPanel(props: Props) {
   return (
     <InvitationFlow
-      key={`${props.guide.tenant.id}:${props.guide.administrator.membershipId}`}
+      key={`${props.guide.tenant.id}:${props.guide.administrator.membershipId}:${props.mode ?? "onboarding"}`}
       {...props}
     />
   );
 }
 function InvitationFlow({
   guide,
+  mode = "onboarding",
   updating,
   update,
   onBack,
@@ -75,13 +78,16 @@ function InvitationFlow({
   onNavigate,
 }: Props) {
   const scope = `guide-invitation:v2:${guide.tenant.id}:${guide.administrator.membershipId}`;
-  const [initial] = useState(() => pendingChannel(scope, guide));
+  const reinvite = mode === "reinvite";
+  const [initial] = useState(() => (reinvite ? null : pendingChannel(scope, guide)));
   const completed = guide.tasks.some((task) => task.id === "ACTIVE_PLAYERS" && task.completed);
   const previousCompletion = useRef(completed);
   const [channel, setChannel] = useState<Channel>(
     initial ?? guide.pedagogicalState.invitationChannel ?? "WHATSAPP"
   );
-  const [view, setView] = useState<View>(completed ? "DONE" : initial ? "CONFIRM" : "OPTIONS");
+  const [view, setView] = useState<View>(
+    reinvite ? "OPTIONS" : completed ? "DONE" : initial ? "CONFIRM" : "OPTIONS"
+  );
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmAccepted, setConfirmAccepted] = useState(false);
@@ -105,7 +111,7 @@ function InvitationFlow({
       return null;
     }
   })();
-  const enabled = Boolean(publicUrl && unlocked && !updating && !busy);
+  const enabled = Boolean(publicUrl && (reinvite || unlocked) && !updating && !busy);
   const canRegister =
     unlocked &&
     guide.capabilities.managePlayers === true &&
@@ -128,6 +134,7 @@ function InvitationFlow({
   const other = channel === "WHATSAPP" ? "INSTAGRAM" : "WHATSAPP";
 
   useEffect(() => {
+    if (reinvite) return;
     if (completed && (view === "CONFIRM" || !previousCompletion.current)) {
       setView("DONE");
       try {
@@ -137,7 +144,7 @@ function InvitationFlow({
       }
     }
     previousCompletion.current = completed;
-  }, [completed, view, scope]);
+  }, [completed, view, scope, reinvite]);
   useEffect(() => {
     const dialog = root.current?.closest('[role="dialog"]');
     const scroller = dialog?.querySelector<HTMLElement>(".overflow-y-auto");
@@ -153,6 +160,10 @@ function InvitationFlow({
     setChannel(selected);
     setConfirmAccepted(false);
     setFeedback("");
+    if (reinvite) {
+      setView("OPTIONS");
+      return;
+    }
     try {
       if (completed) sessionStorage.removeItem(scope);
       else sessionStorage.setItem(scope, selected);
@@ -163,6 +174,11 @@ function InvitationFlow({
   };
   const recordOpen = (selected: Channel) => {
     if (!enabled) return;
+    if (reinvite) {
+      setChannel(selected);
+      setFeedback("Abra o aplicativo e compartilhe o convite com os jogadores.");
+      return;
+    }
     start(selected);
     void update({
       action: "RESOURCE_VIEWED",
@@ -180,6 +196,17 @@ function InvitationFlow({
       setFeedback("A cópia falhou. Permita o acesso à área de transferência e tente novamente.");
       lock.current = false;
       setBusy(false);
+      return;
+    }
+    if (reinvite) {
+      setChannel(selected);
+      setFeedback(
+        selected === "WHATSAPP"
+          ? "Convite copiado! Envie a mensagem aos jogadores."
+          : "Link copiado! Compartilhe com os jogadores."
+      );
+      setBusy(false);
+      lock.current = false;
       return;
     }
     start(selected);
@@ -201,7 +228,7 @@ function InvitationFlow({
     lock.current = false;
   };
   const confirmSharing = async () => {
-    if (!enabled || lock.current) return;
+    if (reinvite || !enabled || lock.current) return;
     lock.current = true;
     setBusy(true);
     setFeedback("");
@@ -215,7 +242,7 @@ function InvitationFlow({
     lock.current = false;
   };
   // O retorno do PATCH não substitui a conclusão calculada pelo backend no GET.
-  const showDone = completed && view === "DONE";
+  const showDone = !reinvite && completed && view === "DONE";
   const backOptions = () => {
     setView("OPTIONS");
     setFeedback("");
@@ -396,10 +423,13 @@ function InvitationFlow({
       ) : (
         <>
           <header className="space-y-2">
-            <h2 className="text-xl font-bold">Traga seus primeiros jogadores</h2>
+            <h2 className="text-xl font-bold">
+              {reinvite ? "Convidar mais jogadores" : "Traga seus primeiros jogadores"}
+            </h2>
             <p className="text-sm text-zinc-300">
-              Escolha onde divulgar o site do seu grupo. Assim, os jogadores poderão criar suas
-              contas e acompanhar tudo pelo Fut7Pro.
+              {reinvite
+                ? "Compartilhe o link do grupo com novos jogadores. Os convites não alteram as etapas já concluídas."
+                : "Escolha onde divulgar o site do seu grupo. Assim, os jogadores poderão criar suas contas e acompanhar tudo pelo Fut7Pro."}
             </p>
           </header>
           <div
@@ -528,9 +558,9 @@ function InvitationFlow({
           <div className="flex flex-wrap gap-x-4 border-t border-white/10 pt-2">
             <button type="button" className={secondary} onClick={onBack}>
               <ArrowLeft size={15} aria-hidden="true" />
-              Voltar aos primeiros passos
+              {reinvite ? "Voltar à Fase 2" : "Voltar aos primeiros passos"}
             </button>
-            {completed && (
+            {completed && !reinvite && (
               <button type="button" className={secondary} onClick={() => setView("DONE")}>
                 Ver etapa concluída
               </button>
