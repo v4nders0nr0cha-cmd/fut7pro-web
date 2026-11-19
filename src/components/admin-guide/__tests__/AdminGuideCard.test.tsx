@@ -490,8 +490,8 @@ it("celebrates preparation once and shows how many athletes are missing", async 
   expect(screen.getByText(/7 de 10 atletas cadastrados/)).toBeVisible();
   expect(update).toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" });
   fireEvent.click(screen.getByRole("button", { name: "Convidar mais jogadores" }));
-  expect(screen.getByRole("heading", { name: "Etapa concluída!" })).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "Consultar opções e exemplos" }));
+  expect(screen.getByRole("heading", { name: "Convidar mais jogadores" })).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "Etapa concluída!" })).toBeNull();
   expect(screen.getByRole("button", { name: "Copiar convite" })).toBeVisible();
 });
 it("offers a newly unlocked football milestone during the same login", async () => {
@@ -995,7 +995,7 @@ it("opens the existing invitation flow from locked phase two and returns to the 
   fireEvent.click(screen.getByRole("button", { name: "Voltar à Fase 2" }));
   expect(screen.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
   await waitFor(() =>
-    expect(screen.getByRole("heading", { name: "Primeiros passos do grupo" })).toHaveFocus()
+    expect(screen.getByRole("button", { name: "Convidar jogadores" })).toHaveFocus()
   );
   expect(update).not.toHaveBeenCalled();
 });
