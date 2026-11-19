@@ -190,3 +190,49 @@ it("shows actual schedule entries and preserves the option to add days", () => {
   view.rerender(<AdminGuideContext />);
   expect(screen.queryByRole("list", { name: "Horários cadastrados" })).toBeNull();
 });
+
+it("reports evaluated eligible athletes without turning coverage into a client-side achievement", () => {
+  pathname = "/admin/jogadores/nivel-dos-atletas";
+  params = "guia=ATHLETE_LEVELS";
+  Object.assign(task(), { id: "ATHLETE_LEVELS", route: pathname });
+  guide().capabilities.manageAthleteLevels = true;
+  Object.assign(guide().operationalState, {
+    eligiblePlayerCount: 12,
+    evaluatedEligiblePlayers: 9,
+    eligibleLevelCoverage: 75,
+  });
+  const view = render(<AdminGuideContext />);
+  expect(screen.getByText(/9 de 12 atletas elegíveis avaliados/)).toBeVisible();
+  Object.assign(guide().operationalState, {
+    evaluatedEligiblePlayers: 12,
+    eligibleLevelCoverage: 100,
+  });
+  view.rerender(<AdminGuideContext />);
+  expect(screen.getByRole("status")).toHaveTextContent("Em andamento");
+  task().completed = true;
+  view.rerender(<AdminGuideContext />);
+  expect(screen.getByText(/As avaliações dos atletas elegíveis estão salvas/)).toBeVisible();
+  guide().operationalState.eligiblePlayerCount = 13;
+  guide().operationalState.eligibleLevelCoverage = 92;
+  view.rerender(<AdminGuideContext />);
+  expect(screen.getByRole("status")).toHaveTextContent("Etapa concluída!");
+  expect(screen.getByText(/12 de 13 atletas elegíveis/)).toBeVisible();
+  expect(screen.queryByText(/As avaliações dos atletas elegíveis estão salvas/)).toBeNull();
+});
+
+it.each([
+  "/admin/partidas/criar",
+  "/admin/partidas/criar/classica",
+  "/admin/partidas/sorteio-inteligente",
+])("keeps match preparation context on its real route %s", (route) => {
+  pathname = route;
+  params = "guia=FIRST_MATCHDAY";
+  Object.assign(task(), { id: "FIRST_MATCHDAY", route: "/admin/partidas/criar" });
+  guide().capabilities.manageMatchesAndResults = true;
+  guide().guideVersion = 3;
+  const view = render(<AdminGuideContext />);
+  expect(screen.getByRole("complementary")).toBeVisible();
+  pathname = "/admin/partidas/criar/unknown";
+  view.rerender(<AdminGuideContext />);
+  expect(screen.queryByRole("complementary")).toBeNull();
+});

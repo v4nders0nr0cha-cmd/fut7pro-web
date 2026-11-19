@@ -47,3 +47,22 @@ it("does not follow up an abandoned scope and recovers after a failed read", asy
   await flush();
   expect(retry).toHaveBeenCalledTimes(2);
 });
+
+it("drops a queued follow-up when the administrator or group leaves during a read", async () => {
+  let resolve!: () => void;
+  const retry = jest.fn(
+    () =>
+      new Promise<void>((done) => {
+        resolve = done;
+      })
+  );
+  const cleanup = subscribeGuideChanges(retry);
+  notifyAdminGuideChanged();
+  await flush();
+  notifyAdminGuideChanged();
+  cleanup();
+  resolve();
+  await flush();
+  await flush();
+  expect(retry).toHaveBeenCalledTimes(1);
+});

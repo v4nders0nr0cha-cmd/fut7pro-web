@@ -128,6 +128,8 @@ export function contextProgress(guide: AdminGuideData, task: AdminGuideTask): st
   const state = guide.operationalState;
   if (task.id === "OFFICIAL_TEAMS") {
     const teams = count(guide, "activeOfficialTeams");
+    if (task.completed && teams !== null && teams >= 2)
+      return `${teams} times oficiais ativos cadastrados. Mínimo necessário: 2.`;
     return teams === null
       ? null
       : `${teams} de 2 times oficiais ativos cadastrados${teams === 1 && !task.completed ? " — falta mais um time." : "."}`;
@@ -168,5 +170,22 @@ export function contextSummary(guide: AdminGuideData, task: AdminGuideTask) {
     return "O dia e o horário dos jogos do seu grupo foram cadastrados com sucesso. Seu grupo joga em outros dias da semana? Você pode cadastrar mais horários no formulário abaixo.";
   if (task.id === "ACTIVE_PLAYERS")
     return "Você já deu o primeiro passo para trazer jogadores ao Fut7Pro. Continue incentivando cada atleta a criar sua conta. O cadastro manual permanece disponível como alternativa.";
+  if (
+    task.id === "ATHLETE_LEVELS" &&
+    guide.operationalState.eligibleLevelCoverage === 100 &&
+    (count(guide, "eligiblePlayerCount") ?? 0) >= 10
+  )
+    return "As avaliações dos atletas elegíveis estão salvas. Você pode continuar ajustando habilidade e condição física nesta página.";
+  if (task.id === "FIRST_MATCHDAY" && (count(guide, "validMatchCount") ?? 0) > 0)
+    return "A preparação do primeiro jogo foi salva. Você pode continuar organizando as partidas do grupo.";
+  if (task.id === "RESULTS_RECORDED" && guide.operationalState.hasMatchdayWithAllResults === true)
+    return "Os resultados de todas as partidas de um dia estão salvos. Confira os registros antes de finalizar oficialmente a rodada.";
+  if (task.id === "CHAMPION_PUBLISHED" && guide.operationalState.championPublished === true)
+    return "O Time Campeão do Dia foi publicado em um ciclo válido. Você pode continuar organizando as publicações nesta página.";
+  if (
+    task.id === "MATCHES_FINISHED" &&
+    guide.operationalState.hasOfficiallyFinishedMatchday === true
+  )
+    return "A finalização oficial das partidas foi confirmada. A publicação do campeão continua sendo uma etapa própria.";
   return "Esta etapa já foi concluída. Você pode continuar trabalhando nesta página. As condições atuais da funcionalidade continuam valendo para novas ações.";
 }

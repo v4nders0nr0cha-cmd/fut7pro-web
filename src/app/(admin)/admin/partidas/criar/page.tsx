@@ -13,7 +13,8 @@ export default function CriarPartidasPage() {
       ? contextualGuideHref(
           path,
           "FIRST_MATCHDAY",
-          params.get("guiaOrigem") === "dashboard" ? "dashboard" : "pagina"
+          params.get("guiaOrigem") === "dashboard" ? "dashboard" : "pagina",
+          params.get("guiaRetorno") ?? undefined
         )
       : path;
 

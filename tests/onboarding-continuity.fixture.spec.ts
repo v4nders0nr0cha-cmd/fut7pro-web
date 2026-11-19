@@ -86,6 +86,7 @@ test("contextual team creation resumes the current page, persists X by real logi
   await guide.screenshot({ path: info.outputPath("active-football-phase.png") });
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
   const reloadDashboard = async () => {
+    if (new URL(page.url()).pathname !== dashboard) await page.goto(dashboard);
     const accessAfterRefresh = page.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/admin/access"
     );
