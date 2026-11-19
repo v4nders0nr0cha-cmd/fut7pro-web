@@ -50,4 +50,27 @@ describe("useTimes: ausência de logo", () => {
     const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
     expect(body.logoUrl).toBeNull();
   });
+
+  it("preserva a imagem no backend quando a edição não informa os campos de logo", async () => {
+    const { result } = renderHook(() => useTimes("grupo-teste"));
+    await act(async () => {
+      await result.current.updateTime({ id: "team-1", nome: "Nome atualizado", cor: "#ff0000" });
+    });
+    const [url, request] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/times/team-1?slug=grupo-teste&status=active");
+    expect(JSON.parse(request.body)).not.toHaveProperty("logoUrl");
+  });
+
+  it.each(["/uploads/real.png", "/images/times/time_padrao_01.png"])(
+    "mantém a imagem existente na normalização e na edição: %s",
+    async (logoUrl) => {
+      const time = normalizeTime({ id: "team-1", name: "Meu time", logoUrl });
+      const { result } = renderHook(() => useTimes("grupo-teste"));
+      await act(async () => {
+        await result.current.updateTime({ ...time, nome: "Novo nome" });
+      });
+      expect(time.logo).toBe(logoUrl);
+      expect(JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body).logoUrl).toBe(logoUrl);
+    }
+  );
 });

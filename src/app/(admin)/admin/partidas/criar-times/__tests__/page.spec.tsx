@@ -365,17 +365,34 @@ describe("GerenciarTimesPage", () => {
     );
   });
 
-  it("não restaura Hawks ao editar nome de time legado", async () => {
+  it("preserva a imagem legada enquanto sua origem não for confirmada", async () => {
     render(<GerenciarTimesPage />);
     fireEvent.click(screen.getByRole("button", { name: "Editar Casa do Gamer" }));
-    expect(screen.getByRole("img", { name: /sem logo enviada/ })).toHaveTextContent("CG");
-    expect(screen.queryByRole("button", { name: "Remover logo" })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("dialog")).getByRole("img", { name: "Logo do time Casa do Gamer" })
+    ).toHaveAttribute("src", "/images/times/time_padrao_01.png");
+    expect(screen.getByRole("button", { name: "Remover logo" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
     await waitFor(() =>
       expect(updateTime).toHaveBeenCalledWith(
         expect.objectContaining({
           logoUrl: "/images/times/time_padrao_01.png",
         })
+      )
+    );
+  });
+
+  it("mantém a ausência de logo ao editar nome e cor", async () => {
+    mockedTimes = [{ ...activeWithoutHistory, logo: null, logoUrl: null }];
+    render(<GerenciarTimesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Editar Academia Performance Sobral" }));
+    fireEvent.change(screen.getByLabelText("Nome do time"), { target: { value: "Time vermelho" } });
+    fireEvent.change(screen.getByLabelText("Cor do time"), { target: { value: "#ff0000" } });
+    expect(within(screen.getByRole("dialog")).getByRole("img")).toHaveTextContent("TV");
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    await waitFor(() =>
+      expect(updateTime).toHaveBeenCalledWith(
+        expect.objectContaining({ nome: "Time vermelho", cor: "#ff0000", logoUrl: null })
       )
     );
   });

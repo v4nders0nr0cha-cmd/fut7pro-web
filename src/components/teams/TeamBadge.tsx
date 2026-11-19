@@ -1,11 +1,8 @@
 import Image from "next/image";
 
-export const LEGACY_DEFAULT_TEAM_LOGO = "/images/times/time_padrao_01.png";
-
 export function visibleTeamLogo(logo?: string | null): string | null {
   const value = logo?.trim();
   return value &&
-    value !== LEGACY_DEFAULT_TEAM_LOGO &&
     ((value.startsWith("/") && !value.startsWith("//")) || /^https?:\/\//i.test(value))
     ? value
     : null;
@@ -48,7 +45,8 @@ export function TeamBadge({ name, color, logo, size = 40, className = "" }: Team
     channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
   );
   const luminance = linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
-  const textColor = luminance > 0.179 ? "#111827" : "#ffffff";
+  // Escolher preto ou branco garante contraste mínimo de 4,5:1 em qualquer cor.
+  const textColor = luminance > 0.179 ? "#000000" : "#ffffff";
   return (
     <span
       role="img"

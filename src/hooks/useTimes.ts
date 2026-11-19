@@ -133,7 +133,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
     const payload = {
       name: time.nome || time.name || "Time",
       color: time.cor || time.color || DEFAULT_COR,
-      logoUrl: time.logoUrl !== undefined ? time.logoUrl : (time.logo ?? null),
+      logoUrl: time.logoUrl !== undefined ? time.logoUrl : time.logo,
     };
 
     const res = await fetch(`/api/times/${time.id}${search}`, {
