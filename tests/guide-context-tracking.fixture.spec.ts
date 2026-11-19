@@ -21,12 +21,19 @@ for (const width of [1280, 768, 390, 375, 320]) {
     await panel.screenshot({ path: info.outputPath(`context-teams-${width}-pending.png`) });
     await addTeam(page, "Time A");
     await expect(panel.getByText(/1 de 2 times/)).toBeVisible();
+    await expect(page.getByText("Time adicionado", { exact: true })).toHaveCount(0, {
+      timeout: 15_000,
+    });
     await panel.screenshot({ path: info.outputPath(`context-teams-${width}-partial.png`) });
     await addTeam(page, "Time B");
     await expect(panel.getByRole("status")).toHaveText("Etapa concluída!");
     await expect(dialog).toHaveCount(0);
     await expect(panel.getByText(/Se seu grupo utiliza mais equipes/)).toBeVisible();
+    await expect(page.getByText("Time adicionado", { exact: true })).toHaveCount(0, {
+      timeout: 15_000,
+    });
     await panel.screenshot({ path: info.outputPath(`context-teams-${width}-completed.png`) });
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: info.outputPath(`context-teams-${width}-page.png`),
       fullPage: true,
@@ -91,7 +98,9 @@ for (const width of [1280, 390, 320]) {
     await panel.screenshot({ path: info.outputPath(`context-schedule-${width}-pending.png`) });
     await page.getByLabel("Horário", { exact: true }).fill("06:27");
     await page.getByRole("button", { name: "Adicionar", exact: true }).click();
-    await expect(page.getByRole("alert")).toContainText("Falha ao salvar");
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Falha ao salvar horário" })
+    ).toBeVisible();
     await expect(panel.getByRole("status")).toHaveText("Em andamento");
     await expect(page.getByLabel("Horário", { exact: true })).toHaveValue("06:27");
     failSave = false;
