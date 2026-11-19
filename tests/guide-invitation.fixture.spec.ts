@@ -88,6 +88,14 @@ for (const viewport of [
     await expect(
       dialog.getByRole("img", { name: "Exemplo ilustrativo ampliado do WhatsApp" })
     ).toBeVisible();
+    await expect
+      .poll(() =>
+        dialog
+          .getByRole("img")
+          .evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)
+      )
+      .toBe(true);
+
     await expect.poll(() => examples).toBeGreaterThan(0);
     await dialog.screenshot({
       path: info.outputPath(`invitation-example-whatsapp-${viewport.name}.png`),
@@ -160,6 +168,22 @@ for (const viewport of [
     await dialog.getByRole("button", { name: "Divulgar também no Instagram", exact: true }).click();
     await dialog.getByRole("button", { name: "Ver exemplo no Instagram", exact: true }).click();
     await dialog.getByRole("img", { name: "Exemplo ilustrativo ampliado do Instagram" }).waitFor();
+
+    const instagramImage = dialog.getByRole("img", {
+      name: "Exemplo ilustrativo ampliado do Instagram",
+    });
+    await expect
+      .poll(() =>
+        instagramImage.evaluate(
+          (element: HTMLImageElement) => element.complete && element.naturalWidth > 0
+        )
+      )
+      .toBe(true);
+    const proportion = await instagramImage.evaluate((element: HTMLImageElement) => {
+      const box = element.getBoundingClientRect();
+      return Math.abs(box.width / box.height - element.naturalWidth / element.naturalHeight);
+    });
+    expect(proportion).toBeLessThan(0.01);
     await dialog.screenshot({
       path: info.outputPath(`invitation-example-instagram-${viewport.name}.png`),
     });
