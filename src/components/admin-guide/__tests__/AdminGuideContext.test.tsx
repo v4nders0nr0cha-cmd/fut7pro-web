@@ -106,3 +106,12 @@ it("uses real team counts, preserves an open form, and returns to the originatin
     "/admin/guia-fut7pro"
   );
 });
+
+it("returns manual guidance to a validated originating modal page", () => {
+  params = "guia=OFFICIAL_TEAMS&guiaOrigem=dashboard&guiaRetorno=%2Fadmin%2Ffinanceiro";
+  render(<AdminGuideContext />);
+  expect(screen.getByRole("link", { name: "Voltar ao guia" })).toHaveAttribute(
+    "href",
+    "/admin/financeiro?retomarGuia=1&grupoGuia=pelada"
+  );
+});

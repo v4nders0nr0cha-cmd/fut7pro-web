@@ -4,9 +4,19 @@ import AdminGuideAccessHint from "../AdminGuideAccessHint";
 import AdminGuideMobileAccess from "../AdminGuideMobileAccess";
 import { GUIDE_CLOSED, GUIDE_ACCESS_USED, notifyGuideAccess } from "@/lib/admin-guide-access";
 let guide: any;
+let authStatus: number | undefined;
 let pathname = "/admin/dashboard";
 let mobile = false;
 jest.mock("@/hooks/useAdminGuide", () => ({ useAdminGuide: () => ({ guide }) }));
+jest.mock("../AdminGuideController", () => ({
+  useAdminGuideController: () => ({
+    scope: "identity:admin:grupo:login",
+    state: { guide, error: authStatus ? { status: authStatus } : null },
+    openGuide: () => {
+      if (guide) notifyGuideAccess(GUIDE_ACCESS_USED, identity());
+    },
+  }),
+}));
 jest.mock("next/navigation", () => ({ usePathname: () => pathname }));
 const identity = () => ({
   tenantId: guide.tenant.id,
@@ -26,6 +36,7 @@ function Surface({ overlay = false, menu = false }: { overlay?: boolean; menu?: 
 }
 beforeEach(() => {
   localStorage.clear();
+  authStatus = undefined;
   pathname = "/admin/dashboard";
   mobile = false;
   guide = {
@@ -44,17 +55,17 @@ afterEach(() => jest.restoreAllMocks());
 it("exposes a 44px manual mobile link despite permanent dismissal and hides only after real completion", () => {
   guide.pedagogicalState.dashboardInviteDismissedAt = "2026-11-18";
   const view = render(<AdminGuideMobileAccess />);
-  expect(screen.getByRole("link", { name: "Abrir Guia Interativo" })).toHaveAttribute(
-    "href",
-    "/admin/dashboard?retomarGuia=1&grupoGuia=grupo"
-  );
-  expect(screen.getByRole("link")).toHaveClass("h-11", "w-11", "lg:hidden");
+  expect(screen.getByRole("button", { name: "Abrir Guia Interativo" })).not.toHaveAttribute("href");
+  expect(screen.getByRole("button")).toHaveClass("h-11", "w-11", "lg:hidden");
   guide = { ...guide, activationProgress: { complete: true } };
   view.rerender(<AdminGuideMobileAccess />);
-  expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button")).not.toBeInTheDocument();
   guide = null;
   view.rerender(<AdminGuideMobileAccess />);
-  expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Abrir Guia Interativo" })).toBeVisible();
+  authStatus = 403;
+  view.rerender(<AdminGuideMobileAccess />);
+  expect(screen.queryByRole("button")).not.toBeInTheDocument();
 });
 it.each([false, true])(
   "teaches access once in this browser (mobile=%s), including after a new login",
@@ -82,7 +93,7 @@ it("dismisses the hint when the indicated access is used, without changing autom
   render(<Surface />);
   act(() => notifyGuideAccess(GUIDE_CLOSED, identity()));
   await screen.findByRole("status");
-  fireEvent.click(screen.getByRole("link", { name: "Abrir Guia Interativo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Abrir Guia Interativo" }));
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
   expect(guide.pedagogicalState).toEqual({});
 });

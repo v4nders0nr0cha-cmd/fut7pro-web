@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useAdminGuide } from "@/hooks/useAdminGuide";
-import { resumeGuideHref } from "@/lib/admin-guide-navigation";
-import { GUIDE_ACCESS_USED, notifyGuideAccess } from "@/lib/admin-guide-access";
+import { useAdminGuideController } from "./AdminGuideController";
 import { BookOpen, CircleHelp, MessageCircle } from "lucide-react";
 import { buildFut7ProOfficialWhatsAppUrl } from "@/config/fut7pro-contact";
 
@@ -32,9 +29,7 @@ const destinations = [
 ];
 
 export default function AdminHelpLauncher() {
-  const { guide, retry, error } = useAdminGuide();
-  const pathname = usePathname();
-  const guideAvailable = Boolean(guide);
+  const controller = useAdminGuideController();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -48,7 +43,7 @@ export default function AdminHelpLauncher() {
     };
     document.addEventListener("pointerdown", onOutside);
     return () => document.removeEventListener("pointerdown", onOutside);
-  }, [open, guideAvailable]);
+  }, [open]);
 
   return (
     <div
@@ -74,40 +69,31 @@ export default function AdminHelpLauncher() {
         >
           <h2 className="px-3 py-2 text-sm font-bold text-yellow-300">Como podemos ajudar?</h2>
           {destinations.map(({ label, description, href, icon: Icon, external }) =>
-            label === "Guia Interativo" && !guide ? (
+            label === "Guia Interativo" ? (
               <button
                 key={label}
                 type="button"
-                onClick={() => void retry().catch(() => undefined)}
-                className="flex min-h-12 w-full items-start gap-3 rounded-lg px-3 py-2 text-left hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+                disabled={!controller?.scope}
+                onClick={() => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                  controller?.openGuide();
+                }}
+                className="flex min-h-12 w-full items-start gap-3 rounded-lg px-3 py-2 text-left hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:opacity-50"
               >
                 <Icon size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-yellow-300" />
                 <span>
                   <strong className="block text-sm">{label}</strong>
-                  <span className="block text-xs text-zinc-300">
-                    {error ? "Não foi possível carregar. Tente novamente." : "Carregando seu guia…"}
-                  </span>
+                  <span className="block text-xs text-zinc-300">{description}</span>
                 </span>
               </button>
             ) : (
               <Link
                 key={label}
-                href={
-                  label === "Guia Interativo" && guide ? resumeGuideHref(guide.tenant.slug) : href
-                }
-                prefetch={label === "Guia Interativo" ? false : undefined}
-                replace={label === "Guia Interativo" && pathname === "/admin/dashboard"}
+                href={href}
                 target={external ? "_blank" : undefined}
                 rel={external ? "noopener noreferrer" : undefined}
-                onClick={() => {
-                  setOpen(false);
-                  if (label === "Guia Interativo") triggerRef.current?.focus();
-                  if (label === "Guia Interativo" && guide)
-                    notifyGuideAccess(GUIDE_ACCESS_USED, {
-                      tenantId: guide.tenant.id,
-                      membershipId: guide.administrator.membershipId,
-                    });
-                }}
+                onClick={() => setOpen(false)}
                 className="flex min-h-12 items-start gap-3 rounded-lg px-3 py-2 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
               >
                 <Icon size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-yellow-300" />

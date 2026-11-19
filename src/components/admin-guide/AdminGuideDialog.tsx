@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
 import AdminGuideAbout from "./AdminGuideAbout";
@@ -8,13 +8,18 @@ export default function AdminGuideDialog({
   onClose,
   onCloseByButton,
   children,
+  contentKey = "guide",
 }: {
   open: boolean;
   onClose: () => void;
   onCloseByButton?: () => void;
   children: ReactNode;
+  contentKey?: string;
 }) {
-  const [aboutOpen, setAboutOpen] = useState(false);
+  const [about, setAbout] = useState({ key: contentKey, open: false });
+  const aboutOpen = about.key === contentKey && about.open;
+  useEffect(() => setAbout({ key: contentKey, open: false }), [contentKey]);
+  const setAboutOpen = (open: boolean) => setAbout({ key: contentKey, open });
   const trigger = useRef<HTMLButtonElement>(null);
   return (
     <Fut7DialogBase
@@ -36,7 +41,7 @@ export default function AdminGuideDialog({
           type="button"
           aria-label="Sobre o Guia Interativo"
           aria-expanded={aboutOpen}
-          onClick={() => setAboutOpen((value) => !value)}
+          onClick={() => setAboutOpen(!aboutOpen)}
           className="flex h-full w-full items-center justify-center rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
         >
           <Info size={24} aria-hidden="true" />

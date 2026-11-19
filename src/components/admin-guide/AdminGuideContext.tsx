@@ -155,7 +155,7 @@ export default function AdminGuideContext() {
       <Link
         href={
           params?.get("guiaOrigem") === "dashboard" && guide
-            ? resumeGuideHref(guide.tenant.slug)
+            ? resumeGuideHref(guide.tenant.slug, params?.get("guiaRetorno"))
             : "/admin/guia-fut7pro"
         }
         className="mt-2 inline-flex min-h-11 items-center text-yellow-200 underline"

@@ -154,6 +154,17 @@ export async function installGuide(page: Page) {
     const field = markers[action];
     const claimed = !field || !state[field];
     if (field) state[field] ??= new Date().toISOString();
+    if (action === "INVITATION_COPY_RECORDED") {
+      state.invitationCopies ??= {};
+      state.invitationCopies[value.channel] ??= new Date().toISOString();
+    }
+    if (action === "INVITATION_SHARED_CONFIRMED") {
+      state.invitationConfirmations ??= {};
+      state.invitationConfirmations[value.channel] ??= new Date().toISOString();
+      completed.add("ACTIVE_PLAYERS");
+    }
+    if (action === "RESOURCE_VIEWED" && !state.viewedResources.includes(value.resourceId))
+      state.viewedResources.push(value.resourceId);
     if (action === "STEP_SELECTED") state.currentStep = value.tipId;
     if (action === "REWARD_CLAIM") {
       rewardGranted = true;

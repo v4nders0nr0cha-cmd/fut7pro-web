@@ -96,9 +96,26 @@ export function guideResourceDestinations(guide: AdminGuideData) {
 }
 
 export type GuideOrigin = "dashboard" | "pagina";
-export function contextualGuideHref(destination: string, step: string, origin: GuideOrigin) {
-  return `${destination}?${new URLSearchParams({ guia: step, guiaOrigem: origin })}`;
+export function guideReturnPath(value?: string | null) {
+  return value &&
+    /^\/admin\/[a-zA-Z0-9/_-]+$/.test(value) &&
+    !value.includes("//") &&
+    !/^\/admin\/(login|logout)(\/|$)/.test(value)
+    ? value
+    : null;
 }
-export function resumeGuideHref(slug: string) {
-  return `/admin/dashboard?${new URLSearchParams({ retomarGuia: "1", grupoGuia: slug })}`;
+export function contextualGuideHref(
+  destination: string,
+  step: string,
+  origin: GuideOrigin,
+  returnTo?: string
+) {
+  const params = new URLSearchParams({ guia: step, guiaOrigem: origin });
+  const path = guideReturnPath(returnTo);
+  if (origin === "dashboard" && path && path !== "/admin/dashboard")
+    params.set("guiaRetorno", path);
+  return `${destination}?${params}`;
+}
+export function resumeGuideHref(slug: string, returnTo?: string | null) {
+  return `${guideReturnPath(returnTo) ?? "/admin/dashboard"}?${new URLSearchParams({ retomarGuia: "1", grupoGuia: slug })}`;
 }

@@ -1,6 +1,32 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import AdminOnboarding from "../AdminOnboarding";
+import { AdminGuideControllerProvider, useAdminGuideController } from "../AdminGuideController";
 import AdminGuidePresenter from "../AdminGuidePresenter";
+function Surface({ children }: { children: React.ReactNode }) {
+  const controller = useAdminGuideController();
+  return (
+    <>
+      <button onClick={controller?.openGuide}>Abrir guia neste teste</button>
+      {children}
+    </>
+  );
+}
+function render(ui: React.ReactNode) {
+  const wrap = (children: React.ReactNode) => (
+    <AdminGuideControllerProvider>
+      <Surface>{children}</Surface>
+    </AdminGuideControllerProvider>
+  );
+  const view = rtlRender(wrap(ui));
+  return { ...view, rerender: (children: React.ReactNode) => view.rerender(wrap(children)) };
+}
+let adminId = "admin-1";
+jest.mock("@/context/RachaContext", () => ({
+  useRacha: () => ({
+    tenantSlug: guide?.tenant.slug ?? "pelada",
+    rachaId: guide?.tenant.id ?? "group",
+  }),
+}));
 const update = jest.fn().mockResolvedValue(true);
 const retry = jest.fn(() => Promise.resolve(guide));
 let pathname = "/admin/dashboard";
@@ -13,6 +39,9 @@ jest.mock("next/navigation", () => ({
 }));
 const copy = jest.fn().mockResolvedValue(undefined);
 let guide: any;
+let guideLoading = false;
+let guideValidating = false;
+let guideError: Error | null = null;
 let loginId = "login-1";
 let eligiblePlayers = 10;
 function withPhases(value: any) {
@@ -91,11 +120,19 @@ function withPhases(value: any) {
   return value;
 }
 jest.mock("@/hooks/useAdminGuide", () => ({
-  useAdminGuide: () => ({ guide: withPhases(guide), update, retry, updating: false }),
+  useAdminGuide: () => ({
+    guide: withPhases(guide),
+    update,
+    retry,
+    updating: false,
+    loading: guideLoading,
+    validating: guideValidating,
+    error: guideError,
+  }),
 }));
 jest.mock("next-auth/react", () => ({
   useSession: () => ({
-    data: { user: { name: "Ana Silva", image: null, onboardingLoginId: loginId } },
+    data: { user: { id: adminId, name: "Ana Silva", image: null, onboardingLoginId: loginId } },
   }),
 }));
 jest.mock("next/image", () => ({
@@ -108,7 +145,9 @@ jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
     open ? (
       <div role="dialog">
         {icon}
-        <button onClick={onCloseButton ?? onClose}>Fechar modal</button>
+        <button aria-label="Fechar modal" onClick={onCloseButton ?? onClose}>
+          Fechar modal
+        </button>
         {children}
       </div>
     ) : null,
@@ -118,6 +157,10 @@ beforeEach(() => {
   pathname = "/admin/dashboard";
   search = "";
   loginId = "login-1";
+  adminId = "admin-1";
+  guideLoading = false;
+  guideValidating = false;
+  guideError = null;
   eligiblePlayers = 10;
   sessionStorage.clear();
   localStorage.clear();
@@ -135,7 +178,7 @@ beforeEach(() => {
     administrator: { membershipId: "member" },
     pedagogicalState: { revision: 0 },
     activationProgress: { completed: 1, total: 8, percentage: 13, complete: false },
-    capabilities: { manageMatchesAndResults: true, publishChampion: true },
+    capabilities: { manageMatchesAndResults: true, publishChampion: true, managePlayers: true },
     tasks: [
       ["ACCOUNT_READY", "Conta criada e site no ar", "/", true],
       [
@@ -177,12 +220,39 @@ it("keeps the main summary clean with four visible steps and eight in the overal
   expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeEnabled();
 });
 
+it("places dismissal after both columns and keeps it absent from the full-page guide", () => {
+  const { unmount } = render(<AdminOnboarding onClose={jest.fn()} />);
+  const dismiss = screen.getByRole("button", { name: "Não mostrar este Guia novamente" });
+  const footer = dismiss.closest("footer")!;
+  expect(footer).toHaveClass("md:col-span-2");
+  expect(footer.previousElementSibling).toHaveAttribute("aria-label", "Primeiros passos do grupo");
+  expect(footer.parentElement?.querySelector("aside")).not.toContainElement(dismiss);
+  unmount();
+  render(<AdminOnboarding />);
+  expect(screen.queryByRole("button", { name: "Não mostrar este Guia novamente" })).toBeNull();
+});
+
+it("opens the validated public site in another tab without navigating or writing progress", () => {
+  const onNavigate = jest.fn();
+  render(<AdminOnboarding onNavigate={onNavigate} />);
+  fireEvent.click(screen.getByRole("button", { name: /Conta criada e site no ar/ }));
+  const link = screen.getByRole("link", { name: "Ver site do grupo" });
+  expect(link).toHaveAttribute("href", "/pelada");
+  expect(link).toHaveAttribute("target", "_blank");
+  expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  fireEvent.click(link);
+  expect(onNavigate).not.toHaveBeenCalled();
+  expect(update).not.toHaveBeenCalled();
+  expect(guide.activationProgress.completed).toBe(1);
+});
+
 it("only records successful clipboard writes", async () => {
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
   fireEvent.click(screen.getByRole("button", { name: "Copiar convite" }));
   await waitFor(() =>
-    expect(update).toHaveBeenCalledWith({ action: "INVITATION_COPIED", channel: "WHATSAPP" })
+    expect(update).toHaveBeenCalledWith({ action: "INVITATION_COPY_RECORDED", channel: "WHATSAPP" })
   );
   expect(copy).toHaveBeenCalledWith(expect.stringContaining(guide.tenant.publicUrl));
 });
@@ -201,21 +271,28 @@ it("keeps Instagram accessible after completion and records its copy separately"
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: /Concluída Traga seus primeiros jogadores/ }));
   fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
-  fireEvent.click(screen.getByRole("button", { name: "Instagram" }));
+  fireEvent.click(screen.getByRole("button", { name: "Divulgar também no Instagram" }));
   fireEvent.click(screen.getByRole("button", { name: "Copiar link" }));
   await waitFor(() =>
-    expect(update).toHaveBeenCalledWith({ action: "INVITATION_COPIED", channel: "INSTAGRAM" })
+    expect(update).toHaveBeenCalledWith({
+      action: "INVITATION_COPY_RECORDED",
+      channel: "INSTAGRAM",
+    })
   );
 });
 
-it("opening external channels and manual form does not complete recruitment", () => {
-  render(<AdminOnboarding />);
+it("keeps manual registration out of the first screen and available after real completion", () => {
+  const view = render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
   expect(screen.getByRole("link", { name: "Compartilhar no WhatsApp" })).toHaveAttribute(
     "href",
     expect.stringContaining("https://wa.me/")
   );
-  fireEvent.click(screen.getByRole("button", { name: "Cadastro manual" }));
+  expect(screen.queryByRole("link", { name: "Cadastrar jogador manualmente" })).toBeNull();
+  view.unmount();
+  guide.tasks[1].completed = true;
+  render(<AdminOnboarding initialStep="ACTIVE_PLAYERS" />);
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
   expect(screen.getByRole("link", { name: "Cadastrar jogador manualmente" })).toHaveAttribute(
     "href",
     "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=pagina"
@@ -241,6 +318,7 @@ it("X closes temporarily without leaving a dashboard card", async () => {
 it("requires confirmation before permanent dismissal and permits cancelling", async () => {
   render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
+  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "WELCOME_PRESENTED" }));
   update.mockClear();
   fireEvent.click(screen.getByRole("button", { name: "Não mostrar este Guia novamente" }));
   expect(screen.getByRole("alertdialog")).toBeVisible();
@@ -295,16 +373,14 @@ it("opens a separate invitation panel and restores the clean summary on return",
   expect(
     screen.queryByRole("region", { name: "Primeiros passos do grupo" })
   ).not.toBeInTheDocument();
-  expect(screen.getAllByText(guide.tenant.publicUrl)).toHaveLength(1);
-  expect(screen.getByRole("img", { name: /convite fixado/ })).toHaveAttribute(
+  expect(screen.queryByRole("img")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Ver exemplo no WhatsApp" }));
+  expect(screen.getByRole("img", { name: /ampliado do WhatsApp/ })).toHaveAttribute(
     "src",
     "/images/onboarding/whatsapp.webp"
   );
+  fireEvent.click(screen.getByRole("button", { name: "Voltar às opções de convite" }));
   fireEvent.click(screen.getByRole("button", { name: "Instagram" }));
-  expect(screen.getByRole("img", { name: /perfil do Instagram/ })).toHaveAttribute(
-    "src",
-    "/images/onboarding/instagram.webp"
-  );
   expect(screen.getByRole("button", { name: "Copiar link" })).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Voltar aos primeiros passos" }));
   expect(screen.queryByRole("button", { name: "Copiar link" })).not.toBeInTheDocument();
@@ -402,6 +478,8 @@ it("celebrates preparation once and shows how many athletes are missing", async 
   expect(screen.getByText(/7 de 10 atletas cadastrados/)).toBeVisible();
   expect(update).toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" });
   fireEvent.click(screen.getByRole("button", { name: "Convidar mais jogadores" }));
+  expect(screen.getByRole("heading", { name: "Etapa concluída!" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Consultar opções e exemplos" }));
   expect(screen.getByRole("button", { name: "Copiar convite" })).toBeVisible();
 });
 it("offers a newly unlocked football milestone during the same login", async () => {
@@ -463,8 +541,10 @@ it("keeps X across Dashboard remounts in the same login, but allows an explicit 
   second.rerender(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   expect(replace).toHaveBeenCalledWith("/admin/dashboard", { scroll: false });
+  search = "";
   pathname = "/admin/partidas/criar-times";
   second.rerender(<AdminGuidePresenter />);
+  search = "retomarGuia=1&grupoGuia=pelada";
   pathname = "/admin/dashboard";
   second.rerender(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
@@ -504,6 +584,7 @@ it("isolates temporary closing by group, administrator and real login", async ()
   await screen.findByRole("dialog");
   fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
   guide.administrator.membershipId = "another-administrator";
+  adminId = "another-admin";
   view.rerender(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
 });
@@ -602,7 +683,8 @@ it("refreshes before manual reopening and does not change permanent dismissal", 
   search = "retomarGuia=1&grupoGuia=pelada";
   view.rerender(<AdminGuidePresenter />);
   await waitFor(() => expect(retry).toHaveBeenCalledTimes(2));
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeDisabled();
   guide.tasks.slice(0, 3).forEach((task: any) => (task.completed = true));
   finish(guide);
   await screen.findByRole("heading", { name: "Cadastre os times" });
@@ -616,14 +698,12 @@ it("keeps the Dashboard usable if the manual progress read fails", async () => {
   retry.mockRejectedValueOnce(new Error("unavailable"));
   search = "retomarGuia=1&grupoGuia=pelada";
   view.rerender(<AdminGuidePresenter />);
-  await screen.findByText(/Não foi possível abrir o guia/);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(replace).toHaveBeenCalledWith("/admin/dashboard", { scroll: false });
-  search = "";
-  view.rerender(<AdminGuidePresenter />);
-  search = "retomarGuia=1&grupoGuia=pelada";
-  view.rerender(<AdminGuidePresenter />);
-  await screen.findByRole("dialog");
+  await screen.findByText(/Não foi possível atualizar seu progresso/);
+  expect(screen.getByRole("dialog")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeEnabled()
+  );
 });
 
 it("does not let an earlier automatic read display stale progress during a manual request", async () => {
@@ -648,9 +728,99 @@ it("does not let an earlier automatic read display stale progress during a manua
   await act(async () => {
     automatic(guide);
   });
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeDisabled();
   await act(async () => {
     manualRead(guide);
   });
   await screen.findByRole("dialog");
+});
+
+it("opens on an operational page with no cache and stays closed when the pending read arrives after X", async () => {
+  const loaded = guide;
+  guide = null;
+  guideLoading = true;
+  guideValidating = true;
+  pathname = "/admin/partidas/criar-times";
+  const view = render(<AdminGuidePresenter />);
+  fireEvent.click(screen.getByRole("button", { name: "Abrir guia neste teste" }));
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.getByText("Carregando seu progresso...")).toBeVisible();
+  expect(retry).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
+  guide = loaded;
+  guideLoading = false;
+  guideValidating = false;
+  pathname = "/admin/dashboard";
+  view.rerender(<AdminGuidePresenter />);
+  await waitFor(() => expect(retry).toHaveBeenCalled());
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Abrir guia neste teste" }));
+  await screen.findByRole("dialog");
+});
+it("keeps the dialog DOM while loading fails and retries, restoring keyboard focus", async () => {
+  const loaded = guide;
+  guide = null;
+  guideLoading = true;
+  guideValidating = true;
+  pathname = "/admin/jogadores/listar-cadastrar";
+  const view = render(<AdminGuidePresenter />);
+  fireEvent.click(screen.getByRole("button", { name: "Abrir guia neste teste" }));
+  const dialog = screen.getByRole("dialog");
+  guideLoading = false;
+  guideValidating = false;
+  guideError = new Error("offline");
+  view.rerender(<AdminGuidePresenter />);
+  const retryControl = await screen.findByRole("button", { name: "Tentar novamente" });
+  expect(screen.getByRole("dialog")).toBe(dialog);
+  retryControl.focus();
+  retry.mockImplementationOnce(async () => {
+    guide = loaded;
+    guideError = null;
+    return loaded;
+  });
+  fireEvent.click(retryControl);
+  view.rerender(<AdminGuidePresenter />);
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeEnabled()
+  );
+  expect(screen.getByRole("dialog")).toBe(dialog);
+  expect(screen.getByRole("button", { name: "Fechar modal" })).toHaveFocus();
+});
+it("continues to the real next pending task after invitation completion", async () => {
+  const view = render(<AdminOnboarding initialStep="ACTIVE_PLAYERS" />);
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
+  guide.tasks[1].completed = true;
+  guide.tasks[2].completed = true;
+  view.rerender(<AdminOnboarding initialStep="ACTIVE_PLAYERS" />);
+  await screen.findByRole("heading", { name: "Etapa concluída!" });
+  fireEvent.click(screen.getByRole("button", { name: "Continuar para a próxima etapa" }));
+  expect(screen.getByRole("heading", { name: "Cadastre os times" })).toBeVisible();
+});
+it("keeps the invitation result visible before offering a newly earned phase transition", async () => {
+  guide.tasks[2].completed = true;
+  guide.tasks[3].completed = true;
+  const view = render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
+  guide.tasks[1].completed = true;
+  view.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("heading", { name: "Etapa concluída!" });
+  expect(update).not.toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" });
+  fireEvent.click(screen.getByRole("button", { name: "Continuar para a próxima etapa" }));
+  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" }));
+});
+
+it("consumes an explicit contextual return on the originating operational page", async () => {
+  pathname = "/admin/partidas/criar-times";
+  search = "retomarGuia=1&grupoGuia=pelada";
+  render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  expect(replace).toHaveBeenCalledWith("/admin/partidas/criar-times", { scroll: false });
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Convidar jogadores agora" })).toBeEnabled()
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
+  expect(screen.getByRole("group", { name: "Como trazer jogadores" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Etapa concluída!" })).toBeNull();
 });

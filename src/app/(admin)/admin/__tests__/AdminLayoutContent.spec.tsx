@@ -1,3 +1,7 @@
+jest.mock("@/components/admin-guide/AdminGuideController", () => ({
+  AdminGuideControllerProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useAdminGuideController: () => null,
+}));
 jest.mock("@/components/admin-guide/AdminGuideAccessHint", () => ({
   __esModule: true,
   default: () => null,

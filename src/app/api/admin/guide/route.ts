@@ -24,6 +24,8 @@ const ACTION_FIELDS: Record<string, string[]> = {
   STEP_SKIPPED: ["tipId"],
   STEP_SELECTED: ["tipId"],
   INVITATION_COPIED: ["channel"],
+  INVITATION_COPY_RECORDED: ["channel"],
+  INVITATION_SHARED_CONFIRMED: ["channel"],
   WELCOME_PRESENTED: [],
   WELCOME_SEEN: [],
   DASHBOARD_INVITE_DISMISSED: [],

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCircle2, Circle, Trophy } from "lucide-react";
+import { CheckCircle2, Circle, ExternalLink, Trophy } from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import {
   ONBOARDING_IDS,
@@ -43,12 +43,18 @@ export default function AdminOnboarding({
   origin = "pagina",
   initialStep,
   firstPresentation = false,
+  actionsReady = true,
+  onInvitationChange,
+  returnTo,
 }: {
   onClose?: (permanentlyDismissed?: boolean) => void;
   onNavigate?: () => void;
   origin?: GuideOrigin;
   initialStep?: string;
   firstPresentation?: boolean;
+  actionsReady?: boolean;
+  onInvitationChange?: (open: boolean) => void;
+  returnTo?: string;
 }) {
   const { guide, updating, update, actionError, error, retry } = useAdminGuide();
   const { data: session } = useSession();
@@ -66,6 +72,7 @@ export default function AdminOnboarding({
   const [invitationOpen, setInvitationOpen] = useState(false);
   const invitationButtonRef = useRef<HTMLButtonElement>(null);
   const dismissButtonRef = useRef<HTMLButtonElement>(null);
+  const stepsHeadingRef = useRef<HTMLHeadingElement>(null);
   const selectedCompleted = guide?.tasks.find((task) => task.id === selected)?.completed;
   const previousCompletion = useRef({ id: selected, completed: selectedCompleted });
   useEffect(() => {
@@ -103,12 +110,30 @@ export default function AdminOnboarding({
       <AdminGuideInvitationPanel
         guide={guide}
         origin={origin}
+        returnTo={returnTo}
         onNavigate={onNavigate}
-        updating={updating}
+        updating={updating || !actionsReady}
         update={update}
-        onBack={() => {
+        onContinue={() => {
+          onInvitationChange?.(false);
+          setSelected(undefined);
           setInvitationOpen(false);
-          window.setTimeout(() => invitationButtonRef.current?.focus(), 0);
+          window.setTimeout(() => {
+            const heading = stepsHeadingRef.current;
+            const scroller = heading
+              ?.closest('[role="dialog"]')
+              ?.querySelector<HTMLElement>(".overflow-y-auto");
+            if (scroller) scroller.scrollTop = 0;
+            heading?.focus({ preventScroll: true });
+          }, 0);
+        }}
+        onBack={() => {
+          onInvitationChange?.(false);
+          setInvitationOpen(false);
+          window.setTimeout(
+            () => (invitationButtonRef.current ?? stepsHeadingRef.current)?.focus(),
+            0
+          );
         }}
       />
     );
@@ -182,64 +207,12 @@ export default function AdminOnboarding({
             </>
           )}
         </p>
-        {onClose && (
-          <div className="mt-4 border-t border-white/10 pt-2">
-            <button
-              ref={dismissButtonRef}
-              disabled={updating}
-              className="min-h-11 text-xs text-red-300/90 underline decoration-red-300/30 underline-offset-4"
-              onClick={() => setConfirmDismiss(true)}
-            >
-              Não mostrar este Guia novamente
-            </button>
-          </div>
-        )}
-        {confirmDismiss && (
-          <section
-            role="alertdialog"
-            aria-modal="false"
-            aria-labelledby="guide-dismiss-title"
-            className="mt-3 space-y-3 rounded-xl border border-white/15 bg-[#23262b] p-4 text-left"
-          >
-            <h3 id="guide-dismiss-title" className="font-semibold">
-              Deseja deixar de receber este guia?
-            </h3>
-            <p className="text-sm text-zinc-300">
-              O Guia Interativo não aparecerá mais automaticamente para você neste grupo.
-            </p>
-            <p className="text-sm text-zinc-300">
-              Se quiser acessá-lo novamente, ele continuará disponível no menu do seu perfil, em
-              Ajuda e orientação → Guia Interativo.
-            </p>
-            <button
-              autoFocus
-              className={secondary}
-              disabled={updating}
-              onClick={() => {
-                setConfirmDismiss(false);
-                dismissButtonRef.current?.focus();
-              }}
-            >
-              Manter o guia
-            </button>
-            <button
-              className="ml-2 min-h-11 text-sm text-red-300 underline"
-              disabled={updating}
-              onClick={async () => {
-                if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) {
-                  setConfirmDismiss(false);
-                  onClose?.(true);
-                }
-              }}
-            >
-              Não mostrar novamente
-            </button>
-          </section>
-        )}
       </aside>
       <section className="min-w-0 space-y-4" aria-label="Primeiros passos do grupo">
         <div>
-          <h2 className="text-xl font-bold">Primeiros passos do grupo</h2>
+          <h2 ref={stepsHeadingRef} tabIndex={-1} className="text-xl font-bold focus:outline-none">
+            Primeiros passos do grupo
+          </h2>
           <p className="mt-1 text-sm text-zinc-300">
             {guide.activationProgress.percentage}% concluído · {guide.activationProgress.completed}{" "}
             de {guide.activationProgress.total} etapas
@@ -323,16 +296,17 @@ export default function AdminOnboarding({
               ref={invitationButtonRef}
               type="button"
               className={primary}
-              disabled={updating || !actionUnlocked}
+              disabled={updating || !actionUnlocked || !actionsReady}
               aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
               onClick={() => {
                 setSelected("ACTIVE_PLAYERS");
+                onInvitationChange?.(true);
                 setInvitationOpen(true);
               }}
             >
               Convidar jogadores agora
             </button>
-          ) : actionUnlocked && destination ? (
+          ) : actionUnlocked && actionsReady && destination ? (
             <Link
               className={primary}
               href={
@@ -340,7 +314,10 @@ export default function AdminOnboarding({
                   ? destination
                   : contextualGuideHref(destination, active.id, origin)
               }
+              target={active.id === "ACCOUNT_READY" ? "_blank" : undefined}
+              rel={active.id === "ACCOUNT_READY" ? "noopener noreferrer" : undefined}
               onClick={() => {
+                if (active.id === "ACCOUNT_READY") return;
                 onNavigate?.();
                 if (FOOTBALL_IDS.includes(active.id) && !guide.pedagogicalState.footballStartedAt)
                   void update({ action: "FOOTBALL_STARTED" });
@@ -352,6 +329,9 @@ export default function AdminOnboarding({
                 : active.completed
                   ? "Consultar funcionalidade"
                   : "Continuar"}
+              {active.id === "ACCOUNT_READY" && (
+                <ExternalLink size={14} className="ml-2 shrink-0" aria-hidden="true" />
+              )}
             </Link>
           ) : (
             <button
@@ -407,6 +387,63 @@ export default function AdminOnboarding({
           </p>
         )}
       </section>
+      {onClose && (
+        <footer
+          className="border-t border-white/10 pt-3 text-center md:col-span-2"
+          aria-label="Preferências do guia"
+        >
+          <button
+            ref={dismissButtonRef}
+            disabled={updating || !actionsReady}
+            className="min-h-11 text-xs text-zinc-400 underline decoration-white/20 hover:text-zinc-200 underline-offset-4"
+            onClick={() => setConfirmDismiss(true)}
+          >
+            Não mostrar este Guia novamente
+          </button>
+          {confirmDismiss && (
+            <section
+              role="alertdialog"
+              aria-modal="false"
+              aria-labelledby="guide-dismiss-title"
+              className="mt-3 space-y-3 rounded-xl border border-white/15 bg-[#23262b] p-4 text-left"
+            >
+              <h3 id="guide-dismiss-title" className="font-semibold">
+                Deseja deixar de receber este guia?
+              </h3>
+              <p className="text-sm text-zinc-300">
+                O Guia Interativo não aparecerá mais automaticamente para você neste grupo.
+              </p>
+              <p className="text-sm text-zinc-300">
+                Se quiser acessá-lo novamente, ele continuará disponível no menu do seu perfil, em
+                Ajuda e orientação → Guia Interativo.
+              </p>
+              <button
+                autoFocus
+                className={secondary}
+                disabled={updating || !actionsReady}
+                onClick={() => {
+                  setConfirmDismiss(false);
+                  dismissButtonRef.current?.focus();
+                }}
+              >
+                Manter o guia
+              </button>
+              <button
+                className="ml-2 min-h-11 text-sm text-red-300 underline"
+                disabled={updating || !actionsReady}
+                onClick={async () => {
+                  if (await update({ action: "DASHBOARD_INVITE_DISMISSED" })) {
+                    setConfirmDismiss(false);
+                    onClose?.(true);
+                  }
+                }}
+              >
+                Não mostrar novamente
+              </button>
+            </section>
+          )}
+        </footer>
+      )}
     </div>
   );
 }

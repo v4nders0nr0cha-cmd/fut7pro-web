@@ -1,32 +1,27 @@
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { BookOpen } from "lucide-react";
-import { useAdminGuide } from "@/hooks/useAdminGuide";
-import { resumeGuideHref } from "@/lib/admin-guide-navigation";
-import { GUIDE_ACCESS_USED, notifyGuideAccess } from "@/lib/admin-guide-access";
+import { useAdminGuideController } from "./AdminGuideController";
 
 export default function AdminGuideMobileAccess() {
-  const { guide } = useAdminGuide();
-  const pathname = usePathname();
-  if (!guide || guide.activationProgress.complete) return null;
+  const controller = useAdminGuideController();
+  const status = controller?.state.error?.status;
+  if (
+    !controller?.scope ||
+    controller.state.guide?.activationProgress.complete ||
+    status === 401 ||
+    status === 403
+  )
+    return null;
   return (
-    <Link
+    <button
+      type="button"
       id="admin-guide-mobile-link"
-      href={resumeGuideHref(guide.tenant.slug)}
-      prefetch={false}
-      replace={pathname === "/admin/dashboard"}
       aria-label="Abrir Guia Interativo"
       title="Guia Interativo"
-      onClick={() =>
-        notifyGuideAccess(GUIDE_ACCESS_USED, {
-          tenantId: guide.tenant.id,
-          membershipId: guide.administrator.membershipId,
-        })
-      }
+      onClick={controller.openGuide}
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-yellow-300 transition hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 lg:hidden"
     >
       <BookOpen size={21} strokeWidth={1.75} aria-hidden="true" />
-    </Link>
+    </button>
   );
 }
