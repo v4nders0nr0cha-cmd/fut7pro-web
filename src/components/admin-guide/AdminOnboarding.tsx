@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCircle2, Circle, ExternalLink, Trophy } from "lucide-react";
+import { CheckCircle2, Circle, ExternalLink, LockKeyhole, Trophy } from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import {
   ONBOARDING_IDS,
@@ -56,13 +56,21 @@ export default function AdminOnboarding({
   onInvitationChange?: (open: boolean) => void;
   returnTo?: string;
 }) {
-  const { guide, updating, update, actionError, error, retry } = useAdminGuide();
+  const { guide, updating, update, actionError, error, validating, retry } = useAdminGuide();
   const { data: session } = useSession();
   const returning =
     !firstPresentation &&
     Boolean(guide?.pedagogicalState.welcomePresentedAt || guide?.pedagogicalState.welcomeSeenAt);
   const [selected, setSelected] = useState<string | undefined>(initialStep);
-  const footballActive = Boolean(guide?.eligibility?.footballUnlocked);
+  const preparationComplete = Boolean(
+    guide?.phases?.preparation.complete ?? guide?.eligibility?.preparationComplete
+  );
+  const reviewScope = guide ? `${guide.tenant.id}:${guide.administrator.membershipId}` : "";
+  const [reviewingScope, setReviewingScope] = useState("");
+  useEffect(() => setReviewingScope(""), [reviewScope, preparationComplete]);
+  const reviewingPreparation = Boolean(reviewScope && reviewingScope === reviewScope);
+  const footballActive = preparationComplete && !reviewingPreparation;
+  const footballUnlocked = Boolean(guide?.eligibility?.footballUnlocked);
   const previousPhase = useRef(footballActive);
   useEffect(() => {
     if (previousPhase.current !== footballActive) setSelected(undefined);
@@ -89,7 +97,17 @@ export default function AdminOnboarding({
   const phaseIds = footballActive ? FOOTBALL_IDS : PREPARATION_IDS;
   const phaseTasks = phaseIds.flatMap((id) => tasks.filter((task) => task.id === id));
   const phaseTitle = footballActive ? "Entre em campo" : "Prepare seu grupo";
-  const waitingForPlayers = Boolean(guide.phases?.preparation.complete && !footballActive);
+  const waitingForPlayers = preparationComplete && !footballUnlocked;
+  const eligibility = guide.eligibility;
+  const eligibilityKnown = Boolean(
+    eligibility &&
+      Number.isFinite(eligibility.eligiblePlayers) &&
+      eligibility.eligiblePlayers >= 0 &&
+      Number.isFinite(eligibility.minimumPlayers) &&
+      eligibility.minimumPlayers > 0 &&
+      Number.isFinite(eligibility.missingPlayers) &&
+      eligibility.missingPlayers >= 0
+  );
   const active =
     phaseTasks.find((item) => item.id === selected) ??
     phaseTasks.find((item) => !item.completed) ??
@@ -100,11 +118,10 @@ export default function AdminOnboarding({
     setSelected(id);
   };
   const destination = guideDestination(guide, active);
-  const actionUnlocked = isOnboardingActionUnlocked(
-    guide.tasks,
-    active.id,
-    guide.actionAvailability
-  );
+  const actionUnlocked =
+    (!FOOTBALL_IDS.includes(active.id) || footballUnlocked) &&
+    isOnboardingActionUnlocked(guide.tasks, active.id, guide.actionAvailability);
+  const canUseActions = actionsReady && !validating && !error;
   if (invitationOpen)
     return (
       <AdminGuideInvitationPanel
@@ -112,7 +129,7 @@ export default function AdminOnboarding({
         origin={origin}
         returnTo={returnTo}
         onNavigate={onNavigate}
-        updating={updating || !actionsReady}
+        updating={updating || !canUseActions}
         update={update}
         onContinue={() => {
           onInvitationChange?.(false);
@@ -233,13 +250,20 @@ export default function AdminOnboarding({
         </div>
         <section aria-label={phaseTitle}>
           <div className="mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200/80">
-              Fase {footballActive ? "2" : "1"}
-            </span>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200/80">
+                Fase {footballActive ? "2" : "1"}
+              </span>
+              {footballActive && (
+                <span className="text-[10px] font-semibold text-emerald-400">Fase 1 concluída</span>
+              )}
+            </div>
             <h3 className="mt-0.5 text-base font-semibold">{phaseTitle}</h3>
             <p className="mt-1 text-xs leading-relaxed text-zinc-400">
               {footballActive
-                ? "Avalie a galera, organize a rodada e dê início à história do grupo."
+                ? footballUnlocked
+                  ? "Avalie a galera, organize a rodada e dê início à história do grupo."
+                  : "Conheça os próximos passos para começar a organizar os jogos do seu grupo."
                 : "Deixe sua pelada pronta para começar, um passo de cada vez."}
             </p>
           </div>
@@ -249,6 +273,12 @@ export default function AdminOnboarding({
                 <button
                   type="button"
                   aria-current={active.id === item.id ? "step" : undefined}
+                  aria-describedby={
+                    !item.completed &&
+                    !isOnboardingActionUnlocked(guide.tasks, item.id, guide.actionAvailability)
+                      ? "onboarding-step-locked"
+                      : undefined
+                  }
                   onClick={() => select(item.id)}
                   className={`group flex min-h-11 w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 ${
                     active.id === item.id
@@ -257,7 +287,7 @@ export default function AdminOnboarding({
                   }`}
                 >
                   <span className="w-3 shrink-0 text-xs text-zinc-500" aria-hidden="true">
-                    {index + 1}
+                    {index + 1 + (footballActive ? PREPARATION_IDS.length : 0)}
                   </span>
                   {item.completed ? (
                     <CheckCircle2
@@ -265,6 +295,12 @@ export default function AdminOnboarding({
                       className="shrink-0 text-emerald-400"
                       aria-label="Concluída"
                     />
+                  ) : !isOnboardingActionUnlocked(
+                      guide.tasks,
+                      item.id,
+                      guide.actionAvailability
+                    ) ? (
+                    <LockKeyhole size={16} className="shrink-0 text-zinc-500" aria-hidden="true" />
                   ) : (
                     <Circle
                       size={18}
@@ -277,6 +313,10 @@ export default function AdminOnboarding({
               </li>
             ))}
           </ol>
+          <p id="onboarding-step-locked" className="sr-only">
+            Você pode consultar esta etapa. A execução depende dos requisitos do grupo e das suas
+            permissões.
+          </p>
         </section>
         <section
           className="space-y-3 rounded-xl border border-white/10 bg-[#202329]/70 p-4"
@@ -284,19 +324,12 @@ export default function AdminOnboarding({
         >
           <h3 className="text-lg font-bold">{active.title}</h3>
           <p className="text-sm text-zinc-300">{STEP_SUMMARY[active.id]}</p>
-          {waitingForPlayers && (
-            <p className="border-t border-white/10 pt-3 text-xs leading-relaxed text-zinc-400">
-              Preparação concluída · {guide.eligibility?.eligiblePlayers} de{" "}
-              {guide.eligibility?.minimumPlayers} atletas elegíveis. Reúna a galera para liberar a
-              fase esportiva.
-            </p>
-          )}
           {active.id === "ACTIVE_PLAYERS" ? (
             <button
               ref={invitationButtonRef}
               type="button"
               className={primary}
-              disabled={updating || !actionUnlocked || !actionsReady}
+              disabled={updating || !actionUnlocked || !canUseActions}
               aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
               onClick={() => {
                 setSelected("ACTIVE_PLAYERS");
@@ -306,7 +339,7 @@ export default function AdminOnboarding({
             >
               Convidar jogadores agora
             </button>
-          ) : actionUnlocked && actionsReady && destination ? (
+          ) : actionUnlocked && canUseActions && destination ? (
             <Link
               className={primary}
               href={
@@ -358,6 +391,78 @@ export default function AdminOnboarding({
             </p>
           )}
         </section>
+        {footballActive && waitingForPlayers && (
+          <section
+            className="space-y-3 border-t border-white/10 pt-4"
+            aria-label="Jogadores necessários"
+          >
+            <h3 className="text-sm font-semibold">Jogadores necessários</h3>
+            {error ? (
+              <p role="status" className="text-sm text-zinc-300">
+                Não foi possível atualizar a contagem de atletas. Tente atualizar o progresso
+                abaixo.
+              </p>
+            ) : !canUseActions || !eligibilityKnown ? (
+              <p role="status" className="text-xs text-zinc-400">
+                Atualizando a contagem de atletas...
+              </p>
+            ) : eligibility ? (
+              <div className="space-y-3" aria-live="polite">
+                <p className="text-right text-sm font-semibold">
+                  {eligibility.eligiblePlayers} / {eligibility.minimumPlayers}
+                </p>
+                <div
+                  role="progressbar"
+                  aria-label="Atletas elegíveis para a Fase 2"
+                  aria-valuenow={Math.min(eligibility.eligiblePlayers, eligibility.minimumPlayers)}
+                  aria-valuemin={0}
+                  aria-valuemax={eligibility.minimumPlayers}
+                  className="h-1.5 overflow-hidden rounded-full bg-white/15"
+                >
+                  <div
+                    className="h-full rounded-full bg-amber-200"
+                    style={{
+                      width: `${Math.min(100, (eligibility.eligiblePlayers / eligibility.minimumPlayers) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs leading-relaxed text-zinc-400">
+                  Esta fase será liberada quando seu grupo tiver pelo menos{" "}
+                  {eligibility.minimumPlayers} atletas elegíveis.{" "}
+                  {eligibility.missingPlayers === 1
+                    ? "Falta 1"
+                    : `Faltam ${eligibility.missingPlayers}`}{" "}
+                  para começar.
+                </p>
+              </div>
+            ) : null}
+            <button
+              ref={invitationButtonRef}
+              type="button"
+              className={`${primary} w-full`}
+              disabled={updating || !canUseActions}
+              onClick={() => {
+                onInvitationChange?.(true);
+                setInvitationOpen(true);
+              }}
+            >
+              Convidar mais jogadores
+            </button>
+          </section>
+        )}
+        {preparationComplete && (
+          <button
+            type="button"
+            className="min-h-11 w-full text-xs text-zinc-400 underline underline-offset-4 hover:text-zinc-200"
+            onClick={() => {
+              setSelected(undefined);
+              setReviewingScope(reviewingPreparation ? "" : reviewScope);
+              stepsHeadingRef.current?.focus();
+            }}
+          >
+            {reviewingPreparation ? "Voltar à Fase 2" : "Rever etapas da Fase 1"}
+          </button>
+        )}
         {guide.reward?.granted && (
           <p className="rounded-xl border border-yellow-400/25 p-3 text-sm text-yellow-200">
             Conquista do guia: +{guide.reward.days} dias de Fut7Pro concedidos ao grupo.

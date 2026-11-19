@@ -123,7 +123,7 @@ export async function installGuide(page: Page) {
             allowed:
               ids.slice(0, i).every((previous) => completed.has(previous)) &&
               (i < 4 || football.unlocked),
-            reason: i >= 4 && !football.unlocked ? "MINIMUM_PLAYERS" : "PREVIOUS_STEPS",
+            reason: i >= 4 && !football.unlocked ? "PHASE_LOCKED" : "PREVIOUS_STEPS",
           },
         ])
       ),

@@ -7,6 +7,7 @@ export default function AdminGuidePhaseTransition({
   kind,
   updating,
   onStart,
+  onExplore,
   onInvite,
   onClose,
 }: {
@@ -14,6 +15,7 @@ export default function AdminGuidePhaseTransition({
   kind: GuideTransitionKind;
   updating: boolean;
   onStart: () => void;
+  onExplore: () => void;
   onInvite: () => void;
   onClose: () => void;
 }) {
@@ -41,7 +43,7 @@ export default function AdminGuidePhaseTransition({
       <p className="text-zinc-300">
         {ready
           ? "Seu grupo já tem jogadores suficientes para começar a próxima fase. Vamos avaliar os atletas, preparar sua primeira rodada e conhecer os recursos esportivos do Fut7Pro?"
-          : "Parabéns! Você preparou a estrutura da sua pelada no Fut7Pro. Agora é hora de reunir a galera! Quando houver pelo menos dez atletas válidos cadastrados, vamos começar a próxima fase."}
+          : "Parabéns! Você preparou a estrutura do seu grupo no Fut7Pro. Conheça os próximos passos e acompanhe o que falta para começar a fase esportiva."}
       </p>
       {eligibility && (
         <p className="rounded-xl border border-yellow-400/25 bg-yellow-400/5 p-4 font-semibold text-yellow-200">
@@ -55,12 +57,22 @@ export default function AdminGuidePhaseTransition({
         <button
           autoFocus
           type="button"
-          disabled={updating}
-          onClick={ready ? onStart : onInvite}
+          disabled={updating || (kind === "FOOTBALL_INVITE" && !ready)}
+          onClick={kind === "CELEBRATION" ? onExplore : onStart}
           className="min-h-11 rounded-lg bg-yellow-400 px-4 py-3 font-bold text-black disabled:opacity-50"
         >
-          {ready ? "Começar a Parte 2" : "Convidar mais jogadores"}
+          {kind === "CELEBRATION" ? "Conhecer a Fase 2" : "Começar a Parte 2"}
         </button>
+        {!ready && (
+          <button
+            type="button"
+            disabled={updating}
+            onClick={onInvite}
+            className="min-h-11 rounded-lg border border-white/20 px-4 py-3 disabled:opacity-50"
+          >
+            Convidar mais jogadores
+          </button>
+        )}
         <button
           type="button"
           className="min-h-11 rounded-lg border border-white/20 px-4 py-3"

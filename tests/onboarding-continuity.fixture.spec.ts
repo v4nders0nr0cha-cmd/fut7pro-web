@@ -60,14 +60,27 @@ test("contextual team creation resumes the current page, persists X by real logi
     guide.getByRole("heading", { name: "Sua pelada está configurada! 🎉⚽" })
   ).toBeVisible();
   await expect(guide.getByText(/9 de 10 atletas cadastrados/)).toBeVisible();
-  await guide.getByRole("button", { name: "Agora não", exact: true }).click();
-  await expect(guide.getByText(/9 de 10 atletas elegíveis/)).toBeVisible();
+  await guide.getByRole("button", { name: "Conhecer a Fase 2", exact: true }).click();
+  await expect(guide.getByText("9 / 10", { exact: true })).toBeVisible();
   await expect(
     guide.getByRole("button", { name: "Avalie o nível dos atletas", exact: true })
-  ).toHaveCount(0);
+  ).toBeEnabled();
+  await expect(
+    guide.getByRole("list", { name: "Etapas de Entre em campo" }).locator("li")
+  ).toHaveCount(4);
+  await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+  await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toHaveCount(0);
+  await guide.screenshot({ path: info.outputPath("locked-football-phase.png") });
+  await guide.getByRole("button", { name: "Rever etapas da Fase 1", exact: true }).click();
   await expect(
     guide.getByRole("list", { name: "Etapas de Prepare seu grupo" }).locator("li")
   ).toHaveCount(4);
+  await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
+  await page.getByRole("button", { name: "Continuar no Guia Interativo", exact: true }).click();
+  await expect(
+    guide.getByRole("list", { name: "Etapas de Entre em campo" }).locator("li")
+  ).toHaveCount(4);
+  expect(fixture.actions).not.toContain("FOOTBALL_STARTED");
   fixture.setEligible(10);
   await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
   await expect(guide.getByRole("heading", { name: /A galera está chegando/ })).toBeVisible();
@@ -185,6 +198,8 @@ test("teams saved through the sidebar have the same conclusion and full-page gui
   expect(fixture.teams).toHaveLength(2);
   await page.goto("/admin/guia-fut7pro");
   await expect(guide).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
+  await page.getByRole("button", { name: "Rever etapas da Fase 1", exact: true }).click();
   await page.getByRole("button", { name: /Cadastre os times$/ }).click();
   await page.getByRole("link", { name: "Consultar funcionalidade", exact: true }).click();
   await expect(page).toHaveURL(/guiaOrigem=pagina/);
@@ -244,3 +259,90 @@ for (const reward of [false, true])
       )
     ).toHaveLength(1);
   });
+
+for (const width of [1280, 390, 320]) {
+  test(`contextual team creation keeps locked phase two after reopening and refresh at ${width}`, async ({
+    page,
+  }, info) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width, height: width === 320 ? 640 : 900 });
+    const fixture = await installGuide(page);
+    fixture.completed.add("OFFICIAL_TEAMS");
+    fixture.state.preparationCelebratedAt = "2026-11-18T12:00:00Z";
+    fixture.state.footballInvitePresentedAt = "2026-11-18T12:00:00Z";
+    fixture.setEligible(0);
+    await login(page);
+    const guide = page.getByRole("dialog", { name: dialogName });
+    const phase = guide.getByRole("list", { name: "Etapas de Entre em campo" });
+    await expect(phase.locator("li")).toHaveCount(4);
+    await expect(guide.getByText("0 / 10", { exact: true })).toBeVisible();
+    await expect(guide.getByText(/Faltam 10 para começar/)).toBeVisible();
+    for (const title of [
+      "Avalie o nível dos atletas",
+      "Prepare a primeira rodada",
+      "Registre os resultados",
+      "Publique o Time Campeão do Dia",
+    ]) {
+      await guide.getByRole("button", { name: title, exact: true }).click();
+      await expect(guide.getByRole("heading", { name: title, exact: true })).toBeVisible();
+      await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+      await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toHaveCount(0);
+    }
+    await guide.getByRole("button", { name: "Rever etapas da Fase 1", exact: true }).click();
+    await expect(
+      guide.getByRole("list", { name: "Etapas de Prepare seu grupo" }).locator("li")
+    ).toHaveCount(4);
+    await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
+    const reopen = async () => {
+      if (width < 1024)
+        await page.getByRole("button", { name: "Abrir Guia Interativo", exact: true }).click();
+      else {
+        await page.getByRole("button", { name: "Ajuda Fut7Pro", exact: true }).click();
+        await page
+          .getByRole("navigation", { name: "Ajuda Fut7Pro", exact: true })
+          .getByRole("button", { name: /Guia Interativo/ })
+          .click();
+      }
+      await expect(phase.locator("li")).toHaveCount(4);
+      await expect(guide.getByText("0 / 10", { exact: true })).toBeVisible();
+    };
+    await reopen();
+    await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
+    await page.reload();
+    await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
+    await reopen();
+    expect(fixture.actions).not.toContain("PREPARATION_CELEBRATED");
+    expect(fixture.actions).not.toContain("FOOTBALL_STARTED");
+    await guide.getByRole("button", { name: "Avalie o nível dos atletas", exact: true }).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true
+    );
+    await guide.screenshot({ path: info.outputPath(`phase-two-locked-${width}.png`) });
+    await guide.getByRole("button", { name: "Convidar mais jogadores", exact: true }).click();
+    await expect(
+      guide.getByRole("heading", { name: "Etapa concluída!", exact: true })
+    ).toBeVisible();
+    await guide
+      .getByRole("button", { name: "Continuar para a próxima etapa", exact: true })
+      .click();
+    await expect(phase.locator("li")).toHaveCount(4);
+    await expect(guide.getByText("0 / 10", { exact: true })).toBeVisible();
+    fixture.setEligible(9);
+    await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
+    await expect(guide.getByText("9 / 10", { exact: true })).toBeVisible();
+    await expect(guide.getByText(/Falta 1 para começar/)).toBeVisible();
+    fixture.setEligible(10);
+    await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
+    await expect(
+      guide.getByRole("region", { name: "Jogadores necessários", exact: true })
+    ).toHaveCount(0);
+    await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toHaveAttribute(
+      "href",
+      /ATHLETE_LEVELS/
+    );
+    await guide.getByRole("button", { name: "Registre os resultados", exact: true }).click();
+    await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+    expect(fixture.completed.has("OFFICIAL_TEAMS")).toBe(true);
+    expect(fixture.actions).not.toContain("FOOTBALL_STARTED");
+  });
+}
