@@ -90,14 +90,21 @@ test("contextual team creation resumes the current page, persists X by real logi
     const accessAfterRefresh = page.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/admin/access"
     );
+    const guideAfterRefresh = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/admin/guide" &&
+        response.request().method() === "GET"
+    );
     await page.reload();
     const accessResponse = await accessAfterRefresh;
     expect(accessResponse.ok(), await accessResponse.text()).toBe(true);
     expect(await accessResponse.json()).toMatchObject({ allowed: true });
+    const guideResponse = await guideAfterRefresh;
+    expect(guideResponse.ok()).toBe(true);
+    expect((await guideResponse.json()).tenant.slug).toBe("grupo-fixture");
     await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
-    // The loopback fixture has no live traffic: finish session/tenant revalidation
-    // before a full-document deep link aborts requests in the previous WebKit page.
-    await page.waitForLoadState("networkidle", { timeout: 15_000 });
+    // Wait for the authorization and guide reads this journey requires; unrelated
+    // Dashboard traffic must not decide whether identity/progress are ready.
   };
   await page.goto(dashboard);
   await reloadDashboard();
