@@ -52,7 +52,7 @@ it("identifies the guide, collapses instructions and removes artificial controls
   expect(screen.getByText("Guia Interativo Fut7Pro")).toBeVisible();
   expect(screen.getByText("Etapa 4 de 8")).toBeVisible();
   expect(screen.getByRole("status")).toHaveTextContent("Em andamento");
-  expect(screen.getByText("Continue utilizando os controles da página abaixo.")).toBeVisible();
+  expect(screen.getByText("Use os controles da página abaixo.")).toBeVisible();
   expect(screen.getByText("Ver instruções detalhadas").closest("details")!.open).toBe(false);
   expect(screen.queryByRole("button", { name: /Mostrar|Cadastrar outro time/ })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Voltar ao guia" }));
@@ -99,7 +99,7 @@ it("uses confirmed counts, preserves drafts and focus, and keeps historical achi
   view.rerender(<Page />);
   expect(screen.getByRole("status")).toHaveTextContent("Etapa concluída!");
   expect(screen.getByText(/Se seu grupo utiliza mais equipes/)).toBeVisible();
-  expect(screen.queryByText("Continue utilizando os controles da página abaixo.")).toBeNull();
+  expect(screen.queryByText("Use os controles da página abaixo.")).toBeNull();
   expect(input).toHaveValue("Azul");
   expect(input).toHaveFocus();
   fireEvent.click(screen.getByRole("button", { name: "Continuar no Guia Interativo" }));

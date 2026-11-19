@@ -147,7 +147,7 @@ export default function AdminGuideContext() {
       {!task.completed && !checking && !failed && (
         <p className="mt-2 flex items-start gap-2 border-t border-[#d8ad62]/15 pt-2 text-xs leading-relaxed text-[#d8bd94]">
           <ArrowDown aria-hidden="true" size={14} className="mt-0.5 shrink-0" />
-          Continue utilizando os controles da página abaixo.
+          Use os controles da página abaixo.
         </p>
       )}
     </aside>
