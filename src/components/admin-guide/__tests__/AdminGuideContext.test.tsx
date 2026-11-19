@@ -1,117 +1,192 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import AdminGuideContext from "../AdminGuideContext";
-import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
-const retry = jest.fn();
-let params = "guia=OFFICIAL_TEAMS";
-let guide: any;
+import { GUIDE_CONTEXT } from "@/lib/admin-guide-context";
+const retry = jest.fn().mockResolvedValue(undefined);
+const openGuide = jest.fn();
+let params: string;
+let pathname: string;
+let controller: any;
+let agenda: any;
 jest.mock("next/navigation", () => ({
-  usePathname: () => "/admin/partidas/criar-times",
+  usePathname: () => pathname,
   useSearchParams: () => new URLSearchParams(params),
 }));
-jest.mock("@/hooks/useAdminGuide", () => ({ useAdminGuide: () => ({ retry, guide }) }));
+jest.mock("../AdminGuideController", () => ({ useAdminGuideController: () => controller }));
+jest.mock("@/hooks/useRachaAgenda", () => ({ useRachaAgenda: () => agenda }));
 beforeEach(() => {
   jest.clearAllMocks();
-  params = "guia=OFFICIAL_TEAMS";
-  guide = {
-    tenant: { slug: "pelada" },
-    operationalState: { activeOfficialTeams: 0 },
-    tasks: [
-      {
-        id: "OFFICIAL_TEAMS",
-        title: "Cadastre os times oficiais",
-        route: "/admin/partidas/criar-times",
-        applicable: true,
-        canAct: true,
-        completed: false,
+  pathname = "/admin/partidas/criar-times";
+  params = "guia=OFFICIAL_TEAMS&guiaOrigem=dashboard";
+  agenda = { items: [], isLoading: false, isError: false };
+  controller = {
+    scope: "user:group:login",
+    openGuide,
+    state: {
+      retry,
+      loading: false,
+      validating: false,
+      error: null,
+      guide: {
+        administrator: { status: "APROVADO" },
+        capabilities: { manageOfficialTeams: true },
+        operationalState: { activeOfficialTeams: 0 },
+        tasks: [
+          {
+            id: "OFFICIAL_TEAMS",
+            title: "Cadastre os times",
+            route: pathname,
+            applicable: true,
+            canAct: true,
+            completed: false,
+          },
+        ],
       },
-    ],
+    },
   };
 });
-it("revalidates after a saved operation and removes its listener when leaving", () => {
-  const timer = jest.spyOn(window, "setInterval");
-  const { unmount } = render(<AdminGuideContext />);
-  expect(timer).not.toHaveBeenCalled();
-  notifyAdminGuideChanged();
-  expect(retry).toHaveBeenCalledTimes(1);
-  unmount();
-  notifyAdminGuideChanged();
-  expect(retry).toHaveBeenCalledTimes(1);
-  timer.mockRestore();
-});
-it("takes the administrator to the real team creation action", () => {
-  const scroll = jest.fn();
-  const { getByRole } = render(
-    <>
-      <AdminGuideContext />
-      <button
-        ref={(element) => {
-          if (element) {
-            element.scrollIntoView = scroll;
-            element.getClientRects = () => ({ length: 1 }) as DOMRectList;
-          }
-        }}
-      >
-        Novo Time
-      </button>
-    </>
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Mostrar Novo Time" }));
-  expect(scroll).toHaveBeenCalled();
-  expect(getByRole("button", { name: "Novo Time" })).toHaveFocus();
-});
-
-it("refreshes saved operations even without a guia parameter, without rendering guidance", () => {
-  params = "";
+const state = () => controller.state;
+const guide = () => state().guide;
+const task = () => guide().tasks[0];
+it("identifies the guide, collapses instructions and removes artificial controls", () => {
   render(<AdminGuideContext />);
-  notifyAdminGuideChanged();
-  expect(retry).toHaveBeenCalledTimes(1);
-  expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  expect(screen.getByText("Guia Interativo Fut7Pro")).toBeVisible();
+  expect(screen.getByText("Etapa 4 de 8")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("Em andamento");
+  expect(screen.getByText("Ver instruções detalhadas").closest("details")!.open).toBe(false);
+  expect(screen.queryByRole("button", { name: /Mostrar|Cadastrar outro time/ })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Voltar ao guia" }));
+  expect(openGuide).toHaveBeenCalledTimes(1);
+  expect(retry).not.toHaveBeenCalled();
 });
-it("uses real team counts, preserves an open form, and returns to the originating guide", () => {
-  params = "guia=OFFICIAL_TEAMS&guiaOrigem=dashboard";
+it.each(["", "guia=UNKNOWN", "guia=SCHEDULE"])("hides outside a valid context: %s", (query) => {
+  params = query;
+  render(<AdminGuideContext />);
+  expect(screen.queryByRole("complementary")).toBeNull();
+});
+it.each(["scope", "permission", "membership", "route", "taskPermission", "applicability"])(
+  "rejects invalid %s",
+  (reason) => {
+    if (reason === "scope") controller.scope = "";
+    if (reason === "permission") guide().capabilities.manageOfficialTeams = false;
+    if (reason === "membership") guide().administrator.status = "PENDENTE";
+    if (reason === "route") pathname = "/admin/financeiro";
+    if (reason === "taskPermission") task().canAct = false;
+    if (reason === "applicability") task().applicable = false;
+    render(<AdminGuideContext />);
+    expect(screen.queryByRole("complementary")).toBeNull();
+  }
+);
+it("uses confirmed counts, preserves drafts and focus, and keeps historical achievements", () => {
   const Page = () => (
     <>
       <AdminGuideContext />
-      <input aria-label="Nome em edição" defaultValue="Time ainda em edição" />
+      <input aria-label="Rascunho" defaultValue="Azul" />
     </>
   );
   const view = render(<Page />);
-  guide.operationalState.activeOfficialTeams = 1;
+  const input = screen.getByRole("textbox");
+  input.focus();
+  expect(screen.getByText(/0 de 2 times/)).toBeVisible();
+  guide().operationalState.activeOfficialTeams = 1;
   view.rerender(<Page />);
   expect(screen.getByText(/falta mais um time/)).toBeVisible();
-  expect(screen.getByRole("link", { name: "Voltar ao guia" })).toHaveAttribute(
-    "href",
-    "/admin/dashboard?retomarGuia=1&grupoGuia=pelada"
-  );
-  guide.operationalState.activeOfficialTeams = 2;
-  guide.tasks[0].completed = true;
+  expect(screen.getByText(/Seu primeiro time/)).toBeVisible();
+  guide().operationalState.activeOfficialTeams = 2;
   view.rerender(<Page />);
-  expect(screen.getByRole("heading", { name: "Etapa concluída!" })).toBeVisible();
-  expect(
-    screen.getByText("Você já cadastrou os dois times necessários para concluir esta etapa!")
-  ).toBeVisible();
-  expect(screen.getByText(/Se sua pelada utiliza mais equipes/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Cadastrar outro time" })).toBeVisible();
-  expect(screen.getByRole("textbox", { name: "Nome em edição" })).toHaveValue(
-    "Time ainda em edição"
-  );
-  expect(screen.getByRole("link", { name: "Continuar guia" })).toHaveAttribute(
-    "href",
-    "/admin/dashboard?retomarGuia=1&grupoGuia=pelada"
-  );
+  expect(screen.getByRole("status")).toHaveTextContent("Em andamento");
+  task().completed = true;
+  view.rerender(<Page />);
+  expect(screen.getByRole("status")).toHaveTextContent("Etapa concluída!");
+  expect(screen.getByText(/Se seu grupo utiliza mais equipes/)).toBeVisible();
+  expect(input).toHaveValue("Azul");
+  expect(input).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "Continuar no Guia Interativo" }));
+  expect(openGuide).toHaveBeenCalledTimes(1);
+  guide().operationalState.activeOfficialTeams = 1;
+  view.rerender(<Page />);
+  expect(screen.getByRole("status")).toHaveTextContent("Etapa concluída!");
+  expect(screen.queryByText(/Os dois times necessários já/)).toBeNull();
+  expect(screen.getByText(/1 de 2 times/)).toBeVisible();
+});
+it("masks stale completion while verifying or failed and retries without changing the page", () => {
+  task().completed = true;
+  state().validating = true;
+  const view = render(<AdminGuideContext />);
+  expect(screen.getByRole("status")).toHaveTextContent("Verificando progresso...");
+  expect(screen.queryByText(/0 de 2 times/)).toBeNull();
+  state().validating = false;
+  state().error = new Error("Offline");
+  view.rerender(<AdminGuideContext />);
+  expect(screen.getByRole("status")).not.toHaveTextContent("Etapa concluída");
+  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  expect(retry).toHaveBeenCalledTimes(1);
+  state().error = null;
+  view.rerender(<AdminGuideContext />);
+  expect(screen.getByRole("status")).toHaveTextContent("Etapa concluída!");
+});
+it("preserves full-page origin and ignores obsolete modal return intermediaries", () => {
+  params += "&guiaRetorno=%2Fadmin%2Ffinanceiro";
+  const view = render(<AdminGuideContext />);
+  fireEvent.click(screen.getByRole("button", { name: "Voltar ao guia" }));
+  expect(openGuide).toHaveBeenCalled();
   params = "guia=OFFICIAL_TEAMS&guiaOrigem=pagina";
-  view.rerender(<Page />);
-  expect(screen.getByRole("link", { name: "Continuar guia" })).toHaveAttribute(
+  view.rerender(<AdminGuideContext />);
+  expect(screen.getByRole("link", { name: "Voltar ao guia" })).toHaveAttribute(
     "href",
     "/admin/guia-fut7pro"
   );
 });
-
-it("returns manual guidance to a validated originating modal page", () => {
-  params = "guia=OFFICIAL_TEAMS&guiaOrigem=dashboard&guiaRetorno=%2Fadmin%2Ffinanceiro";
-  render(<AdminGuideContext />);
-  expect(screen.getByRole("link", { name: "Voltar ao guia" })).toHaveAttribute(
-    "href",
-    "/admin/financeiro?retomarGuia=1&grupoGuia=pelada"
-  );
+it.each(Object.keys(GUIDE_CONTEXT))(
+  "uses specific instructions and backend completion for %s",
+  (id) => {
+    const routes: Record<string, string> = {
+      IDENTITY: "/admin/personalizacao/identidade-visual",
+      MONTHLY_MODEL: "/admin/jogadores/mensalistas",
+      ACTIVE_PLAYERS: "/admin/jogadores/listar-cadastrar",
+      SCHEDULE: "/admin/rachas",
+      OFFICIAL_TEAMS: "/admin/partidas/criar-times",
+      ATHLETE_LEVELS: "/admin/jogadores/nivel-dos-atletas",
+      FIRST_MATCHDAY: "/admin/partidas/criar",
+      RESULTS_RECORDED: "/admin/partidas/resultados-do-dia",
+      CHAMPION_PUBLISHED: "/admin/partidas/time-campeao-do-dia",
+      MATCHES_FINISHED: "/admin/partidas/resultados-do-dia",
+    };
+    pathname = routes[id];
+    params = `guia=${id}`;
+    task().id = id;
+    task().route = pathname;
+    guide().capabilities[GUIDE_CONTEXT[id].capability] = true;
+    guide().guideVersion = 3;
+    const view = render(<AdminGuideContext />);
+    expect(screen.getByRole("complementary")).toBeVisible();
+    GUIDE_CONTEXT[id].details.forEach((text) => expect(screen.getByText(text)).toBeInTheDocument());
+    expect(screen.getByRole("status")).toHaveTextContent("Em andamento");
+    task().completed = true;
+    view.rerender(<AdminGuideContext />);
+    expect(screen.getByRole("status")).toHaveTextContent("Etapa concluída!");
+  }
+);
+it("shows actual schedule entries and preserves the option to add days", () => {
+  pathname = "/admin/rachas";
+  params = "guia=SCHEDULE";
+  Object.assign(task(), { id: "SCHEDULE", route: pathname });
+  guide().capabilities.configureSchedule = true;
+  guide().operationalState.agendaConfigured = false;
+  const view = render(<AdminGuideContext />);
+  expect(screen.getByText(/Nenhum dia e horário válido/)).toBeVisible();
+  task().completed = true;
+  guide().operationalState.agendaConfigured = true;
+  agenda.items = [
+    { id: "1", weekday: 6, time: "06:27" },
+    { id: "2", weekday: 2, time: "20:00" },
+    { id: "bad", weekday: 7, time: "24:00" },
+  ];
+  view.rerender(<AdminGuideContext />);
+  expect(screen.getByText("Sábado, às 06:27")).toBeVisible();
+  expect(screen.getByText("Terça-feira, às 20:00")).toBeVisible();
+  expect(screen.queryByText(/24:00/)).toBeNull();
+  expect(screen.getByText(/Você pode cadastrar mais horários/)).toBeVisible();
+  agenda.isError = true;
+  view.rerender(<AdminGuideContext />);
+  expect(screen.queryByRole("list", { name: "Horários cadastrados" })).toBeNull();
 });

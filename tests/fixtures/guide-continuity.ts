@@ -90,6 +90,8 @@ export async function installGuide(page: Page) {
       capabilities: {
         managePlayers: true,
         manageOfficialTeams: true,
+        configureSchedule: true,
+        manageAthleteLevels: true,
         manageMatchesAndResults: true,
         publishChampion: true,
       },

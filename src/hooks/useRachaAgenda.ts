@@ -3,10 +3,12 @@
 import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
 import { useMemo } from "react";
 import useSWR from "swr";
+import { useSession } from "next-auth/react";
+import { useRacha } from "@/context/RachaContext";
 import { useApiState } from "./useApiState";
 import type { RachaAgendaItem } from "@/types/agenda";
 
-const fetcher = async (url: string) => {
+const fetcher = async ([url]: readonly string[]) => {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
     const text = await response.text();
@@ -46,11 +48,15 @@ type UseRachaAgendaOptions = {
 export function useRachaAgenda(options: UseRachaAgendaOptions = {}) {
   const enabled = options.enabled ?? true;
   const apiState = useApiState();
+  const { data: session } = useSession();
+  const { tenantSlug } = useRacha();
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const slug = tenantSlug.trim().toLowerCase();
 
   const { data, error, isLoading, mutate } = useSWR(
-    enabled ? "/api/admin/rachas/agenda" : null,
+    enabled && userId && slug ? ["/api/admin/rachas/agenda", userId, slug] : null,
     fetcher,
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, keepPreviousData: false }
   );
 
   const items = useMemo(() => normalizeItems(data), [data]);

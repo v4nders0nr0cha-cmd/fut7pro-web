@@ -3,7 +3,7 @@ import { addTeam, ids, installGuide, login, signOut } from "./fixtures/guide-con
 const dashboard = "/admin/dashboard";
 const teamsPage = "/admin/partidas/criar-times";
 const dialogName = "Guia Interativo Fut7Pro";
-test("contextual team creation resumes the Dashboard, persists X by real login, and keeps milestones alive", async ({
+test("contextual team creation resumes the current page, persists X by real login, and keeps milestones alive", async ({
   page,
 }, info) => {
   test.setTimeout(240_000);
@@ -21,8 +21,7 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await guide.getByRole("link", { name: "Continuar", exact: true }).click();
   await expect(page).toHaveURL(/criar-times\?guia=OFFICIAL_TEAMS&guiaOrigem=dashboard/);
   await expect(guide).toHaveCount(0);
-  await page.getByRole("button", { name: "Mostrar Novo Time", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Novo Time", exact: true }).first()).toBeFocused();
+  await expect(page.getByRole("button", { name: "Mostrar Novo Time", exact: true })).toHaveCount(0);
   await addTeam(page, "Falha simulada");
   expect(fixture.teams).toHaveLength(0);
   expect(fixture.snapshot().tasks[3].completed).toBe(false);
@@ -31,42 +30,32 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await form.getByRole("button", { name: "Adicionar time", exact: true }).click();
   await expect(form).not.toBeVisible();
   await expect(page.getByText(/1 de 2 times oficiais ativos/)).toBeVisible();
-  await page.getByRole("link", { name: "Voltar ao guia", exact: true }).click();
+  await page.getByRole("button", { name: "Voltar ao guia", exact: true }).click();
   await expect(
     guide.getByRole("heading", { name: "Cadastre os times", exact: true })
   ).toBeVisible();
   await guide.getByRole("link", { name: "Continuar", exact: true }).click();
   await addTeam(page, "Time Verde");
-  await expect(page.getByRole("heading", { name: "Etapa concluída!", exact: true })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Etapa concluída!" })).toBeVisible();
   await expect(page).toHaveURL(/criar-times/);
   await expect(guide).toHaveCount(0);
-  await expect(
-    page.getByText("Você já cadastrou os dois times necessários para concluir esta etapa!", {
-      exact: true,
-    })
-  ).toBeVisible();
-  await expect(
-    page.getByText(
-      "Se sua pelada utiliza mais equipes, aproveite para cadastrar os demais times que participam dos jogos. Assim, tudo fica organizado desde o início.",
-      { exact: true }
-    )
-  ).toBeVisible();
+  await expect(page.getByText(/Os dois times necess/)).toBeVisible();
   await expect(page.getByText("Time adicionado", { exact: true })).toHaveCount(0, {
     timeout: 15_000,
   });
   await page
     .getByRole("complementary", { name: "Orientação do guia" })
     .screenshot({ path: info.outputPath("teams-complete-minimum.png") });
-  // The new contextual action opens the existing form; revalidation preserves it.
-  await page.getByRole("button", { name: "Cadastrar outro time", exact: true }).click();
+  // The real page action stays available; revalidation preserves its draft.
+  await page.getByRole("button", { name: "Novo Time", exact: true }).first().click();
   await form.getByLabel("Nome do time").fill("Rascunho preservado");
   await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
   await expect(form.getByLabel("Nome do time")).toHaveValue("Rascunho preservado");
   await form.getByRole("button", { name: "Adicionar time", exact: true }).click();
   await expect(form).not.toBeVisible();
   expect(fixture.teams).toHaveLength(3);
-  await expect(page.getByRole("heading", { name: "Etapa concluída!", exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Continuar guia", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Etapa concluída!" })).toBeVisible();
+  await page.getByRole("button", { name: "Continuar no Guia Interativo", exact: true }).click();
   await expect(
     guide.getByRole("heading", { name: "Sua pelada está configurada! 🎉⚽" })
   ).toBeVisible();
@@ -109,6 +98,7 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
     // before a full-document deep link aborts requests in the previous WebKit page.
     await page.waitForLoadState("networkidle", { timeout: 15_000 });
   };
+  await page.goto(dashboard);
   await reloadDashboard();
   await expect(guide).toHaveCount(0);
   expect(
@@ -143,7 +133,7 @@ test("contextual team creation resumes the Dashboard, persists X by real login, 
   await reloadDashboard();
   await expect(guide).toHaveCount(0);
   await page.goto(`${teamsPage}?guia=OFFICIAL_TEAMS&guiaOrigem=dashboard`);
-  await page.getByRole("link", { name: "Continuar guia", exact: true }).click();
+  await page.getByRole("button", { name: "Continuar no Guia Interativo", exact: true }).click();
   await expect(guide).toBeVisible();
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
   await reloadDashboard();
@@ -192,10 +182,9 @@ test("teams saved through the sidebar have the same conclusion and full-page gui
   await page.getByRole("button", { name: /Cadastre os times$/ }).click();
   await page.getByRole("link", { name: "Consultar funcionalidade", exact: true }).click();
   await expect(page).toHaveURL(/guiaOrigem=pagina/);
-  await expect(page.getByRole("link", { name: "Continuar guia", exact: true })).toHaveAttribute(
-    "href",
-    "/admin/guia-fut7pro"
-  );
+  await expect(
+    page.getByRole("link", { name: "Continuar no Guia Interativo", exact: true })
+  ).toHaveAttribute("href", "/admin/guia-fut7pro");
 });
 
 for (const reward of [false, true])

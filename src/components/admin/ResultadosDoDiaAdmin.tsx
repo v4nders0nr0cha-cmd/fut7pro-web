@@ -874,6 +874,7 @@ export function MatchModal({
         if ((current.resultVersion ?? 0) !== resultVersionRef.current) {
           const sameResult = matchesPersistedResult(current, payload);
           if (sameResult) {
+            notifyAdminGuideChanged();
             resultVersionRef.current = current.resultVersion ?? resultVersionRef.current;
             baselineRef.current = matchBaseline(current);
             lastSavedKey.current = saveKey;
@@ -1566,6 +1567,7 @@ export default function ResultadosDoDiaAdmin({
           const body = await response.text();
           throw new Error(body || "Falha ao deletar rodada.");
         }
+        notifyAdminGuideChanged();
         setStatusMap((prev) => {
           const next = { ...prev };
           delete next[match.id];
@@ -1606,6 +1608,8 @@ export default function ResultadosDoDiaAdmin({
           body?.error || body?.message || bodyText || "Falha ao registrar fechamento da rodada."
         );
       }
+
+      notifyAdminGuideChanged();
 
       if (body?.mode === "historical") {
         setRoundCompletionModal({

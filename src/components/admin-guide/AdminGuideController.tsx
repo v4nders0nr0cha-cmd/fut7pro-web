@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useRacha } from "@/context/RachaContext";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
+import { subscribeGuideChanges } from "@/lib/admin-guide-events";
 import { GUIDE_ACCESS_USED, notifyGuideAccess } from "@/lib/admin-guide-access";
 
 export type ManualGuideRequest = { id: number; scope: string; pathname: string };
@@ -52,6 +53,10 @@ export function AdminGuideControllerProvider({ children }: { children: ReactNode
         membershipId: guide.current.administrator.membershipId,
       });
   }, [scope, pathname]);
+  useEffect(() => {
+    if (!scope) return;
+    return subscribeGuideChanges(state.retry);
+  }, [scope, state.retry]);
   const closeGuide = useCallback(() => setRequest(null), []);
   useEffect(() => {
     setRequest((current) =>
