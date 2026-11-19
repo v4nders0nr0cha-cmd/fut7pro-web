@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MatchModal, matchBaseline, matchDraftKey } from "../ResultadosDoDiaAdmin";
 import type { PublicMatch } from "@/types/partida";
+import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
+jest.mock("@/lib/admin-guide-events", () => ({ notifyAdminGuideChanged: jest.fn() }));
 
 const match = {
   id: "match-1",
@@ -16,6 +18,7 @@ const match = {
 } as PublicMatch;
 
 describe("old match-result client", () => {
+  beforeEach(() => jest.clearAllMocks());
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();
@@ -70,6 +73,7 @@ describe("old match-result client", () => {
       expect(screen.getByText(/Anote suas alterações antes de atualizar/)).toBeInTheDocument()
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(notifyAdminGuideChanged).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Salvar após revisão" })).toBeDisabled();
     expect(JSON.parse(window.sessionStorage.getItem(key) || "null")?.events).toEqual(events);
   });
@@ -122,6 +126,40 @@ describe("old match-result client", () => {
 
     expect(screen.getByText(/Anote suas alterações antes de atualizar/)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(notifyAdminGuideChanged).not.toHaveBeenCalled();
     expect(JSON.parse(window.sessionStorage.getItem(key) || "null")?.events).toEqual(events);
+  });
+
+  it("refreshes the guide after the server confirms a previously saved result without repeating the write", async () => {
+    const scope = "admin-1:tenant-1";
+    window.sessionStorage.setItem(
+      matchDraftKey(scope, match.id),
+      JSON.stringify({
+        baseline: matchBaseline(match),
+        savedAt: Date.now(),
+        events: [],
+        status: "finished",
+      })
+    );
+    const persisted = { ...match, resultVersion: 1, status: "finished" };
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: async () => persisted });
+    global.fetch = fetchMock as typeof fetch;
+    const onSaved = jest.fn();
+    render(
+      <MatchModal
+        match={match}
+        draftScope={scope}
+        status="finished"
+        onStatusChange={jest.fn()}
+        onClose={jest.fn()}
+        onSaved={onSaved}
+        onDiscard={jest.fn()}
+      />
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Fechar" })[1]);
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith("finished"));
+    expect(notifyAdminGuideChanged).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/partidas/match-1");
   });
 });

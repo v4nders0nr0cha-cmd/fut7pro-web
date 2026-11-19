@@ -260,11 +260,13 @@ for (const viewport of [
     await expect(page).toHaveURL(/\/admin\/jogadores\/listar-cadastrar\?/);
     await expect(dialog).toHaveCount(0);
     const guidance = page.getByRole("complementary", { name: "Orientação do guia", exact: true });
-    await guidance.getByRole("link", { name: "Continuar guia", exact: true }).click();
+    await guidance
+      .getByRole("button", { name: "Continuar no Guia Interativo", exact: true })
+      .click();
     await expect(
       dialog.getByRole("heading", { name: "Cadastre os times", exact: true })
     ).toBeVisible();
-    await expect(page).toHaveURL(/\/admin\/partidas\/criar-times$/);
+    await expect(page).toHaveURL(/\/admin\/jogadores\/listar-cadastrar\?/);
     await expect(dialog).toHaveCount(1);
     expect(fixture.state.dashboardInviteDismissedAt).toBeUndefined();
   });
