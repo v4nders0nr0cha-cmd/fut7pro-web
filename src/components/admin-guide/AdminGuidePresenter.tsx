@@ -32,6 +32,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
   const owner = manual ? `${scope}:manual:${manualId}` : `${scope}:auto`;
   const [autoReady, setAutoReady] = useState("");
   const [read, setRead] = useState<ReadState | null>(null);
+  const [invitingOwner, setInvitingOwner] = useState("");
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [, setStorageVersion] = useState(0);
   const visitClosed = useRef("");
@@ -219,7 +220,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
     if (!visible || !guide) return;
     const milestoneKey = legacyScope;
     const candidate: GuideView =
-      !actionsReady || guide.activationProgress.complete
+      !actionsReady || invitingOwner === owner || guide.activationProgress.complete
         ? "STEPS"
         : guide.transition?.preparationCelebrationPending &&
             !recorded.current.has(`${milestoneKey}:CELEBRATION`)
@@ -240,7 +241,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
             : !(guide.pedagogicalState.welcomePresentedAt || guide.pedagogicalState.welcomeSeenAt),
       };
     });
-  }, [visible, guide, owner, actionsReady, legacyScope]);
+  }, [visible, guide, owner, actionsReady, legacyScope, invitingOwner]);
   useEffect(() => {
     if (!visible || !guide || !actionsReady || !active) return;
     const action =
@@ -277,6 +278,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
     visitClosed.current = scope;
     generation.current += 1;
     closeGuide();
+    setInvitingOwner("");
     setPresentation(null);
     setStorageVersion((value) => value + 1);
   };
@@ -285,6 +287,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
     visitClosed.current = scope;
     generation.current += 1;
     closeGuide();
+    setInvitingOwner("");
     setPresentation(null);
   };
   const steps = () => setPresentation({ owner, view: "STEPS", first });
@@ -354,6 +357,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
                 firstPresentation={first}
                 onClose={close}
                 onNavigate={navigate}
+                onInvitationChange={(open) => setInvitingOwner(open ? owner : "")}
                 actionsReady={actionsReady}
               />
             ) : view === "INVITATION" ? (
@@ -363,6 +367,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
                 update={update}
                 origin="dashboard"
                 onNavigate={navigate}
+                onContinue={steps}
                 onBack={() =>
                   setPresentation({ owner, view: invitationOrigin.current, first: false })
                 }

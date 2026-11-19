@@ -9,6 +9,8 @@ export type AdminGuideAction =
   | "STEP_SKIPPED"
   | "STEP_SELECTED"
   | "INVITATION_COPIED"
+  | "INVITATION_COPY_RECORDED"
+  | "INVITATION_SHARED_CONFIRMED"
   | "WELCOME_PRESENTED"
   | "WELCOME_SEEN"
   | "DASHBOARD_INVITE_DISMISSED"
@@ -32,6 +34,8 @@ export type AdminGuidePedagogicalState = {
   footballStartedAt?: string;
   currentStep?: string;
   invitationCopiedAt?: string;
+  invitationCopies?: Partial<Record<"WHATSAPP" | "INSTAGRAM", string>>;
+  invitationConfirmations?: Partial<Record<"WHATSAPP" | "INSTAGRAM", string>>;
   invitationChannel?: "WHATSAPP" | "INSTAGRAM";
   welcomeSeenAt?: string;
   welcomePresentedAt?: string;
@@ -92,6 +96,7 @@ export type AdminGuideData = {
   >;
   transition?: { preparationCelebrationPending: boolean; footballInvitationPending: boolean };
   guideVersion: number;
+  invitationFlowVersion?: number;
   tenant: {
     id: string;
     slug: string;
@@ -124,7 +129,11 @@ export type AdminGuidePatch =
       expectedRevision?: number;
     }
   | { action: "STEP_SELECTED" | "STEP_SKIPPED"; tipId: string; expectedRevision?: number }
-  | { action: "INVITATION_COPIED"; channel: "WHATSAPP" | "INSTAGRAM"; expectedRevision?: number }
+  | {
+      action: "INVITATION_COPIED" | "INVITATION_COPY_RECORDED" | "INVITATION_SHARED_CONFIRMED";
+      channel: "WHATSAPP" | "INSTAGRAM";
+      expectedRevision?: number;
+    }
   | {
       action:
         | "WELCOME_PRESENTED"

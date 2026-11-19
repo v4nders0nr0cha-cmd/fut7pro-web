@@ -178,7 +178,7 @@ beforeEach(() => {
     administrator: { membershipId: "member" },
     pedagogicalState: { revision: 0 },
     activationProgress: { completed: 1, total: 8, percentage: 13, complete: false },
-    capabilities: { manageMatchesAndResults: true, publishChampion: true },
+    capabilities: { manageMatchesAndResults: true, publishChampion: true, managePlayers: true },
     tasks: [
       ["ACCOUNT_READY", "Conta criada e site no ar", "/", true],
       [
@@ -252,7 +252,7 @@ it("only records successful clipboard writes", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
   fireEvent.click(screen.getByRole("button", { name: "Copiar convite" }));
   await waitFor(() =>
-    expect(update).toHaveBeenCalledWith({ action: "INVITATION_COPIED", channel: "WHATSAPP" })
+    expect(update).toHaveBeenCalledWith({ action: "INVITATION_COPY_RECORDED", channel: "WHATSAPP" })
   );
   expect(copy).toHaveBeenCalledWith(expect.stringContaining(guide.tenant.publicUrl));
 });
@@ -271,21 +271,28 @@ it("keeps Instagram accessible after completion and records its copy separately"
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: /Concluída Traga seus primeiros jogadores/ }));
   fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
-  fireEvent.click(screen.getByRole("button", { name: "Instagram" }));
+  fireEvent.click(screen.getByRole("button", { name: "Divulgar também no Instagram" }));
   fireEvent.click(screen.getByRole("button", { name: "Copiar link" }));
   await waitFor(() =>
-    expect(update).toHaveBeenCalledWith({ action: "INVITATION_COPIED", channel: "INSTAGRAM" })
+    expect(update).toHaveBeenCalledWith({
+      action: "INVITATION_COPY_RECORDED",
+      channel: "INSTAGRAM",
+    })
   );
 });
 
-it("opening external channels and manual form does not complete recruitment", () => {
-  render(<AdminOnboarding />);
+it("keeps manual registration out of the first screen and available after real completion", () => {
+  const view = render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
   expect(screen.getByRole("link", { name: "Compartilhar no WhatsApp" })).toHaveAttribute(
     "href",
     expect.stringContaining("https://wa.me/")
   );
-  fireEvent.click(screen.getByRole("button", { name: "Cadastro manual" }));
+  expect(screen.queryByRole("link", { name: "Cadastrar jogador manualmente" })).toBeNull();
+  view.unmount();
+  guide.tasks[1].completed = true;
+  render(<AdminOnboarding initialStep="ACTIVE_PLAYERS" />);
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
   expect(screen.getByRole("link", { name: "Cadastrar jogador manualmente" })).toHaveAttribute(
     "href",
     "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=pagina"
@@ -366,16 +373,14 @@ it("opens a separate invitation panel and restores the clean summary on return",
   expect(
     screen.queryByRole("region", { name: "Primeiros passos do grupo" })
   ).not.toBeInTheDocument();
-  expect(screen.getAllByText(guide.tenant.publicUrl)).toHaveLength(1);
-  expect(screen.getByRole("img", { name: /convite fixado/ })).toHaveAttribute(
+  expect(screen.queryByRole("img")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Ver exemplo no WhatsApp" }));
+  expect(screen.getByRole("img", { name: /ampliado do WhatsApp/ })).toHaveAttribute(
     "src",
     "/images/onboarding/whatsapp.webp"
   );
+  fireEvent.click(screen.getByRole("button", { name: "Voltar às opções de convite" }));
   fireEvent.click(screen.getByRole("button", { name: "Instagram" }));
-  expect(screen.getByRole("img", { name: /perfil do Instagram/ })).toHaveAttribute(
-    "src",
-    "/images/onboarding/instagram.webp"
-  );
   expect(screen.getByRole("button", { name: "Copiar link" })).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Voltar aos primeiros passos" }));
   expect(screen.queryByRole("button", { name: "Copiar link" })).not.toBeInTheDocument();
@@ -473,6 +478,8 @@ it("celebrates preparation once and shows how many athletes are missing", async 
   expect(screen.getByText(/7 de 10 atletas cadastrados/)).toBeVisible();
   expect(update).toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" });
   fireEvent.click(screen.getByRole("button", { name: "Convidar mais jogadores" }));
+  expect(screen.getByRole("heading", { name: "Etapa concluída!" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Consultar opções e exemplos" }));
   expect(screen.getByRole("button", { name: "Copiar convite" })).toBeVisible();
 });
 it("offers a newly unlocked football milestone during the same login", async () => {
@@ -777,4 +784,27 @@ it("keeps the dialog DOM while loading fails and retries, restoring keyboard foc
   );
   expect(screen.getByRole("dialog")).toBe(dialog);
   expect(screen.getByRole("button", { name: "Fechar modal" })).toHaveFocus();
+});
+it("continues to the real next pending task after invitation completion", async () => {
+  const view = render(<AdminOnboarding initialStep="ACTIVE_PLAYERS" />);
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
+  guide.tasks[1].completed = true;
+  guide.tasks[2].completed = true;
+  view.rerender(<AdminOnboarding initialStep="ACTIVE_PLAYERS" />);
+  await screen.findByRole("heading", { name: "Etapa concluída!" });
+  fireEvent.click(screen.getByRole("button", { name: "Continuar para a próxima etapa" }));
+  expect(screen.getByRole("heading", { name: "Cadastre os times", exact: true })).toBeVisible();
+});
+it("keeps the invitation result visible before offering a newly earned phase transition", async () => {
+  guide.tasks[2].completed = true;
+  guide.tasks[3].completed = true;
+  const view = render(<AdminGuidePresenter />);
+  await screen.findByRole("dialog");
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores agora" }));
+  guide.tasks[1].completed = true;
+  view.rerender(<AdminGuidePresenter />);
+  await screen.findByRole("heading", { name: "Etapa concluída!" });
+  expect(update).not.toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" });
+  fireEvent.click(screen.getByRole("button", { name: "Continuar para a próxima etapa" }));
+  await waitFor(() => expect(update).toHaveBeenCalledWith({ action: "PREPARATION_CELEBRATED" }));
 });

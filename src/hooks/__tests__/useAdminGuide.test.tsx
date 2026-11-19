@@ -263,6 +263,8 @@ it("isolates personal preferences when administrators change in the same group",
 });
 
 it.each([
+  { action: "INVITATION_COPY_RECORDED", channel: "WHATSAPP" },
+  { action: "INVITATION_SHARED_CONFIRMED", channel: "INSTAGRAM" },
   { action: "STEP_SKIPPED", tipId: "SCHEDULE" },
   { action: "COMPLETION_PRESENTED" },
   { action: "PREPARATION_CELEBRATED" },

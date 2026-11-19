@@ -249,27 +249,21 @@ for (const viewport of [
     await dialog.getByRole("button", { name: "Voltar ao guia" }).click();
     await dialog.getByRole("button", { name: "Convidar jogadores agora" }).click();
     for (const channel of ["WhatsApp", "Instagram"]) {
-      await dialog.getByRole("button", { name: channel, exact: true }).click();
+      if (viewport.width < 768)
+        await dialog.getByRole("button", { name: channel, exact: true }).click();
       await fits();
-      const preview = dialog.getByRole("button", { name: `Ampliar imagem do ${channel}` });
-      await preview.scrollIntoViewIfNeeded();
-      const img = preview.locator("img");
-      await expect
-        .poll(
-          () =>
-            img.evaluate(
-              (element: HTMLImageElement) => element.complete && element.naturalWidth > 0
-            ),
-          { timeout: 60_000 }
-        )
-        .toBe(true);
-      expect((await img.boundingBox())!.height).toBeLessThanOrEqual(
-        viewport.width < 640 ? 260 : 380
-      );
+      await expect(dialog.getByRole("img")).toHaveCount(0);
       await dialog.screenshot({ path: testInfo.outputPath(`${channel}-${viewport.name}.png`) });
-      await preview.click();
-      await expect(dialog.getByRole("region", { name: "Imagem educativa ampliada" })).toBeVisible();
+      await dialog.getByRole("button", { name: `Ver exemplo no ${channel}`, exact: true }).click();
+      const image = dialog.getByRole("img", { name: `Exemplo ilustrativo ampliado do ${channel}` });
+      await expect(image).toBeVisible();
+      await expect
+        .poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0))
+        .toBe(true);
       await fits();
+      await dialog.screenshot({
+        path: testInfo.outputPath(`example-${channel}-${viewport.name}.png`),
+      });
       await dialog.getByRole("button", { name: "Voltar às opções de convite" }).click();
     }
     await dialog.getByRole("button", { name: "Fechar modal" }).click();

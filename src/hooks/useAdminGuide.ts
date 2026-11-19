@@ -100,6 +100,8 @@ export function useAdminGuide() {
             if (
               (cause as GuideError).status !== 409 ||
               ![
+                "INVITATION_COPY_RECORDED",
+                "INVITATION_SHARED_CONFIRMED",
                 "STEP_SKIPPED",
                 "PREPARATION_CELEBRATED",
                 "FOOTBALL_INVITE_PRESENTED",

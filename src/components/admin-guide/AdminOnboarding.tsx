@@ -44,6 +44,7 @@ export default function AdminOnboarding({
   initialStep,
   firstPresentation = false,
   actionsReady = true,
+  onInvitationChange,
 }: {
   onClose?: (permanentlyDismissed?: boolean) => void;
   onNavigate?: () => void;
@@ -51,6 +52,7 @@ export default function AdminOnboarding({
   initialStep?: string;
   firstPresentation?: boolean;
   actionsReady?: boolean;
+  onInvitationChange?: (open: boolean) => void;
 }) {
   const { guide, updating, update, actionError, error, retry } = useAdminGuide();
   const { data: session } = useSession();
@@ -68,6 +70,7 @@ export default function AdminOnboarding({
   const [invitationOpen, setInvitationOpen] = useState(false);
   const invitationButtonRef = useRef<HTMLButtonElement>(null);
   const dismissButtonRef = useRef<HTMLButtonElement>(null);
+  const stepsHeadingRef = useRef<HTMLHeadingElement>(null);
   const selectedCompleted = guide?.tasks.find((task) => task.id === selected)?.completed;
   const previousCompletion = useRef({ id: selected, completed: selectedCompleted });
   useEffect(() => {
@@ -106,9 +109,23 @@ export default function AdminOnboarding({
         guide={guide}
         origin={origin}
         onNavigate={onNavigate}
-        updating={updating}
+        updating={updating || !actionsReady}
         update={update}
+        onContinue={() => {
+          onInvitationChange?.(false);
+          setSelected(undefined);
+          setInvitationOpen(false);
+          window.setTimeout(() => {
+            const heading = stepsHeadingRef.current;
+            const scroller = heading
+              ?.closest('[role="dialog"]')
+              ?.querySelector<HTMLElement>(".overflow-y-auto");
+            if (scroller) scroller.scrollTop = 0;
+            heading?.focus({ preventScroll: true });
+          }, 0);
+        }}
         onBack={() => {
+          onInvitationChange?.(false);
           setInvitationOpen(false);
           window.setTimeout(() => invitationButtonRef.current?.focus(), 0);
         }}
@@ -187,7 +204,9 @@ export default function AdminOnboarding({
       </aside>
       <section className="min-w-0 space-y-4" aria-label="Primeiros passos do grupo">
         <div>
-          <h2 className="text-xl font-bold">Primeiros passos do grupo</h2>
+          <h2 ref={stepsHeadingRef} tabIndex={-1} className="text-xl font-bold outline-none">
+            Primeiros passos do grupo
+          </h2>
           <p className="mt-1 text-sm text-zinc-300">
             {guide.activationProgress.percentage}% concluído · {guide.activationProgress.completed}{" "}
             de {guide.activationProgress.total} etapas
@@ -275,6 +294,7 @@ export default function AdminOnboarding({
               aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
               onClick={() => {
                 setSelected("ACTIVE_PLAYERS");
+                onInvitationChange?.(true);
                 setInvitationOpen(true);
               }}
             >

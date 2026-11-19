@@ -41,3 +41,22 @@ it("recusa campos adicionais na ação de dispensa", async () => {
   expect(response.status).toBe(400);
   expect(mockedProxy).not.toHaveBeenCalled();
 });
+for (const action of ["INVITATION_COPY_RECORDED", "INVITATION_SHARED_CONFIRMED"]) {
+  it(`encaminha ${action} separadamente com canal e revisão, sem aceitar campos operacionais`, async () => {
+    const payload = { action, channel: "WHATSAPP", expectedRevision: 4 };
+    expect((await PATCH({ json: async () => payload } as NextRequest)).status).toBe(200);
+    expect(mockedProxy).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ body: JSON.stringify(payload) })
+    );
+    mockedProxy.mockClear();
+    expect(
+      (
+        await PATCH({
+          json: async () => ({ ...payload, tenantId: "other", completed: true }),
+        } as NextRequest)
+      ).status
+    ).toBe(400);
+    expect(mockedProxy).not.toHaveBeenCalled();
+  });
+}

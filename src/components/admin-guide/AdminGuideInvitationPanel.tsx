@@ -1,292 +1,536 @@
 "use client";
-import { contextualGuideHref, type GuideOrigin } from "@/lib/admin-guide-navigation";
-
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import type { AdminGuideData, AdminGuidePatch } from "@/types/admin-guide";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  ExternalLink,
+  UserRoundPlus,
+} from "lucide-react";
+import { FaInstagram, FaWhatsapp } from "react-icons/fa";
+import { contextualGuideHref, type GuideOrigin } from "@/lib/admin-guide-navigation";
 import { isOnboardingActionUnlocked } from "@/lib/admin-onboarding";
+import type { AdminGuideData, AdminGuidePatch } from "@/types/admin-guide";
 
 const primary =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 font-semibold text-black hover:bg-yellow-300 disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 disabled:opacity-50";
 const secondary =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-4 py-2 hover:bg-white/10 disabled:opacity-50";
-const channels = [
-  { id: "WHATSAPP", label: "WhatsApp" },
-  { id: "INSTAGRAM", label: "Instagram" },
-  { id: "MANUAL", label: "Cadastro manual" },
-] as const;
-type Channel = (typeof channels)[number]["id"];
-
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 py-2 text-sm text-zinc-300 underline decoration-white/20 underline-offset-4 hover:text-white disabled:opacity-50";
+const channels = ["WHATSAPP", "INSTAGRAM"] as const;
+type Channel = (typeof channels)[number];
+type View = "OPTIONS" | "CONFIRM" | "DONE" | "EXAMPLE";
 type Props = {
   guide: AdminGuideData;
   updating: boolean;
   update: (action: AdminGuidePatch) => Promise<boolean>;
   onBack: () => void;
+  onContinue?: () => void;
   origin?: GuideOrigin;
   onNavigate?: () => void;
 };
-
-export default function AdminGuideInvitationPanel({
+function pendingChannel(key: string, guide: AdminGuideData): Channel | null {
+  try {
+    const stored = sessionStorage.getItem(key);
+    if (stored === "WHATSAPP" || stored === "INSTAGRAM") return stored;
+  } catch {
+    /* A continuidade básica não depende do armazenamento do navegador. */
+  }
+  const copied = channels.filter((channel) => guide.pedagogicalState.invitationCopies?.[channel]);
+  const latestCopy = copied.sort((a, b) =>
+    (guide.pedagogicalState.invitationCopies![b] ?? "").localeCompare(
+      guide.pedagogicalState.invitationCopies![a] ?? ""
+    )
+  )[0];
+  if (latestCopy) return latestCopy;
+  const latestOpen = [...(guide.pedagogicalState.viewedResources ?? [])]
+    .reverse()
+    .find((resource) => resource === "whatsapp-share-attempt" || resource === "instagram-opened");
+  return latestOpen === "instagram-opened" ? "INSTAGRAM" : latestOpen ? "WHATSAPP" : null;
+}
+export default function AdminGuideInvitationPanel(props: Props) {
+  return (
+    <InvitationFlow
+      key={`${props.guide.tenant.id}:${props.guide.administrator.membershipId}`}
+      {...props}
+    />
+  );
+}
+function InvitationFlow({
   guide,
   updating,
   update,
   onBack,
+  onContinue = onBack,
   origin = "pagina",
   onNavigate,
 }: Props) {
-  const [channel, setChannel] = useState<Channel>("WHATSAPP");
+  const scope = `guide-invitation:v2:${guide.tenant.id}:${guide.administrator.membershipId}`;
+  const [initial] = useState(() => pendingChannel(scope, guide));
+  const completed = guide.tasks.some((task) => task.id === "ACTIVE_PLAYERS" && task.completed);
+  const previousCompletion = useRef(completed);
+  const [channel, setChannel] = useState<Channel>(
+    initial ?? guide.pedagogicalState.invitationChannel ?? "WHATSAPP"
+  );
+  const [view, setView] = useState<View>(completed ? "DONE" : initial ? "CONFIRM" : "OPTIONS");
   const [feedback, setFeedback] = useState("");
-  const [copying, setCopying] = useState(false);
-  const [expandedImage, setExpandedImage] = useState(false);
-  const publicUrl = guide.tenant.publicUrl;
+  const [busy, setBusy] = useState(false);
+  const [confirmAccepted, setConfirmAccepted] = useState(false);
+  const lock = useRef(false);
+  const root = useRef<HTMLElement>(null);
+  const returningFromExample = useRef(false);
+  const confirmed = guide.pedagogicalState.invitationConfirmations;
+  const copied = guide.pedagogicalState.invitationCopies;
   const unlocked = isOnboardingActionUnlocked(
     guide.tasks,
     "ACTIVE_PLAYERS",
     guide.actionAvailability
   );
-  const canCopy = Boolean(publicUrl && unlocked && !updating && !copying);
+  const publicUrl = (() => {
+    try {
+      const url = new URL(guide.tenant.publicUrl ?? "");
+      return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password
+        ? url.href
+        : null;
+    } catch {
+      return null;
+    }
+  })();
+  const enabled = Boolean(publicUrl && unlocked && !updating && !busy);
   const canRegister =
-    unlocked && Boolean(guide.tasks.find((task) => task.id === "ACTIVE_PLAYERS")?.canAct);
+    unlocked &&
+    guide.capabilities.managePlayers === true &&
+    guide.tasks.some((task) => task.id === "ACTIVE_PLAYERS" && task.canAct);
   const invite = `Fala, galera! ⚽🔥\n\nNosso site da pelada já está no ar!\n\nEntrem pelo link e criem suas contas para acompanhar partidas, estatísticas e conquistas.\n\n👉 ${publicUrl}\n\nTamo junto! 👊⚽`;
-  const image = channel === "INSTAGRAM" ? "instagram" : "whatsapp";
+  const appHref =
+    channel === "WHATSAPP"
+      ? `https://wa.me/?text=${encodeURIComponent(invite)}`
+      : "https://www.instagram.com/";
+  const used = (candidate: Channel) =>
+    Boolean(
+      (guide.pedagogicalState.invitationChannel === candidate &&
+        guide.pedagogicalState.invitationCopiedAt) ||
+        confirmed?.[candidate] ||
+        copied?.[candidate] ||
+        (guide.pedagogicalState.viewedResources ?? []).includes(
+          candidate === "WHATSAPP" ? "whatsapp-share-attempt" : "instagram-opened"
+        )
+    );
+  const other = channel === "WHATSAPP" ? "INSTAGRAM" : "WHATSAPP";
 
-  const copy = async () => {
-    if (!canCopy || !publicUrl) return;
-    setCopying(true);
+  useEffect(() => {
+    if (completed && (view === "CONFIRM" || !previousCompletion.current)) {
+      setView("DONE");
+      try {
+        sessionStorage.removeItem(scope);
+      } catch {
+        /* Sem perda do estado confirmado no backend. */
+      }
+    }
+    previousCompletion.current = completed;
+  }, [completed, view, scope]);
+  useEffect(() => {
+    const dialog = root.current?.closest('[role="dialog"]');
+    const scroller = dialog?.querySelector<HTMLElement>(".overflow-y-auto");
+    if (scroller) scroller.scrollTop = 0;
+    if (returningFromExample.current) {
+      root.current
+        ?.querySelector<HTMLButtonElement>(`[data-invitation-example="${channel}"]`)
+        ?.focus();
+      returningFromExample.current = false;
+    } else root.current?.focus({ preventScroll: true });
+  }, [view, channel]);
+  const start = (selected: Channel) => {
+    setChannel(selected);
+    setConfirmAccepted(false);
     setFeedback("");
     try {
-      await navigator.clipboard.writeText(channel === "WHATSAPP" ? invite : publicUrl);
+      if (completed) sessionStorage.removeItem(scope);
+      else sessionStorage.setItem(scope, selected);
+    } catch {
+      /* O estado local ainda permite confirmar. */
+    }
+    setView(completed ? "DONE" : "CONFIRM");
+  };
+  const recordOpen = (selected: Channel) => {
+    if (!enabled) return;
+    start(selected);
+    void update({
+      action: "RESOURCE_VIEWED",
+      resourceId: selected === "WHATSAPP" ? "whatsapp-share-attempt" : "instagram-opened",
+    });
+  };
+  const copy = async (selected: Channel) => {
+    if (!enabled || lock.current || !publicUrl) return;
+    lock.current = true;
+    setBusy(true);
+    setFeedback("");
+    try {
+      await navigator.clipboard.writeText(selected === "WHATSAPP" ? invite : publicUrl);
     } catch {
       setFeedback("A cópia falhou. Permita o acesso à área de transferência e tente novamente.");
-      setCopying(false);
+      lock.current = false;
+      setBusy(false);
       return;
     }
-    const saved = await update({
-      action: "INVITATION_COPIED",
-      channel: channel === "INSTAGRAM" ? "INSTAGRAM" : "WHATSAPP",
-    });
+    start(selected);
+    const saved = await update({ action: "INVITATION_COPY_RECORDED", channel: selected }).catch(
+      () => false
+    );
     setFeedback(
       saved
-        ? "Convite copiado! A divulgação pode começar."
-        : "Copiado. Não foi possível salvar o progresso. Tente copiar novamente."
+        ? selected === "WHATSAPP"
+          ? "Convite copiado. Envie a mensagem no grupo antes de confirmar."
+          : "Link copiado. Adicione-o ao perfil do grupo antes de confirmar."
+        : "O conteúdo foi copiado, mas não foi possível registrar a cópia. Depois de divulgar, tente confirmar novamente."
     );
-    setCopying(false);
+    setBusy(false);
+    lock.current = false;
   };
-
-  if (expandedImage)
-    return (
-      <section aria-label="Imagem educativa ampliada" className="space-y-4 text-white">
-        <button
-          autoFocus
-          type="button"
-          className={secondary}
-          onClick={() => setExpandedImage(false)}
-        >
-          <ArrowLeft size={16} aria-hidden="true" className="mr-2" />
-          Voltar às opções de convite
-        </button>
-        <Image
-          src={`/images/onboarding/${image}.webp`}
-          alt={`Exemplo ilustrativo ampliado do ${channel === "INSTAGRAM" ? "Instagram" : "WhatsApp"}`}
-          width={941}
-          height={1672}
-          className="h-auto w-full max-w-full rounded-xl object-contain"
-        />
-        <p className="text-xs text-zinc-400">
-          Exemplo ilustrativo. Os nomes e links da imagem são referências.
-        </p>
-      </section>
+  const confirm = async () => {
+    if (!enabled || lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    setFeedback("");
+    const saved = await update({ action: "INVITATION_SHARED_CONFIRMED", channel }).catch(
+      () => false
     );
-
+    if (saved) setConfirmAccepted(true);
+    else
+      setFeedback("Não foi possível confirmar a divulgação. Tente novamente ou volte às opções.");
+    setBusy(false);
+    lock.current = false;
+  };
+  // O retorno do PATCH não substitui a conclusão calculada pelo backend no GET.
+  const showDone = completed && view === "DONE";
+  const backOptions = () => {
+    setView("OPTIONS");
+    setFeedback("");
+  };
+  const choose = (selected: Channel) => {
+    setChannel(selected);
+    setFeedback("");
+    setView("OPTIONS");
+  };
   return (
-    <section aria-labelledby="invitation-panel-title" className="min-w-0 space-y-5 text-white">
-      <header className="space-y-3">
-        <button
-          autoFocus
-          type="button"
-          className="inline-flex min-h-11 items-center gap-2 text-sm text-yellow-200 underline"
-          onClick={onBack}
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          Voltar aos primeiros passos
-        </button>
-        <h2 id="invitation-panel-title" className="text-2xl font-bold">
-          Traga seus primeiros jogadores
-        </h2>
-        <p className="text-sm text-zinc-300">Escolha como chamar a galera para o site do grupo.</p>
-      </header>
-      <div role="group" aria-label="Como trazer jogadores" className="grid grid-cols-3 gap-1.5">
-        {channels.map((option) => (
+    <section
+      ref={root}
+      tabIndex={-1}
+      aria-label="Convite de jogadores"
+      className="min-w-0 space-y-5 text-white outline-none"
+    >
+      {view === "EXAMPLE" ? (
+        <>
           <button
             type="button"
-            key={option.id}
-            aria-pressed={channel === option.id}
-            aria-controls="invitation-channel-content"
-            className={`${channel === option.id ? primary : secondary} !px-2 text-xs sm:text-sm`}
+            className={secondary}
             onClick={() => {
-              setChannel(option.id);
-              setFeedback("");
+              returningFromExample.current = true;
+              setView("OPTIONS");
             }}
           >
-            {option.label}
+            <ArrowLeft size={16} aria-hidden="true" />
+            Voltar às opções de convite
           </button>
-        ))}
-      </div>
-      <section
-        id="invitation-channel-content"
-        aria-label={channels.find((option) => option.id === channel)?.label}
-        className="space-y-4 rounded-xl border border-white/15 bg-black/20 p-4 sm:p-5"
-      >
-        {channel === "MANUAL" ? (
-          <>
-            <h3 className="text-lg font-semibold">Uma alternativa para quem ainda não tem conta</h3>
-            <p className="text-sm text-zinc-300">
-              Você pode cadastrar o perfil de um jogador e vinculá-lo à conta dele depois,
-              preservando o histórico.
+          <h2 className="text-lg font-semibold">
+            Exemplo no {channel === "WHATSAPP" ? "WhatsApp" : "Instagram"}
+          </h2>
+          <div className="max-h-[60dvh] overflow-y-auto overflow-x-hidden rounded-xl border border-white/10">
+            <Image
+              src={`/images/onboarding/${channel === "WHATSAPP" ? "whatsapp" : "instagram"}.webp`}
+              alt={`Exemplo ilustrativo ampliado do ${channel === "WHATSAPP" ? "WhatsApp" : "Instagram"}`}
+              width={941}
+              height={1672}
+              sizes="(max-width:767px) calc(100vw - 4rem), 680px"
+              className="h-auto w-full object-contain"
+            />
+          </div>
+          <p className="text-xs text-zinc-400">
+            Exemplo ilustrativo. Os nomes e links da imagem são referências.
+          </p>
+        </>
+      ) : showDone ? (
+        <>
+          <header className="space-y-3">
+            <h2 className="flex items-center gap-2 text-xl font-bold">
+              <CheckCircle2 className="shrink-0 text-emerald-400" size={23} aria-hidden="true" />
+              Etapa concluída!
+            </h2>
+            <p className="text-sm leading-relaxed text-zinc-300">
+              Você deu o primeiro passo para trazer os jogadores ao Fut7Pro. Agora, incentive a
+              galera a criar suas contas e entrar no grupo.
             </p>
+          </header>
+          <section
+            className="space-y-2 border-t border-white/10 pt-4"
+            aria-label="Cadastro manual opcional"
+          >
+            <h3 className="font-semibold">E se algum jogador não conseguir se cadastrar?</h3>
             <p className="text-sm text-zinc-300">
-              Recomendamos que cada atleta crie a própria conta. Use o cadastro manual quando
-              necessário.
+              Você pode criar o perfil dele manualmente e vinculá-lo à conta que ele criar depois,
+              preservando seu histórico. A conta precisa entrar neste grupo para permitir a
+              vinculação.
             </p>
-            {canRegister ? (
+            <p className="text-xs text-zinc-400">
+              Sempre que possível, incentive cada atleta a criar sua própria conta.
+            </p>
+            {canRegister && !updating ? (
               <Link
+                className={secondary}
                 href={contextualGuideHref(
                   "/admin/jogadores/listar-cadastrar",
                   "ACTIVE_PLAYERS",
                   origin
                 )}
                 onClick={onNavigate}
-                className={primary}
               >
+                <UserRoundPlus size={17} aria-hidden="true" />
                 Cadastrar jogador manualmente
               </Link>
             ) : (
-              <>
-                <button type="button" disabled className={primary}>
-                  Cadastrar jogador manualmente
-                </button>
-                <p className="text-sm text-zinc-300">
-                  Peça ao Presidente ou Vice-Presidente para cadastrar o jogador.
-                </p>
-              </>
-            )}
-            <details className="text-sm text-zinc-400">
-              <summary className="min-h-11 cursor-pointer py-2">
-                Facilitar a entrada dos jogadores
-              </summary>
-              <p>
-                Na página de jogadores, administradores autorizados podem escolher a aprovação
-                automática por 24 horas.
-              </p>
-            </details>
-          </>
-        ) : (
-          <>
-            <h3 className="text-lg font-semibold">
-              {channel === "WHATSAPP"
-                ? "Convide a galera pelo WhatsApp"
-                : "Coloque o site no perfil do Instagram"}
-            </h3>
-            <p className="text-sm text-zinc-300">
-              {channel === "WHATSAPP"
-                ? "Envie o convite no grupo da pelada. Depois, pressione a mensagem, escolha Fixar e selecione a duração disponível."
-                : "Copie o endereço e abra o perfil do Instagram do grupo. Em Editar perfil → Links/site, cole o endereço e salve. Os nomes das opções podem variar conforme a versão."}
-            </p>
-            {channel === "WHATSAPP" && publicUrl && (
-              <p
-                className="break-all rounded-lg border border-white/10 bg-white/5 p-3 text-sm"
-                aria-label="Link público do grupo"
-              >
-                {publicUrl}
+              <p className="text-sm text-zinc-400">
+                Um administrador com permissão para gerenciar jogadores pode ajudar com o cadastro
+                manual.
               </p>
             )}
-            {!publicUrl && (
-              <p role="status" className="text-sm text-zinc-300">
-                O endereço público ainda não está disponível.
-              </p>
-            )}
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              {channel === "WHATSAPP" &&
-                (publicUrl && unlocked ? (
-                  <a
-                    className={primary}
-                    href={`https://wa.me/?text=${encodeURIComponent(invite)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() =>
-                      void update({
-                        action: "RESOURCE_VIEWED",
-                        resourceId: "whatsapp-share-attempt",
-                      })
-                    }
-                  >
-                    Compartilhar no WhatsApp
-                  </a>
+          </section>
+          {!used(other) && (
+            <section
+              className="space-y-1 border-t border-white/10 pt-4"
+              aria-label="Outro canal de divulgação"
+            >
+              <p className="text-sm text-zinc-300">Quer divulgar o site em mais um lugar?</p>
+              <button type="button" className={secondary} onClick={() => choose(other)}>
+                {other === "INSTAGRAM" ? (
+                  <FaInstagram aria-hidden="true" />
                 ) : (
-                  <button disabled className={primary}>
-                    Compartilhar no WhatsApp
+                  <FaWhatsapp aria-hidden="true" />
+                )}
+                {other === "INSTAGRAM"
+                  ? "Divulgar também no Instagram"
+                  : "Compartilhar também no WhatsApp"}
+              </button>
+            </section>
+          )}
+          <div className="space-y-2">
+            <button type="button" className={`${primary} w-full`} onClick={onContinue}>
+              Continuar para a próxima etapa
+              <ArrowRight size={17} aria-hidden="true" />
+            </button>
+            <button type="button" className={secondary} onClick={backOptions}>
+              Consultar opções e exemplos
+            </button>
+          </div>
+        </>
+      ) : view === "CONFIRM" ? (
+        <>
+          <header className="space-y-3">
+            <h2 className="text-xl font-bold">Conseguiu compartilhar o convite?</h2>
+            <p className="text-sm text-zinc-300">
+              Se já divulgou o site do grupo, confirme para continuar. Se ainda não conseguiu, você
+              pode tentar novamente.
+            </p>
+          </header>
+          {channel === "INSTAGRAM" && (
+            <p className="text-sm text-zinc-400">
+              No Instagram, entre em Editar perfil, procure a opção de links e adicione o endereço
+              do site. Os nomes podem variar conforme a versão.
+            </p>
+          )}
+          <a
+            className={secondary}
+            href={appHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => {
+              if (!enabled) event.preventDefault();
+              else recordOpen(channel);
+            }}
+            aria-disabled={!enabled}
+          >
+            {channel === "WHATSAPP" ? "Abrir WhatsApp novamente" : "Abrir Instagram"}
+            <ExternalLink size={13} aria-hidden="true" />
+          </a>
+          <p className="text-xs text-zinc-400">
+            Ao confirmar, você informa que realizou a divulgação. O Fut7Pro não verifica o envio no
+            aplicativo.
+          </p>
+          <div className="flex flex-col items-start gap-2 sm:flex-row">
+            <button
+              type="button"
+              className={primary}
+              disabled={!enabled}
+              onClick={() => void confirm()}
+            >
+              {busy
+                ? "Salvando..."
+                : confirmAccepted
+                  ? "Atualizar progresso"
+                  : "Já compartilhei o convite"}
+            </button>
+            <button type="button" className={secondary} disabled={busy} onClick={backOptions}>
+              Voltar às opções
+            </button>
+          </div>
+          {confirmAccepted && !completed && (
+            <p role="status" className="text-sm text-zinc-300">
+              Sua confirmação foi salva. Aguarde a atualização do progresso ou volte às opções para
+              tentar novamente.
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <header className="space-y-2">
+            <h2 className="text-xl font-bold">Traga seus primeiros jogadores</h2>
+            <p className="text-sm text-zinc-300">
+              Escolha onde divulgar o site do seu grupo. Assim, os jogadores poderão criar suas
+              contas e acompanhar tudo pelo Fut7Pro.
+            </p>
+          </header>
+          <div
+            role="group"
+            aria-label="Como trazer jogadores"
+            className="grid grid-cols-2 gap-2 md:hidden"
+          >
+            {channels.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={channel === option}
+                className={`min-h-11 rounded-lg text-sm font-semibold ${channel === option ? "bg-white/10 text-yellow-200" : "text-zinc-400"}`}
+                onClick={() => choose(option)}
+              >
+                {option === "WHATSAPP" ? "WhatsApp" : "Instagram"}
+              </button>
+            ))}
+          </div>
+          <div className="grid min-w-0 gap-4 md:grid-cols-2">
+            {channels.map((option) => (
+              <section
+                key={option}
+                aria-label={option === "WHATSAPP" ? "WhatsApp" : "Instagram"}
+                className={`${channel === option ? "block" : "hidden md:block"} min-w-0 space-y-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 md:flex md:flex-col`}
+              >
+                {option === "WHATSAPP" ? (
+                  <FaWhatsapp size={30} className="text-emerald-400" aria-hidden="true" />
+                ) : (
+                  <FaInstagram size={30} className="text-amber-200" aria-hidden="true" />
+                )}
+                <h3 className="text-base font-semibold">
+                  {option === "WHATSAPP"
+                    ? "Convide a galera pelo WhatsApp"
+                    : "Coloque o site no Instagram"}
+                </h3>
+                <p className="text-sm text-zinc-300 md:flex-1">
+                  {option === "WHATSAPP"
+                    ? "Envie o convite no grupo da pelada. Depois, pressione a mensagem e escolha Fixar para facilitar o acesso dos jogadores."
+                    : "Adicione o link do site ao perfil do Instagram do grupo. Assim, os jogadores poderão encontrá-lo sempre que precisarem."}
+                </p>
+                {option === "INSTAGRAM" && (
+                  <p className="text-xs text-zinc-400">
+                    Em Editar perfil, procure a opção de links. Os nomes podem variar conforme a
+                    versão.
+                  </p>
+                )}
+                {option === "WHATSAPP" ? (
+                  enabled ? (
+                    <a
+                      className={primary}
+                      href={`https://wa.me/?text=${encodeURIComponent(invite)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => recordOpen(option)}
+                    >
+                      <FaWhatsapp size={17} aria-hidden="true" />
+                      Compartilhar no WhatsApp
+                    </a>
+                  ) : (
+                    <button type="button" className={primary} disabled>
+                      Compartilhar no WhatsApp
+                    </button>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    className={primary}
+                    disabled={!enabled}
+                    onClick={() => void copy(option)}
+                  >
+                    Copiar link
                   </button>
-                ))}
-              <button
-                type="button"
-                className={channel === "WHATSAPP" ? secondary : primary}
-                disabled={!canCopy}
-                onClick={() => void copy()}
-              >
-                {copying
-                  ? "Copiando..."
-                  : channel === "WHATSAPP"
-                    ? "Copiar convite"
-                    : "Copiar link"}
+                )}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {option === "WHATSAPP" ? (
+                    <button
+                      type="button"
+                      className={secondary}
+                      disabled={!enabled}
+                      onClick={() => void copy(option)}
+                    >
+                      Copiar convite
+                    </button>
+                  ) : (
+                    <a
+                      className={secondary}
+                      href="https://www.instagram.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-disabled={!enabled}
+                      onClick={(event) => {
+                        if (!enabled) event.preventDefault();
+                        else recordOpen(option);
+                      }}
+                    >
+                      Abrir Instagram
+                      <ExternalLink size={12} aria-hidden="true" />
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    className={secondary}
+                    data-invitation-example={option}
+                    onClick={() => {
+                      setChannel(option);
+                      setView("EXAMPLE");
+                    }}
+                  >
+                    <Eye size={15} aria-hidden="true" />
+                    Ver exemplo
+                    <span className="sr-only">
+                      {" "}
+                      no {option === "WHATSAPP" ? "WhatsApp" : "Instagram"}
+                    </span>
+                  </button>
+                </div>
+              </section>
+            ))}
+          </div>
+          {!publicUrl && (
+            <p role="status" className="text-sm text-zinc-400">
+              O endereço público ainda não está disponível.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-x-4 border-t border-white/10 pt-2">
+            <button type="button" className={secondary} onClick={onBack}>
+              <ArrowLeft size={15} aria-hidden="true" />
+              Voltar aos primeiros passos
+            </button>
+            {completed && (
+              <button type="button" className={secondary} onClick={() => setView("DONE")}>
+                Ver etapa concluída
               </button>
-              {channel === "INSTAGRAM" && (
-                <a
-                  className={secondary}
-                  href="https://www.instagram.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() =>
-                    void update({ action: "RESOURCE_VIEWED", resourceId: "instagram-opened" })
-                  }
-                >
-                  Abrir Instagram
-                </a>
-              )}
-            </div>
-            {feedback && (
-              <p role="status" className="text-sm text-yellow-200">
-                {feedback}
-              </p>
             )}
-            <figure className="space-y-2 border-t border-white/10 pt-4">
-              <button
-                type="button"
-                className="block w-full overflow-hidden rounded-xl border border-white/10 bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
-                aria-label={`Ampliar imagem do ${channel === "WHATSAPP" ? "WhatsApp" : "Instagram"}`}
-                onClick={() => setExpandedImage(true)}
-              >
-                <Image
-                  src={`/images/onboarding/${image}.webp`}
-                  alt={
-                    channel === "WHATSAPP"
-                      ? "Exemplo de convite fixado no grupo do WhatsApp, com destaque amarelo"
-                      : "Exemplo do link do grupo no perfil do Instagram, com destaque amarelo"
-                  }
-                  width={941}
-                  height={1672}
-                  sizes="(max-width: 767px) calc(100vw - 4rem), 680px"
-                  className="h-[220px] w-full rounded-xl object-cover object-top sm:mx-auto sm:h-[360px] sm:w-auto sm:max-w-full sm:object-contain"
-                />
-              </button>
-              <figcaption className="text-xs text-zinc-400">
-                Exemplo ilustrativo · Clique na imagem para ampliar.
-              </figcaption>
-            </figure>
-          </>
-        )}
-      </section>
+          </div>
+        </>
+      )}
+      {feedback && (
+        <p role="status" className="text-sm text-yellow-200">
+          {feedback}
+        </p>
+      )}
     </section>
   );
 }
