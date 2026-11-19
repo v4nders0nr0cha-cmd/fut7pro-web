@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CheckCircle2, ChevronDown } from "lucide-react";
+import { ArrowDown, BookOpen, CheckCircle2, ChevronDown } from "lucide-react";
 import { useAdminGuideController } from "./AdminGuideController";
 import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import {
@@ -58,27 +58,26 @@ export default function AdminGuideContext() {
   const completed = task.completed && !checking && !failed;
   const progress = !checking && !failed ? contextProgress(guide, task) : null;
   const label = completed ? "Continuar no Guia Interativo" : "Voltar ao guia";
-  const actionClass = completed
-    ? "inline-flex min-h-11 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-400"
-    : "inline-flex min-h-11 items-center text-sm font-medium text-yellow-200 underline decoration-yellow-200/30 underline-offset-4 hover:decoration-yellow-200";
+  const actionClass =
+    "inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-lg border border-[#fff1cd]/70 bg-[#f8e5b7] px-3 py-2 text-[13px] font-semibold text-[#38270f] shadow-sm hover:bg-[#fff0ce] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8e5b7] sm:text-sm";
   return (
     <aside
       aria-label="Orientação do guia"
-      className="mb-5 min-w-0 rounded-xl border border-white/10 bg-gradient-to-br from-zinc-900 to-[#202228] p-4 text-zinc-100 sm:p-5"
+      className="relative mb-5 mt-3 min-w-0 rounded-2xl border border-[#d8ad62]/35 bg-[linear-gradient(115deg,#392b1c_0%,#2c231a_55%,#352719_100%)] p-4 pt-5 text-[#fff7e9] shadow-[0_6px_24px_-16px_rgba(212,153,52,0.45)] sm:px-5"
     >
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
-        <span className="inline-flex items-center gap-2 font-semibold text-yellow-200">
-          <BookOpen aria-hidden="true" size={17} />
+      <div className="flex min-h-4 items-center justify-end text-[11px]">
+        <span className="absolute -top-3 left-3 inline-flex items-center gap-2 rounded-lg rounded-br-2xl border border-[#ffe5a5]/60 bg-[#e8c682] px-2.5 py-1 text-[11px] font-semibold text-[#38270f] shadow-sm sm:left-5 sm:px-3">
+          <BookOpen aria-hidden="true" size={16} className="shrink-0" />
           Guia Interativo Fut7Pro
         </span>
-        <span className="text-zinc-400">{contextOrdinal(task.id)}</span>
+        <span className="text-[#dfc9a7]">{contextOrdinal(task.id)}</span>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
         <h2 className="text-base font-semibold">{task.title}</h2>
         <span
           role="status"
           aria-live="polite"
-          className={`inline-flex items-center gap-1.5 text-xs ${completed ? "text-emerald-300" : "text-zinc-400"}`}
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs ${completed ? "bg-emerald-950/50 text-emerald-200 ring-1 ring-inset ring-emerald-300/25" : "bg-black/15 text-[#e5cfac]"}`}
         >
           {completed && <CheckCircle2 size={14} aria-hidden="true" />}
           {checking
@@ -90,25 +89,25 @@ export default function AdminGuideContext() {
                 : "Em andamento"}
         </span>
       </div>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-300">
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#eadac3]">
         {checking
           ? "Aguarde a confirmação dos dados salvos no grupo."
           : failed
             ? "Tente novamente para conferir o progresso. Você pode continuar utilizando esta página."
             : contextSummary(guide, task)}
       </p>
-      {progress && <p className="mt-2 text-sm text-zinc-200">{progress}</p>}
+      {progress && <p className="mt-2 text-sm text-[#f5e8d2]">{progress}</p>}
       {task.id === "SCHEDULE" && (
         <ScheduleSummary
           visible={!checking && !failed && guide.operationalState.agendaConfigured === true}
         />
       )}
-      <div className="mt-3 flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
+      <div className="mt-2 flex flex-wrap items-start justify-between gap-x-5 gap-y-1">
         <details
           key={`${controller.scope}:${task.id}:${pathname}`}
           className="group min-w-0 flex-1 basis-56 text-sm"
         >
-          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 text-zinc-400 hover:text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-400">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 text-[#d8bd94] hover:text-[#fff7e9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f8e5b7]">
             Ver instruções detalhadas
             <ChevronDown
               aria-hidden="true"
@@ -116,7 +115,7 @@ export default function AdminGuideContext() {
               className="transition-transform group-open:rotate-180"
             />
           </summary>
-          <ol className="mt-1 list-decimal space-y-2 pl-5 text-zinc-300">
+          <ol className="mt-1 list-decimal space-y-2 pl-5 text-[#eadac3]">
             {GUIDE_CONTEXT[task.id].details.map((instruction) => (
               <li key={instruction}>{instruction}</li>
             ))}
@@ -134,15 +133,23 @@ export default function AdminGuideContext() {
           )}
           {params?.get("guiaOrigem") === "pagina" ? (
             <Link className={actionClass} href="/admin/guia-fut7pro">
+              <BookOpen aria-hidden="true" size={16} className="shrink-0" />
               {label}
             </Link>
           ) : (
             <button type="button" className={actionClass} onClick={controller.openGuide}>
+              <BookOpen aria-hidden="true" size={16} className="shrink-0" />
               {label}
             </button>
           )}
         </div>
       </div>
+      {!task.completed && !checking && !failed && (
+        <p className="mt-2 flex items-start gap-2 border-t border-[#d8ad62]/15 pt-2 text-xs leading-relaxed text-[#d8bd94]">
+          <ArrowDown aria-hidden="true" size={14} className="mt-0.5 shrink-0" />
+          Continue utilizando os controles da página abaixo.
+        </p>
+      )}
     </aside>
   );
 }
