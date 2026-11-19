@@ -365,6 +365,7 @@ function Presenter({ controller }: { controller: AdminGuideControllerValue }) {
             ) : view === "INVITATION" ? (
               <AdminGuideInvitationPanel
                 guide={guide}
+                mode="reinvite"
                 updating={updating || !actionsReady}
                 update={update}
                 origin="dashboard"
