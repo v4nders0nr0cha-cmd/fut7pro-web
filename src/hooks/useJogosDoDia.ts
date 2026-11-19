@@ -7,6 +7,8 @@ export type JogoDoDia = {
   timeB: string;
   logoTimeA: string | null;
   logoTimeB: string | null;
+  corTimeA: string | null;
+  corTimeB: string | null;
   golsTimeA: number;
   golsTimeB: number;
 };
@@ -23,6 +25,8 @@ function mapMatch(match: PublicMatch): JogoDoDia {
     timeB: nomeTimeB || "Equipe visitante",
     logoTimeA,
     logoTimeB,
+    corTimeA: match.teamA?.color ?? null,
+    corTimeB: match.teamB?.color ?? null,
     golsTimeA: Number(match.score?.teamA ?? match.scoreA ?? 0),
     golsTimeB: Number(match.score?.teamB ?? match.scoreB ?? 0),
   };

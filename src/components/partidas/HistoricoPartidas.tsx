@@ -1,7 +1,8 @@
 "use client";
 
+import { TeamBadge } from "@/components/teams/TeamBadge";
+
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   addDays,
@@ -17,8 +18,6 @@ import {
 import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import type { PublicMatch } from "@/types/partida";
-
-const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
 
 function parseMatchDate(value?: string | null) {
   if (!value) return null;
@@ -191,12 +190,11 @@ export default function HistoricoPartidas() {
 
                   <div className="flex items-center justify-center gap-3">
                     <div className="flex items-center gap-2">
-                      <Image
-                        src={match.teamA.logoUrl || FALLBACK_LOGO}
-                        alt={`Logo ${match.teamA.name}`}
-                        width={32}
-                        height={32}
-                        className="rounded"
+                      <TeamBadge
+                        name={match.teamA.name}
+                        color={match.teamA.color}
+                        logo={match.teamA.logoUrl}
+                        size={32}
                       />
                       <span className="text-sm font-semibold">{match.teamA.name}</span>
                     </div>
@@ -204,12 +202,11 @@ export default function HistoricoPartidas() {
                       {hasScore ? `${scoreA} x ${scoreB}` : "-- x --"}
                     </span>
                     <div className="flex items-center gap-2">
-                      <Image
-                        src={match.teamB.logoUrl || FALLBACK_LOGO}
-                        alt={`Logo ${match.teamB.name}`}
-                        width={32}
-                        height={32}
-                        className="rounded"
+                      <TeamBadge
+                        name={match.teamB.name}
+                        color={match.teamB.color}
+                        logo={match.teamB.logoUrl}
+                        size={32}
                       />
                       <span className="text-sm font-semibold">{match.teamB.name}</span>
                     </div>

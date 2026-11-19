@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
-
-const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
+import { TeamBadge } from "@/components/teams/TeamBadge";
 
 interface ConfrontoItem {
   id: string;
@@ -14,6 +12,8 @@ interface ConfrontoItem {
   turno?: "ida" | "volta";
   logoA?: string;
   logoB?: string;
+  corA?: string;
+  corB?: string;
 }
 
 interface ConfrontosDoDiaProps {
@@ -72,24 +72,20 @@ export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProp
                           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                             <div className="flex items-center justify-end gap-2 min-w-0">
                               <span className="truncate font-medium">{jogo.timeA}</span>
-                              <Image
-                                src={jogo.logoA || DEFAULT_LOGO}
-                                alt={jogo.timeA}
-                                width={26}
-                                height={26}
-                                className="rounded shrink-0"
-                                style={{ objectFit: "cover" }}
+                              <TeamBadge
+                                name={jogo.timeA}
+                                color={jogo.corA}
+                                logo={jogo.logoA}
+                                size={26}
                               />
                             </div>
                             <span className="text-brand font-bold text-base">x</span>
                             <div className="flex items-center justify-start gap-2 min-w-0">
-                              <Image
-                                src={jogo.logoB || DEFAULT_LOGO}
-                                alt={jogo.timeB}
-                                width={26}
-                                height={26}
-                                className="rounded shrink-0"
-                                style={{ objectFit: "cover" }}
+                              <TeamBadge
+                                name={jogo.timeB}
+                                color={jogo.corB}
+                                logo={jogo.logoB}
+                                size={26}
                               />
                               <span className="truncate font-medium">{jogo.timeB}</span>
                             </div>
@@ -127,14 +123,7 @@ export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProp
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Image
-                        src={jogo.logoA || DEFAULT_LOGO}
-                        alt={jogo.timeA}
-                        width={26}
-                        height={26}
-                        className="rounded shrink-0"
-                        style={{ objectFit: "cover" }}
-                      />
+                      <TeamBadge name={jogo.timeA} color={jogo.corA} logo={jogo.logoA} size={26} />
                       <span className="truncate text-sm font-semibold">{jogo.timeA}</span>
                     </div>
                     <span className="text-brand font-bold text-sm">x</span>
@@ -142,14 +131,7 @@ export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProp
                       <span className="truncate text-sm font-semibold text-right">
                         {jogo.timeB}
                       </span>
-                      <Image
-                        src={jogo.logoB || DEFAULT_LOGO}
-                        alt={jogo.timeB}
-                        width={26}
-                        height={26}
-                        className="rounded shrink-0"
-                        style={{ objectFit: "cover" }}
-                      />
+                      <TeamBadge name={jogo.timeB} color={jogo.corB} logo={jogo.logoB} size={26} />
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { TeamBadge } from "@/components/teams/TeamBadge";
 import Link from "next/link";
 import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
@@ -54,15 +54,7 @@ export default function TopTeamsCard() {
                   >
                     <td className="py-2">{time.posicao ?? index + 1}</td>
                     <td className="flex items-center gap-[2px] py-2 pl-0">
-                      {time.logo && (
-                        <Image
-                          src={time.logo}
-                          alt={`Escudo do ${time.nome}`}
-                          width={24}
-                          height={24}
-                          className="rounded-sm"
-                        />
-                      )}
+                      <TeamBadge name={time.nome} color={time.cor} logo={time.logo} size={24} />
                       <span className="font-medium">{time.nome}</span>
                     </td>
                     <td className="text-center py-2">{getVariacaoIcon("stable")}</td>

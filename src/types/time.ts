@@ -3,8 +3,8 @@ export interface Time {
   nome: string;
   name?: string;
   slug?: string;
-  logo?: string; // Logo do time (antes escudoUrl)
-  logoUrl?: string;
+  logo?: string | null; // Logo do time (antes escudoUrl)
+  logoUrl?: string | null;
   cor?: string; // Cor principal do time
   color?: string;
   corSecundaria?: string; // Cor secundária opcional

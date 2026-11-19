@@ -20,4 +20,18 @@ describe("resolveChampionBannerImage", () => {
 
     expect(result.image).toBe("https://cdn/logo.png");
   });
+  it("preserva Hawks quando a URL já está cadastrada", () => {
+    expect(
+      resolveChampionBannerImage({
+        logoUrl: "/images/times/time_padrao_01.png",
+        defaultImage: "/default.jpg",
+      }).image
+    ).toBe("/images/times/time_padrao_01.png");
+  });
+
+  it("usa a imagem padrão quando banner e logo estão ausentes", () => {
+    expect(resolveChampionBannerImage({ logoUrl: null, defaultImage: "/default.jpg" }).image).toBe(
+      "/default.jpg"
+    );
+  });
 });

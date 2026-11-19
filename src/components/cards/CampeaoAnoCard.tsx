@@ -1,13 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import { TeamBadge } from "@/components/teams/TeamBadge";
 import Link from "next/link";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 interface CampeaoAnoCardProps {
   titulo: string;
   nome: string;
-  image: string;
+  image: string | null;
+  teamColor?: string | null;
   valor: string;
   icone: string;
   href: string;
@@ -19,6 +21,7 @@ export default function CampeaoAnoCard({
   titulo,
   nome,
   image,
+  teamColor,
   valor,
   icone,
   href,
@@ -69,13 +72,17 @@ export default function CampeaoAnoCard({
 
       {renderTitulo()}
 
-      <Image
-        src={resolvedImage}
-        alt={`Imagem do campeão ${nome} - ${titulo}`}
-        width={100}
-        height={100}
-        className="rounded-full object-cover mb-2"
-      />
+      {titulo === "Campeão do Ano" ? (
+        <TeamBadge name={nome} color={teamColor} logo={image} size={100} className="mb-2" />
+      ) : (
+        <Image
+          src={resolvedImage}
+          alt={`Imagem do campeão ${nome} - ${titulo}`}
+          width={100}
+          height={100}
+          className="rounded-full object-cover mb-2"
+        />
+      )}
       <h3 className="text-xl font-bold text-center">{nome}</h3>
       <p className="text-sm text-gray-300">{valor}</p>
     </Link>

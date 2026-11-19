@@ -1,5 +1,7 @@
 "use client";
 
+import { TeamBadge } from "@/components/teams/TeamBadge";
+
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,7 +14,6 @@ import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/
 import type { RegisteredRoundSummary } from "@/types/destaques";
 import type { SorteioHistoricoItem } from "@/types/sorteio";
 
-const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
 const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 const PAGE_SIZE = 30;
 const HISTORICO_LIMIT = 90;
@@ -648,12 +649,11 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-center bg-[#1a1a1a] border border-neutral-800 rounded-2xl p-4">
           <div className="flex items-center gap-3">
-            <Image
-              src={match.teamA.logoUrl || FALLBACK_LOGO}
-              alt={`Logo ${match.teamA.name}`}
-              width={42}
-              height={42}
-              className="rounded"
+            <TeamBadge
+              name={match.teamA.name}
+              color={match.teamA.color}
+              logo={match.teamA.logoUrl}
+              size={42}
             />
             <div>
               <p className="text-sm text-neutral-400">Time A</p>
@@ -672,12 +672,11 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
               <p className="text-sm text-neutral-400">Time B</p>
               <p className="text-base font-semibold">{match.teamB.name}</p>
             </div>
-            <Image
-              src={match.teamB.logoUrl || FALLBACK_LOGO}
-              alt={`Logo ${match.teamB.name}`}
-              width={42}
-              height={42}
-              className="rounded"
+            <TeamBadge
+              name={match.teamB.name}
+              color={match.teamB.color}
+              logo={match.teamB.logoUrl}
+              size={42}
             />
           </div>
         </div>
@@ -1221,12 +1220,11 @@ export default function HistoricoPartidasAdmin() {
 
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <Image
-                        src={match.teamA.logoUrl || FALLBACK_LOGO}
-                        alt={`Logo ${match.teamA.name}`}
-                        width={38}
-                        height={38}
-                        className="rounded"
+                      <TeamBadge
+                        name={match.teamA.name}
+                        color={match.teamA.color}
+                        logo={match.teamA.logoUrl}
+                        size={38}
                       />
                       <div>
                         <p className="text-xs text-neutral-400">Time A</p>
@@ -1243,12 +1241,11 @@ export default function HistoricoPartidasAdmin() {
                         <p className="text-xs text-neutral-400">Time B</p>
                         <p className="text-sm font-semibold">{match.teamB.name}</p>
                       </div>
-                      <Image
-                        src={match.teamB.logoUrl || FALLBACK_LOGO}
-                        alt={`Logo ${match.teamB.name}`}
-                        width={38}
-                        height={38}
-                        className="rounded"
+                      <TeamBadge
+                        name={match.teamB.name}
+                        color={match.teamB.color}
+                        logo={match.teamB.logoUrl}
+                        size={38}
                       />
                     </div>
                   </div>

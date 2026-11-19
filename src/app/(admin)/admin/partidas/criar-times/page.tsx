@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog } from "@headlessui/react";
-import Image from "next/image";
+import { TeamBadge, visibleTeamLogo } from "@/components/teams/TeamBadge";
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -27,7 +27,6 @@ import {
   showFut7Toast,
 } from "@/components/ui/feedback";
 
-const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
 const DEFAULT_COLOR = "#FFD700";
 const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_LOGO_SIZE = 2 * 1024 * 1024;
@@ -35,10 +34,6 @@ const MAX_LOGO_SIZE = 2 * 1024 * 1024;
 type TabKey = "active" | "archived";
 type ModalMode = "create" | "edit";
 type TeamModalState = { mode: ModalMode; team?: Time } | null;
-
-function getTeamLogo(time?: Pick<Time, "logo" | "logoUrl"> | null) {
-  return time?.logo || time?.logoUrl || DEFAULT_LOGO;
-}
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof TimesApiError) {
@@ -129,15 +124,12 @@ function TeamCard({
   return (
     <article className="group flex min-w-0 flex-col rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.18)] transition hover:border-yellow-400/35 hover:bg-zinc-900/90">
       <div className="flex min-w-0 items-start gap-4">
-        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
-          <Image
-            src={getTeamLogo(time)}
-            alt={`Logo do time ${time.nome}`}
-            fill
-            sizes="64px"
-            className="object-contain p-1.5"
-          />
-        </div>
+        <TeamBadge
+          name={time.nome}
+          color={color}
+          logo={time.logoUrl !== undefined ? time.logoUrl : time.logo}
+          size={64}
+        />
         <div className="min-w-0 flex-1">
           <h2 className="line-clamp-2 break-words text-lg font-extrabold leading-tight text-white">
             {time.nome}
@@ -303,12 +295,12 @@ function TeamFormModal({
   currentSlug: string;
   saving: boolean;
   onClose: () => void;
-  onSubmit: (payload: { nome: string; cor: string; logoUrl: string }) => Promise<void>;
+  onSubmit: (payload: { nome: string; cor: string; logoUrl: string | null }) => Promise<void>;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [nome, setNome] = useState("");
   const [cor, setCor] = useState(DEFAULT_COLOR);
-  const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -321,7 +313,7 @@ function TeamFormModal({
     if (!state) return;
     setNome(state.team?.nome || "");
     setCor(state.team?.cor || state.team?.color || DEFAULT_COLOR);
-    setLogoUrl(getTeamLogo(state.team));
+    setLogoUrl(state.team?.logoUrl !== undefined ? state.team.logoUrl : (state.team?.logo ?? null));
     setUploadError(null);
     setFormError(null);
   }, [state]);
@@ -384,7 +376,7 @@ function TeamFormModal({
       await onSubmit({
         nome: nome.trim(),
         cor,
-        logoUrl: logoUrl || DEFAULT_LOGO,
+        logoUrl,
       });
     } catch (error) {
       setFormError(getErrorMessage(error, "Não foi possível salvar o time."));
@@ -488,20 +480,13 @@ function TeamFormModal({
                 <span className="block text-sm font-bold text-zinc-200">Logo do time</span>
                 <div className="mt-2 rounded-2xl border border-dashed border-zinc-700 bg-zinc-950 p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
-                      <Image
-                        src={logoUrl || DEFAULT_LOGO}
-                        alt={nome ? `Prévia da logo do time ${nome}` : "Prévia da logo do time"}
-                        fill
-                        sizes="80px"
-                        className="object-contain p-2"
-                      />
-                    </div>
+                    <TeamBadge name={nome || "Time"} color={cor} logo={logoUrl} size={80} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-white">
-                        {logoUrl && logoUrl !== DEFAULT_LOGO ? "Logo enviada" : "Enviar logo"}
+                        {visibleTeamLogo(logoUrl) ? "Logo enviada" : "Enviar logo"}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-zinc-400">
+                        Opcional. Se não enviar uma logo, usaremos as iniciais e a cor do time.
                         JPEG, PNG ou WebP com até 2 MB.
                       </p>
                       <input
@@ -527,10 +512,20 @@ function TeamFormModal({
                         )}
                         {uploading
                           ? "Enviando..."
-                          : logoUrl && logoUrl !== DEFAULT_LOGO
+                          : visibleTeamLogo(logoUrl)
                             ? "Trocar logo"
                             : "Enviar logo"}
                       </button>
+                      {visibleTeamLogo(logoUrl) && (
+                        <button
+                          type="button"
+                          onClick={() => setLogoUrl(null)}
+                          disabled={uploading || saving}
+                          className="ml-3 min-h-10 rounded-xl px-3 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/10"
+                        >
+                          Remover logo
+                        </button>
+                      )}
                     </div>
                   </div>
                   {uploadError && (
@@ -600,7 +595,7 @@ export default function CriarTimesPage() {
   const visibleTeams = activeTab === "active" ? activeTeams : archivedTeams;
   const savingForm = pendingAction === "save";
 
-  const handleSaveTeam = async (payload: { nome: string; cor: string; logoUrl: string }) => {
+  const handleSaveTeam = async (payload: { nome: string; cor: string; logoUrl: string | null }) => {
     if (!currentSlug) {
       throw new Error("Selecione um grupo no Hub para criar ou editar times.");
     }

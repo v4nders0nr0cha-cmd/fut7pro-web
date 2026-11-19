@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { TeamBadge } from "@/components/teams/TeamBadge";
 import type { TimeDoDia } from "@/types/partida";
 
 type JogadorTime = TimeDoDia["jogadores"][number];
@@ -24,13 +25,7 @@ export function CardTimeDoDia({ time }: Props) {
       aria-label={`Time ${time.nome}`}
     >
       <div className="flex items-center gap-3 mb-2">
-        <Image
-          src={time.logo}
-          alt={`Logo do time ${time.nome}`}
-          width={42}
-          height={42}
-          className="rounded-lg"
-        />
+        <TeamBadge name={time.nome} color={time.cor} logo={time.logo} size={42} />
         <h2 className="text-lg md:text-xl font-bold text-brand">
           {time.nome}
           {time.ehTimeCampeao && (

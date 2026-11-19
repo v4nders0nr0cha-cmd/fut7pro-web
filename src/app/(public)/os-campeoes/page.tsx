@@ -2,6 +2,7 @@
 
 import Head from "next/head";
 import Image from "next/image";
+import { TeamBadge } from "@/components/teams/TeamBadge";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -15,7 +16,6 @@ import type { TeamRankingEntry } from "@/hooks/usePublicTeamRankings";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
-const DEFAULT_TEAM_IMAGE = "/images/times/time_padrao_01.png";
 
 type TenantInfo = {
   slug: string;
@@ -180,7 +180,8 @@ export default function CampeoesPage() {
         titulo: "Campeão do Ano",
         nome: topTime?.nome ?? "Time em processamento",
         valor: topTime ? `${topTime.pontos} pontos` : "Em processamento",
-        image: safeImage(topTime?.logo, DEFAULT_TEAM_IMAGE),
+        image: topTime?.logo ?? null,
+        teamColor: topTime?.cor ?? null,
         icon: "/images/icons/trofeu-de-ouro.png",
         href: publicHref(`/estatisticas/classificacao-dos-times?year=${anoBase}`),
         temporario,
@@ -373,12 +374,14 @@ function ChampionHighlightCard({
   icon,
   temporario,
   highlight,
+  teamColor,
 }: {
   titulo: string;
   nome: string;
   valor: string;
   href: string;
-  image: string;
+  image: string | null;
+  teamColor?: string | null;
   icon: string;
   temporario?: boolean;
   highlight?: boolean;
@@ -411,13 +414,17 @@ function ChampionHighlightCard({
       )}
       <p className="text-[11px] uppercase font-bold text-brand mb-2 pr-10">{titulo}</p>
       <div className="flex items-center gap-3">
-        <Image
-          src={image}
-          alt={`Imagem de ${nome}`}
-          width={48}
-          height={48}
-          className="rounded-md object-cover"
-        />
+        {titulo === "Campeão do Ano" ? (
+          <TeamBadge name={nome} color={teamColor} logo={image} size={48} />
+        ) : (
+          <Image
+            src={image || DEFAULT_PLAYER_IMAGE}
+            alt={`Imagem de ${nome}`}
+            width={48}
+            height={48}
+            className="rounded-md object-cover"
+          />
+        )}
         <div className="flex flex-col">
           <p className="font-semibold text-sm text-white">{nome}</p>
           <p className="text-brand text-xs">{valor}</p>

@@ -1,5 +1,7 @@
 "use client";
 
+import { TeamBadge } from "@/components/teams/TeamBadge";
+
 import { useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,7 +10,6 @@ import { format } from "date-fns";
 import { usePublicMatch } from "@/hooks/usePublicMatch";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
-const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
 const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 
 type LineupPlayer = { id: string; nome: string; foto: string };
@@ -188,12 +189,11 @@ export default function PartidaDetalhesPage() {
         <div className="flex flex-col items-center justify-center gap-3 my-6">
           <div className="flex items-center gap-6 justify-center">
             <div className="flex flex-col items-center gap-1">
-              <Image
-                src={match.teamA.logoUrl || FALLBACK_LOGO}
-                alt={`Logo do time ${match.teamA.name}`}
-                width={48}
-                height={48}
-                className="rounded"
+              <TeamBadge
+                name={match.teamA.name}
+                color={match.teamA.color}
+                logo={match.teamA.logoUrl}
+                size={48}
               />
               <span className="font-bold text-lg">{match.teamA.name}</span>
             </div>
@@ -203,12 +203,11 @@ export default function PartidaDetalhesPage() {
               {hasScore ? scoreB : "--"}
             </span>
             <div className="flex flex-col items-center gap-1">
-              <Image
-                src={match.teamB.logoUrl || FALLBACK_LOGO}
-                alt={`Logo do time ${match.teamB.name}`}
-                width={48}
-                height={48}
-                className="rounded"
+              <TeamBadge
+                name={match.teamB.name}
+                color={match.teamB.color}
+                logo={match.teamB.logoUrl}
+                size={48}
               />
               <span className="font-bold text-lg">{match.teamB.name}</span>
             </div>

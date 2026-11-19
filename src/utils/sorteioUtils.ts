@@ -2,7 +2,7 @@
 
 import type { Participante, Posicao, TimeSorteado, SorteioHistoricoItem } from "@/types/sorteio";
 
-export type Time = { id: string; nome: string; logo: string };
+export type Time = { id: string; nome: string; logo: string; cor?: string };
 
 export interface JogoConfronto {
   ordem: number;

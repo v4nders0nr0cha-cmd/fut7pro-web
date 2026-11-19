@@ -1,5 +1,6 @@
 "use client";
 
+import { TeamBadge } from "@/components/teams/TeamBadge";
 import type { TeamRankingEntry } from "@/hooks/usePublicTeamRankings";
 
 interface ResponsiveTeamRankingProps {
@@ -39,18 +40,7 @@ export default function ResponsiveTeamRanking({
                 >
                   {index + 1}
                 </span>
-                {team.logo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={team.logo}
-                    alt={`Escudo do time ${team.nome} de futebol 7`}
-                    className="h-10 w-10 shrink-0 rounded-full border border-brand object-cover"
-                  />
-                ) : (
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-600 bg-zinc-800 text-xs font-semibold text-gray-300">
-                    SEM
-                  </span>
-                )}
+                <TeamBadge name={team.nome} color={team.cor} logo={team.logo} size={40} />
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-2 text-sm font-semibold text-white">{team.nome}</p>
                 </div>
@@ -101,14 +91,7 @@ export default function ResponsiveTeamRanking({
                   <td className="p-2 font-bold text-brand">{index + 1}</td>
                   <td className="p-2 font-semibold text-white">
                     <div className="flex items-center gap-2 whitespace-nowrap">
-                      {team.logo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={team.logo}
-                          alt={`Escudo do time ${team.nome} de futebol 7`}
-                          className="h-6 w-6 rounded object-cover"
-                        />
-                      ) : null}
+                      <TeamBadge name={team.nome} color={team.cor} logo={team.logo} size={24} />
                       <span>{team.nome}</span>
                     </div>
                   </td>
