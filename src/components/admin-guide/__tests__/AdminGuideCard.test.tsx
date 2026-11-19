@@ -849,7 +849,7 @@ it("shows sports steps 5–8 after preparation even with zero eligible athletes"
   render(<AdminOnboarding />);
   expect(screen.getByText("Fase 1 concluída")).toBeVisible();
   expect(screen.getByText("0 / 10")).toBeVisible();
-  expect(screen.getByText(/Faltam 10 para começar/)).toBeVisible();
+  expect(screen.getByText(/Faltam 10 atletas para liberar/)).toBeVisible();
   const list = screen.getByRole("list", { name: "Etapas de Entre em campo" });
   expect(
     within(list)
@@ -889,14 +889,14 @@ it("uses the official minimum and updates counts without unlocking future action
   eligiblePlayers = 8;
   const view = render(<AdminOnboarding />);
   expect(screen.getByText("8 / 12")).toBeVisible();
-  expect(screen.getByText(/Faltam 4 para começar/)).toBeVisible();
+  expect(screen.getByText(/Faltam 4 atletas para liberar/)).toBeVisible();
   eligiblePlayers = 11;
   view.rerender(<AdminOnboarding />);
   expect(screen.getByText("11 / 12")).toBeVisible();
-  expect(screen.getByText(/Falta 1 para começar/)).toBeVisible();
+  expect(screen.getByText(/Falta 1 atleta para liberar/)).toBeVisible();
   eligiblePlayers = 12;
   view.rerender(<AdminOnboarding />);
-  expect(screen.queryByRole("region", { name: "Jogadores necessários" })).toBeNull();
+  expect(screen.queryByRole("region", { name: "Requisito para liberar a Fase 2" })).toBeNull();
   expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
     "href",
     expect.stringContaining("ATHLETE_LEVELS")
@@ -943,6 +943,8 @@ it.each(["loading", "missing", "error"])("does not fabricate a player count duri
   render(<AdminOnboarding />);
   expect(screen.queryByText("0 / 10")).toBeNull();
   expect(screen.queryByRole("progressbar", { name: "Atletas elegíveis para a Fase 2" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Continuar" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Avalie o nível dos atletas" }));
   expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   if (state === "error") {
     fireEvent.click(screen.getByRole("button", { name: "Tentar atualizar" }));
@@ -963,7 +965,7 @@ it("explores phase two from the celebration without starting sports or repeating
   await screen.findByRole("button", { name: "Conhecer a Fase 2" });
   fireEvent.click(screen.getByRole("button", { name: "Conhecer a Fase 2" }));
   await screen.findByRole("list", { name: "Etapas de Entre em campo" });
-  expect(screen.getByRole("button", { name: "Convidar mais jogadores" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Convidar jogadores" })).toBeEnabled();
   expect(update).not.toHaveBeenCalledWith({ action: "FOOTBALL_STARTED" });
   fireEvent.click(screen.getByRole("button", { name: "Rever etapas da Fase 1" }));
   fireEvent.click(screen.getByRole("button", { name: "Fechar modal" }));
@@ -983,7 +985,7 @@ it("opens the existing invitation flow from locked phase two and returns to the 
   finishPreparation();
   eligiblePlayers = 0;
   render(<AdminOnboarding />);
-  fireEvent.click(screen.getByRole("button", { name: "Convidar mais jogadores" }));
+  fireEvent.click(screen.getByRole("button", { name: "Convidar jogadores" }));
   expect(screen.getByRole("heading", { name: "Etapa concluída!" })).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Continuar para a próxima etapa" }));
   expect(screen.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
@@ -1000,5 +1002,39 @@ it("keeps individual permissions when the sports phase is unlocked", () => {
   expect(screen.getByRole("heading", { name: "Avalie o nível dos atletas" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   expect(screen.getByText(/Esta ação cabe a outro responsável autorizado/)).toBeVisible();
+  expect(update).not.toHaveBeenCalled();
+});
+
+it("places a compact requirement before the steps and keeps explanations collapsed initially", () => {
+  finishPreparation();
+  eligiblePlayers = 0;
+  render(<AdminOnboarding />);
+  const indicator = screen.getByRole("region", { name: "Requisito para liberar a Fase 2" });
+  const list = screen.getByRole("list", { name: "Etapas de Entre em campo" });
+  expect(indicator.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(within(indicator).getByRole("button", { name: "Convidar jogadores" })).toBeEnabled();
+  expect(screen.queryByText("Jogadores necessários")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Avalie o nível dos atletas" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Continuar" })).toBeNull();
+  for (const button of within(list).getAllByRole("button"))
+    expect(button).toHaveAttribute("aria-expanded", "false");
+});
+
+it("opens and collapses a locked explanation, restores focus, and preserves its blocked action", () => {
+  finishPreparation();
+  eligiblePlayers = 0;
+  render(<AdminOnboarding />);
+  const control = screen.getByRole("button", { name: "Registre os resultados" });
+  fireEvent.click(control);
+  expect(control).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByRole("region", { name: "Registre os resultados" })).toHaveAttribute(
+    "id",
+    control.getAttribute("aria-controls")
+  );
+  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Recolher orientação" }));
+  expect(control).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("heading", { name: "Registre os resultados" })).toBeNull();
+  expect(control).toHaveFocus();
   expect(update).not.toHaveBeenCalled();
 });

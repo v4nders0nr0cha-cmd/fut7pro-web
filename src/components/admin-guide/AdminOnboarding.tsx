@@ -1,9 +1,18 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCircle2, Circle, ExternalLink, LockKeyhole, Trophy } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronRight,
+  ChevronUp,
+  Circle,
+  ExternalLink,
+  LockKeyhole,
+  Trophy,
+  UserRoundPlus,
+} from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import {
   ONBOARDING_IDS,
@@ -61,6 +70,7 @@ export default function AdminOnboarding({
   const returning =
     !firstPresentation &&
     Boolean(guide?.pedagogicalState.welcomePresentedAt || guide?.pedagogicalState.welcomeSeenAt);
+  const stepDetailsId = useId();
   const [selected, setSelected] = useState<string | undefined>(initialStep);
   const preparationComplete = Boolean(
     guide?.phases?.preparation.complete ?? guide?.eligibility?.preparationComplete
@@ -79,6 +89,7 @@ export default function AdminOnboarding({
   const [confirmDismiss, setConfirmDismiss] = useState(false);
   const [invitationOpen, setInvitationOpen] = useState(false);
   const invitationButtonRef = useRef<HTMLButtonElement>(null);
+  const stepButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const dismissButtonRef = useRef<HTMLButtonElement>(null);
   const stepsHeadingRef = useRef<HTMLHeadingElement>(null);
   const selectedCompleted = guide?.tasks.find((task) => task.id === selected)?.completed;
@@ -98,6 +109,8 @@ export default function AdminOnboarding({
   const phaseTasks = phaseIds.flatMap((id) => tasks.filter((task) => task.id === id));
   const phaseTitle = footballActive ? "Entre em campo" : "Prepare seu grupo";
   const waitingForPlayers = preparationComplete && !footballUnlocked;
+  const compactLockedPhase = footballActive && waitingForPlayers;
+  const showStepDetails = !compactLockedPhase || phaseTasks.some((task) => task.id === selected);
   const eligibility = guide.eligibility;
   const eligibilityKnown = Boolean(
     eligibility &&
@@ -267,12 +280,81 @@ export default function AdminOnboarding({
                 : "Deixe sua pelada pronta para começar, um passo de cada vez."}
             </p>
           </div>
+          {compactLockedPhase && (
+            <section
+              aria-label="Requisito para liberar a Fase 2"
+              className="mb-3 grid grid-cols-[20px_minmax(0,1fr)] gap-x-2.5 rounded-xl border border-amber-200/25 bg-amber-200/[0.04] px-3 py-2"
+            >
+              <LockKeyhole size={19} className="mt-0.5 text-amber-200" aria-hidden="true" />
+              <div className="min-w-0">
+                {error ? (
+                  <p role="status" className="text-xs leading-5 text-zinc-300">
+                    Não foi possível atualizar a contagem de atletas.
+                  </p>
+                ) : !canUseActions || !eligibilityKnown ? (
+                  <p role="status" className="text-xs leading-5 text-zinc-400">
+                    Atualizando a contagem de atletas...
+                  </p>
+                ) : eligibility ? (
+                  <div aria-live="polite">
+                    <div className="flex items-start justify-between gap-2 text-xs leading-5 sm:text-sm">
+                      <p className="min-w-0 font-semibold">
+                        {eligibility.missingPlayers === 1
+                          ? "Falta 1 atleta para liberar"
+                          : `Faltam ${eligibility.missingPlayers} atletas para liberar`}
+                      </p>
+                      <p className="shrink-0 whitespace-nowrap font-medium tabular-nums text-zinc-200">
+                        {eligibility.eligiblePlayers} / {eligibility.minimumPlayers}
+                      </p>
+                    </div>
+                    <div
+                      role="progressbar"
+                      aria-label="Atletas elegíveis para a Fase 2"
+                      aria-valuenow={Math.min(
+                        eligibility.eligiblePlayers,
+                        eligibility.minimumPlayers
+                      )}
+                      aria-valuemin={0}
+                      aria-valuemax={eligibility.minimumPlayers}
+                      className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/15"
+                    >
+                      <div
+                        className="h-full rounded-full bg-amber-200"
+                        style={{
+                          width: `${Math.min(100, (eligibility.eligiblePlayers / eligibility.minimumPlayers) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+                <button
+                  ref={invitationButtonRef}
+                  type="button"
+                  className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-yellow-300 underline underline-offset-4 hover:text-yellow-200 disabled:opacity-50 sm:min-h-9"
+                  disabled={updating || !canUseActions}
+                  onClick={() => {
+                    onInvitationChange?.(true);
+                    setInvitationOpen(true);
+                  }}
+                >
+                  <UserRoundPlus size={14} aria-hidden="true" />
+                  Convidar jogadores
+                  <ChevronRight size={13} aria-hidden="true" />
+                </button>
+              </div>
+            </section>
+          )}
           <ol className="space-y-1" aria-label={`Etapas de ${phaseTitle}`}>
             {phaseTasks.map((item, index) => (
               <li key={item.id}>
                 <button
                   type="button"
+                  ref={(node) => {
+                    stepButtonRefs.current[item.id] = node;
+                  }}
                   aria-current={active.id === item.id ? "step" : undefined}
+                  aria-expanded={compactLockedPhase ? selected === item.id : undefined}
+                  aria-controls={compactLockedPhase ? stepDetailsId : undefined}
                   aria-describedby={
                     !item.completed &&
                     !isOnboardingActionUnlocked(guide.tasks, item.id, guide.actionAvailability)
@@ -318,142 +400,101 @@ export default function AdminOnboarding({
             permissões.
           </p>
         </section>
-        <section
-          className="space-y-3 rounded-xl border border-white/10 bg-[#202329]/70 p-4"
-          aria-label={active.title}
-        >
-          <h3 className="text-lg font-bold">{active.title}</h3>
-          <p className="text-sm text-zinc-300">{STEP_SUMMARY[active.id]}</p>
-          {active.id === "ACTIVE_PLAYERS" ? (
-            <button
-              ref={invitationButtonRef}
-              type="button"
-              className={primary}
-              disabled={updating || !actionUnlocked || !canUseActions}
-              aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
-              onClick={() => {
-                setSelected("ACTIVE_PLAYERS");
-                onInvitationChange?.(true);
-                setInvitationOpen(true);
-              }}
-            >
-              Convidar jogadores agora
-            </button>
-          ) : actionUnlocked && canUseActions && destination ? (
-            <Link
-              className={primary}
-              href={
-                active.id === "ACCOUNT_READY"
-                  ? destination
-                  : contextualGuideHref(destination, active.id, origin)
-              }
-              target={active.id === "ACCOUNT_READY" ? "_blank" : undefined}
-              rel={active.id === "ACCOUNT_READY" ? "noopener noreferrer" : undefined}
-              onClick={() => {
-                if (active.id === "ACCOUNT_READY") return;
-                onNavigate?.();
-                if (FOOTBALL_IDS.includes(active.id) && !guide.pedagogicalState.footballStartedAt)
-                  void update({ action: "FOOTBALL_STARTED" });
-                else void update({ action: "STEP_SELECTED", tipId: active.id });
-              }}
-            >
-              {active.id === "ACCOUNT_READY"
-                ? "Ver site do grupo"
-                : active.completed
-                  ? "Consultar funcionalidade"
-                  : "Continuar"}
-              {active.id === "ACCOUNT_READY" && (
-                <ExternalLink size={14} className="ml-2 shrink-0" aria-hidden="true" />
-              )}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className={primary}
-              disabled
-              aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
-            >
-              {active.id === "ACCOUNT_READY"
-                ? "Ver site do grupo"
-                : active.completed
-                  ? "Consultar funcionalidade"
-                  : "Continuar"}
-            </button>
-          )}
-          {!actionUnlocked && (
-            <p id="onboarding-action-locked" className="text-sm text-zinc-300">
-              {onboardingBlockMessage(guide, active.id)}
-            </p>
-          )}
-          {!active.completed && !active.canAct && active.id !== "ACTIVE_PLAYERS" && (
-            <p className="text-sm text-zinc-300">
-              Esta ação depende de outro administrador autorizado do grupo.
-            </p>
-          )}
-        </section>
-        {footballActive && waitingForPlayers && (
+        {showStepDetails && (
           <section
-            className="space-y-3 border-t border-white/10 pt-4"
-            aria-label="Jogadores necessários"
+            id={stepDetailsId}
+            className="space-y-3 rounded-xl border border-white/10 bg-[#202329]/70 p-4"
+            aria-label={active.title}
           >
-            <h3 className="text-sm font-semibold">Jogadores necessários</h3>
-            {error ? (
-              <p role="status" className="text-sm text-zinc-300">
-                Não foi possível atualizar a contagem de atletas. Tente atualizar o progresso
-                abaixo.
-              </p>
-            ) : !canUseActions || !eligibilityKnown ? (
-              <p role="status" className="text-xs text-zinc-400">
-                Atualizando a contagem de atletas...
-              </p>
-            ) : eligibility ? (
-              <div className="space-y-3" aria-live="polite">
-                <p className="text-right text-sm font-semibold">
-                  {eligibility.eligiblePlayers} / {eligibility.minimumPlayers}
-                </p>
-                <div
-                  role="progressbar"
-                  aria-label="Atletas elegíveis para a Fase 2"
-                  aria-valuenow={Math.min(eligibility.eligiblePlayers, eligibility.minimumPlayers)}
-                  aria-valuemin={0}
-                  aria-valuemax={eligibility.minimumPlayers}
-                  className="h-1.5 overflow-hidden rounded-full bg-white/15"
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-lg font-bold">{active.title}</h3>
+              {compactLockedPhase && (
+                <button
+                  type="button"
+                  aria-label="Recolher orientação"
+                  className="inline-flex min-h-9 shrink-0 items-center gap-1 text-xs text-zinc-400 underline underline-offset-4 hover:text-zinc-200"
+                  onClick={() => {
+                    setSelected(undefined);
+                    stepButtonRefs.current[active.id]?.focus();
+                  }}
                 >
-                  <div
-                    className="h-full rounded-full bg-amber-200"
-                    style={{
-                      width: `${Math.min(100, (eligibility.eligiblePlayers / eligibility.minimumPlayers) * 100)}%`,
-                    }}
-                  />
-                </div>
-                <p className="text-xs leading-relaxed text-zinc-400">
-                  Esta fase será liberada quando seu grupo tiver pelo menos{" "}
-                  {eligibility.minimumPlayers} atletas elegíveis.{" "}
-                  {eligibility.missingPlayers === 1
-                    ? "Falta 1"
-                    : `Faltam ${eligibility.missingPlayers}`}{" "}
-                  para começar.
-                </p>
-              </div>
-            ) : null}
-            <button
-              ref={invitationButtonRef}
-              type="button"
-              className={`${primary} w-full`}
-              disabled={updating || !canUseActions}
-              onClick={() => {
-                onInvitationChange?.(true);
-                setInvitationOpen(true);
-              }}
-            >
-              Convidar mais jogadores
-            </button>
+                  Recolher <ChevronUp size={14} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            <p className="text-sm text-zinc-300">{STEP_SUMMARY[active.id]}</p>
+            {active.id === "ACTIVE_PLAYERS" ? (
+              <button
+                ref={invitationButtonRef}
+                type="button"
+                className={primary}
+                disabled={updating || !actionUnlocked || !canUseActions}
+                aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
+                onClick={() => {
+                  setSelected("ACTIVE_PLAYERS");
+                  onInvitationChange?.(true);
+                  setInvitationOpen(true);
+                }}
+              >
+                Convidar jogadores agora
+              </button>
+            ) : actionUnlocked && canUseActions && destination ? (
+              <Link
+                className={primary}
+                href={
+                  active.id === "ACCOUNT_READY"
+                    ? destination
+                    : contextualGuideHref(destination, active.id, origin)
+                }
+                target={active.id === "ACCOUNT_READY" ? "_blank" : undefined}
+                rel={active.id === "ACCOUNT_READY" ? "noopener noreferrer" : undefined}
+                onClick={() => {
+                  if (active.id === "ACCOUNT_READY") return;
+                  onNavigate?.();
+                  if (FOOTBALL_IDS.includes(active.id) && !guide.pedagogicalState.footballStartedAt)
+                    void update({ action: "FOOTBALL_STARTED" });
+                  else void update({ action: "STEP_SELECTED", tipId: active.id });
+                }}
+              >
+                {active.id === "ACCOUNT_READY"
+                  ? "Ver site do grupo"
+                  : active.completed
+                    ? "Consultar funcionalidade"
+                    : "Continuar"}
+                {active.id === "ACCOUNT_READY" && (
+                  <ExternalLink size={14} className="ml-2 shrink-0" aria-hidden="true" />
+                )}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className={primary}
+                disabled
+                aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
+              >
+                {active.id === "ACCOUNT_READY"
+                  ? "Ver site do grupo"
+                  : active.completed
+                    ? "Consultar funcionalidade"
+                    : "Continuar"}
+              </button>
+            )}
+            {!actionUnlocked && (
+              <p id="onboarding-action-locked" className="text-sm text-zinc-300">
+                {onboardingBlockMessage(guide, active.id)}
+              </p>
+            )}
+            {!active.completed && !active.canAct && active.id !== "ACTIVE_PLAYERS" && (
+              <p className="text-sm text-zinc-300">
+                Esta ação depende de outro administrador autorizado do grupo.
+              </p>
+            )}
           </section>
         )}
         {preparationComplete && (
           <button
             type="button"
-            className="min-h-11 w-full text-xs text-zinc-400 underline underline-offset-4 hover:text-zinc-200"
+            className="min-h-11 w-full text-left text-xs text-zinc-400 underline underline-offset-4 hover:text-zinc-200"
             onClick={() => {
               setSelected(undefined);
               setReviewingScope(reviewingPreparation ? "" : reviewScope);
