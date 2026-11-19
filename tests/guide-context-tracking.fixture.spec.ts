@@ -1,5 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { installGuide, login, addTeam } from "./fixtures/guide-continuity";
+
+async function capturePanel(page: Page, panel: Locator, path: string) {
+  // Inclui a etiqueta que atravessa o contorno, sem cortar o topo da orientação.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const bounds = await panel.boundingBox();
+  if (!bounds) throw new Error("Painel do guia indisponível para captura.");
+  const top = Math.max(0, bounds.y - 16);
+  await page.screenshot({
+    path,
+    clip: { x: bounds.x, y: top, width: bounds.width, height: bounds.height + bounds.y - top },
+  });
+}
 
 for (const width of [1280, 768, 390, 375, 320]) {
   test(`context tracking teams ${width} pending partial completed and current-page return`, async ({
@@ -18,13 +30,13 @@ for (const width of [1280, 768, 390, 375, 320]) {
     await expect(panel.getByRole("button", { name: /Mostrar|Cadastrar outro time/ })).toHaveCount(
       0
     );
-    await panel.screenshot({ path: info.outputPath(`context-teams-${width}-pending.png`) });
+    await capturePanel(page, panel, info.outputPath(`context-teams-${width}-pending.png`));
     await addTeam(page, "Time A");
     await expect(panel.getByText(/1 de 2 times/)).toBeVisible();
     await expect(page.getByText("Time adicionado", { exact: true })).toHaveCount(0, {
       timeout: 15_000,
     });
-    await panel.screenshot({ path: info.outputPath(`context-teams-${width}-partial.png`) });
+    await capturePanel(page, panel, info.outputPath(`context-teams-${width}-partial.png`));
     await addTeam(page, "Time B");
     await expect(panel.getByRole("status")).toHaveText("Etapa concluída!");
     await expect(dialog).toHaveCount(0);
@@ -32,7 +44,7 @@ for (const width of [1280, 768, 390, 375, 320]) {
     await expect(page.getByText("Time adicionado", { exact: true })).toHaveCount(0, {
       timeout: 15_000,
     });
-    await panel.screenshot({ path: info.outputPath(`context-teams-${width}-completed.png`) });
+    await capturePanel(page, panel, info.outputPath(`context-teams-${width}-completed.png`));
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: info.outputPath(`context-teams-${width}-page.png`),
@@ -95,7 +107,7 @@ for (const width of [1280, 390, 320]) {
     const panel = page.getByRole("complementary", { name: "Orientação do guia" });
     await expect(page).toHaveURL(/\/admin\/rachas\?guia=SCHEDULE/);
     await expect(panel.getByText(/Nenhum dia e horário válido/)).toBeVisible();
-    await panel.screenshot({ path: info.outputPath(`context-schedule-${width}-pending.png`) });
+    await capturePanel(page, panel, info.outputPath(`context-schedule-${width}-pending.png`));
     await page.getByLabel("Horário", { exact: true }).fill("06:27");
     await page.getByRole("button", { name: "Adicionar", exact: true }).click();
     await expect(
@@ -113,7 +125,7 @@ for (const width of [1280, 390, 320]) {
     await expect(panel.getByRole("status")).toHaveText("Etapa concluída!");
     await expect(panel.getByText("Sábado, às 06:27")).toBeVisible();
     await expect(page.getByLabel("Horário", { exact: true })).toHaveValue("20:00");
-    await panel.screenshot({ path: info.outputPath(`context-schedule-${width}-completed.png`) });
+    await capturePanel(page, panel, info.outputPath(`context-schedule-${width}-completed.png`));
     await page.getByLabel("Dia da semana", { exact: true }).selectOption("2");
     await page.getByRole("button", { name: "Adicionar", exact: true }).click();
     await expect(panel.getByText("Terça-feira, às 20:00")).toBeVisible();
