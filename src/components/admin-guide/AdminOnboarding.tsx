@@ -88,6 +88,8 @@ export default function AdminOnboarding({
   }, [footballActive]);
   const [confirmDismiss, setConfirmDismiss] = useState(false);
   const [invitationOpen, setInvitationOpen] = useState(false);
+  // O contexto é fixado ao abrir: concluir a Fase 1 durante o convite não reinicia o painel.
+  const [invitationMode, setInvitationMode] = useState<"onboarding" | "reinvite">("onboarding");
   const invitationButtonRef = useRef<HTMLButtonElement>(null);
   const stepButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const dismissButtonRef = useRef<HTMLButtonElement>(null);
@@ -139,7 +141,7 @@ export default function AdminOnboarding({
     return (
       <AdminGuideInvitationPanel
         guide={guide}
-        mode={preparationComplete ? "reinvite" : "onboarding"}
+        mode={invitationMode}
         origin={origin}
         returnTo={returnTo}
         onNavigate={onNavigate}
@@ -334,6 +336,7 @@ export default function AdminOnboarding({
                   className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-yellow-300 underline underline-offset-4 hover:text-yellow-200 disabled:opacity-50 sm:min-h-9"
                   disabled={updating || !canUseActions}
                   onClick={() => {
+                    setInvitationMode("reinvite");
                     onInvitationChange?.(true);
                     setInvitationOpen(true);
                   }}
@@ -433,6 +436,7 @@ export default function AdminOnboarding({
                 aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
                 onClick={() => {
                   setSelected("ACTIVE_PLAYERS");
+                  setInvitationMode(preparationComplete ? "reinvite" : "onboarding");
                   onInvitationChange?.(true);
                   setInvitationOpen(true);
                 }}
