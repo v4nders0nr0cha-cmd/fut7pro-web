@@ -210,7 +210,7 @@ export default function AdminOnboarding({
       </aside>
       <section className="min-w-0 space-y-4" aria-label="Primeiros passos do grupo">
         <div>
-          <h2 ref={stepsHeadingRef} tabIndex={-1} className="text-xl font-bold outline-none">
+          <h2 ref={stepsHeadingRef} tabIndex={-1} className="text-xl font-bold focus:outline-none">
             Primeiros passos do grupo
           </h2>
           <p className="mt-1 text-sm text-zinc-300">

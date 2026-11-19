@@ -230,7 +230,7 @@ function InvitationFlow({
       ref={root}
       tabIndex={-1}
       aria-label="Convite de jogadores"
-      className="min-w-0 space-y-5 text-white outline-none"
+      className="min-w-0 space-y-5 text-white focus:outline-none"
     >
       {view === "EXAMPLE" ? (
         <>

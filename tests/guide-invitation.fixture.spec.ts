@@ -65,6 +65,9 @@ for (const viewport of [
       dialog.getByRole("heading", { name: "Traga seus primeiros jogadores", exact: true })
     ).toBeVisible();
     expect(examples).toBe(0);
+    await expect(
+      dialog.getByRole("region", { name: "Convite de jogadores", exact: true })
+    ).toHaveCSS("outline-style", "none");
     await expect(dialog.getByRole("link", { name: "Cadastrar jogador manualmente" })).toHaveCount(
       0
     );
