@@ -87,24 +87,22 @@ test("contextual team creation resumes the current page, persists X by real logi
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
   const reloadDashboard = async () => {
     if (new URL(page.url()).pathname !== dashboard) await page.goto(dashboard);
-    const accessAfterRefresh = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/admin/access"
-    );
-    const guideAfterRefresh = page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === "/api/admin/guide" &&
-        response.request().method() === "GET"
-    );
     await page.reload();
-    const accessResponse = await accessAfterRefresh;
-    expect(accessResponse.ok(), await accessResponse.text()).toBe(true);
-    expect(await accessResponse.json()).toMatchObject({ allowed: true });
-    const guideResponse = await guideAfterRefresh;
-    expect(guideResponse.ok()).toBe(true);
-    expect((await guideResponse.json()).tenant.slug).toBe("grupo-fixture");
     await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
-    // Wait for the authorization and guide reads this journey requires; unrelated
-    // Dashboard traffic must not decide whether identity/progress are ready.
+    // Read from the current document. WebKit can discard response bodies from
+    // the previous document when a Dashboard request races with the reload.
+    const [access, currentGuide] = await page.evaluate(async () =>
+      Promise.all(
+        ["/api/admin/access", "/api/admin/guide"].map(async (url) => {
+          const response = await fetch(url, { cache: "no-store" });
+          return { ok: response.ok, body: await response.json() };
+        })
+      )
+    );
+    expect(access.ok).toBe(true);
+    expect(access.body).toMatchObject({ allowed: true });
+    expect(currentGuide.ok).toBe(true);
+    expect(currentGuide.body.tenant.slug).toBe("grupo-fixture");
   };
   await page.goto(dashboard);
   await reloadDashboard();
