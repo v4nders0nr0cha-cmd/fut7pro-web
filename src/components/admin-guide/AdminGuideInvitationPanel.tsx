@@ -45,6 +45,11 @@ function pendingChannel(key: string, guide: AdminGuideData): Channel | null {
     )
   )[0];
   if (latestCopy) return latestCopy;
+  const declarations = guide.pedagogicalState.invitationConfirmations;
+  const lastDeclaration = channels
+    .filter((item) => declarations?.[item])
+    .sort((a, b) => (declarations?.[b] ?? "").localeCompare(declarations?.[a] ?? ""))[0];
+  if (lastDeclaration) return lastDeclaration;
   const latestOpen = [...(guide.pedagogicalState.viewedResources ?? [])]
     .reverse()
     .find((resource) => resource === "whatsapp-share-attempt" || resource === "instagram-opened");

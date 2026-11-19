@@ -162,3 +162,10 @@ it("respects historical completion, registration permissions and already used ch
   expect(screen.getByRole("button", { name: "Continuar para a próxima etapa" })).toBeEnabled();
   expect(update).not.toHaveBeenCalled();
 });
+it("remembers the declared Instagram channel even if recording the preceding copy failed", () => {
+  guide.tasks.forEach((task) => (task.completed = true));
+  guide.pedagogicalState.invitationConfirmations = { INSTAGRAM: "2026-11-18T00:00:00Z" };
+  render(panel());
+  expect(screen.getByRole("button", { name: "Compartilhar também no WhatsApp" })).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Divulgar também no Instagram" })).toBeNull();
+});
