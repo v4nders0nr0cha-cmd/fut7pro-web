@@ -2,11 +2,11 @@
 
 Consulta de leitura no projeto Neon `fut7pro-prodution`, tabela `public."Team"`, em 19/11/2026:
 
-| Grupo | ID do time | Nome | Cor | URL atual |
-| --- | --- | --- | --- | --- |
-| quintasemlei | cmwnt03sd000jg33sg1azirli | Time amarelo | #FFD700 | /images/times/time_padrao_01.png |
-| quintasemlei | cmwnt0pgt000ng33s0a6kj7qz | time vermelho | #ff0000 | /images/times/time_padrao_01.png |
-| vitrine | cmkfmjq520001i2owxe178xv0 | Leoes do Norte | #f97316 | /images/times/time_padrao_01.png |
+| Grupo        | ID do time                | Nome           | Cor     | URL atual                        |
+| ------------ | ------------------------- | -------------- | ------- | -------------------------------- |
+| quintasemlei | cmwnt03sd000jg33sg1azirli | Time amarelo   | #FFD700 | /images/times/time_padrao_01.png |
+| quintasemlei | cmwnt0pgt000ng33s0a6kj7qz | time vermelho  | #ff0000 | /images/times/time_padrao_01.png |
+| vitrine      | cmkfmjq520001i2owxe178xv0 | Leoes do Norte | #f97316 | /images/times/time_padrao_01.png |
 
 Os dois times de `quintasemlei` foram cadastrados sem upload. O registro `vitrine` permanece fora do escopo até comprovação da origem da imagem. Nenhuma escrita foi executada durante a análise.
 

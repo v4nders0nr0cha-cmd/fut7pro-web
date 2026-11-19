@@ -649,7 +649,12 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-center bg-[#1a1a1a] border border-neutral-800 rounded-2xl p-4">
           <div className="flex items-center gap-3">
-            <TeamBadge name={match.teamA.name} color={match.teamA.color} logo={match.teamA.logoUrl} size={42} />
+            <TeamBadge
+              name={match.teamA.name}
+              color={match.teamA.color}
+              logo={match.teamA.logoUrl}
+              size={42}
+            />
             <div>
               <p className="text-sm text-neutral-400">Time A</p>
               <p className="text-base font-semibold">{match.teamA.name}</p>
@@ -667,7 +672,12 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
               <p className="text-sm text-neutral-400">Time B</p>
               <p className="text-base font-semibold">{match.teamB.name}</p>
             </div>
-            <TeamBadge name={match.teamB.name} color={match.teamB.color} logo={match.teamB.logoUrl} size={42} />
+            <TeamBadge
+              name={match.teamB.name}
+              color={match.teamB.color}
+              logo={match.teamB.logoUrl}
+              size={42}
+            />
           </div>
         </div>
 
@@ -1210,7 +1220,12 @@ export default function HistoricoPartidasAdmin() {
 
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <TeamBadge name={match.teamA.name} color={match.teamA.color} logo={match.teamA.logoUrl} size={38} />
+                      <TeamBadge
+                        name={match.teamA.name}
+                        color={match.teamA.color}
+                        logo={match.teamA.logoUrl}
+                        size={38}
+                      />
                       <div>
                         <p className="text-xs text-neutral-400">Time A</p>
                         <p className="text-sm font-semibold">{match.teamA.name}</p>
@@ -1226,7 +1241,12 @@ export default function HistoricoPartidasAdmin() {
                         <p className="text-xs text-neutral-400">Time B</p>
                         <p className="text-sm font-semibold">{match.teamB.name}</p>
                       </div>
-                      <TeamBadge name={match.teamB.name} color={match.teamB.color} logo={match.teamB.logoUrl} size={38} />
+                      <TeamBadge
+                        name={match.teamB.name}
+                        color={match.teamB.color}
+                        logo={match.teamB.logoUrl}
+                        size={38}
+                      />
                     </div>
                   </div>
 

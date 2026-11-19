@@ -189,7 +189,12 @@ export default function PartidaDetalhesPage() {
         <div className="flex flex-col items-center justify-center gap-3 my-6">
           <div className="flex items-center gap-6 justify-center">
             <div className="flex flex-col items-center gap-1">
-              <TeamBadge name={match.teamA.name} color={match.teamA.color} logo={match.teamA.logoUrl} size={48} />
+              <TeamBadge
+                name={match.teamA.name}
+                color={match.teamA.color}
+                logo={match.teamA.logoUrl}
+                size={48}
+              />
               <span className="font-bold text-lg">{match.teamA.name}</span>
             </div>
             <span className="text-4xl font-extrabold">
@@ -198,7 +203,12 @@ export default function PartidaDetalhesPage() {
               {hasScore ? scoreB : "--"}
             </span>
             <div className="flex flex-col items-center gap-1">
-              <TeamBadge name={match.teamB.name} color={match.teamB.color} logo={match.teamB.logoUrl} size={48} />
+              <TeamBadge
+                name={match.teamB.name}
+                color={match.teamB.color}
+                logo={match.teamB.logoUrl}
+                size={48}
+              />
               <span className="font-bold text-lg">{match.teamB.name}</span>
             </div>
           </div>

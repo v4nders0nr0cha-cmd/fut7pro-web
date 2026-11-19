@@ -417,7 +417,13 @@ function ChampionHighlightCard({
         {titulo === "Campeão do Ano" ? (
           <TeamBadge name={nome} color={teamColor} logo={image} size={48} />
         ) : (
-          <Image src={image || DEFAULT_PLAYER_IMAGE} alt={`Imagem de ${nome}`} width={48} height={48} className="rounded-md object-cover" />
+          <Image
+            src={image || DEFAULT_PLAYER_IMAGE}
+            alt={`Imagem de ${nome}`}
+            width={48}
+            height={48}
+            className="rounded-md object-cover"
+          />
         )}
         <div className="flex flex-col">
           <p className="font-semibold text-sm text-white">{nome}</p>

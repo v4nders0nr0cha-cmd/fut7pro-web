@@ -789,7 +789,12 @@ export default function TimeCampeaoDoDiaPage() {
                   <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
                     <div className="rounded-2xl border border-yellow-400/40 bg-gradient-to-br from-zinc-950 to-zinc-900 p-5 shadow-lg">
                       <div className="flex items-center gap-4">
-                        <TeamBadge name={timeCampeao?.nome || "Time Campeão do Dia"} color={timeCampeao?.cor} logo={timeCampeao?.logoUrl} size={64} />
+                        <TeamBadge
+                          name={timeCampeao?.nome || "Time Campeão do Dia"}
+                          color={timeCampeao?.cor}
+                          logo={timeCampeao?.logoUrl}
+                          size={64}
+                        />
                         <div>
                           <p className="text-xs font-bold uppercase text-yellow-300">
                             Time Campeão do Dia

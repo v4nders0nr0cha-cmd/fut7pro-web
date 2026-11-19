@@ -48,7 +48,7 @@ function slugify(value: string) {
 export function normalizeTime(raw: any): Time {
   const nome = raw?.nome || raw?.name || raw?.title || "Time";
   const slug = raw?.slug || slugify(nome) || raw?.id || "time";
-  const logo = raw?.logoUrl !== undefined ? raw.logoUrl : raw?.logo ?? null;
+  const logo = raw?.logoUrl !== undefined ? raw.logoUrl : (raw?.logo ?? null);
   const cor = raw?.cor || raw?.color || DEFAULT_COR;
 
   return {
@@ -109,7 +109,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
     const payload = {
       name: time.nome || time.name || "Novo Time",
       color: time.cor || time.color || DEFAULT_COR,
-      logoUrl: time.logoUrl !== undefined ? time.logoUrl : time.logo ?? null,
+      logoUrl: time.logoUrl !== undefined ? time.logoUrl : (time.logo ?? null),
     };
 
     const res = await fetch(`/api/times${search}`, {
@@ -133,7 +133,7 @@ export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
     const payload = {
       name: time.nome || time.name || "Time",
       color: time.cor || time.color || DEFAULT_COR,
-      logoUrl: time.logoUrl !== undefined ? time.logoUrl : time.logo ?? null,
+      logoUrl: time.logoUrl !== undefined ? time.logoUrl : (time.logo ?? null),
     };
 
     const res = await fetch(`/api/times/${time.id}${search}`, {

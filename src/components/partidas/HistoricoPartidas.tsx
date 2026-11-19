@@ -19,7 +19,6 @@ import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import type { PublicMatch } from "@/types/partida";
 
-
 function parseMatchDate(value?: string | null) {
   if (!value) return null;
   const date = new Date(value);
@@ -191,14 +190,24 @@ export default function HistoricoPartidas() {
 
                   <div className="flex items-center justify-center gap-3">
                     <div className="flex items-center gap-2">
-                      <TeamBadge name={match.teamA.name} color={match.teamA.color} logo={match.teamA.logoUrl} size={32} />
+                      <TeamBadge
+                        name={match.teamA.name}
+                        color={match.teamA.color}
+                        logo={match.teamA.logoUrl}
+                        size={32}
+                      />
                       <span className="text-sm font-semibold">{match.teamA.name}</span>
                     </div>
                     <span className="text-lg font-bold text-brand">
                       {hasScore ? `${scoreA} x ${scoreB}` : "-- x --"}
                     </span>
                     <div className="flex items-center gap-2">
-                      <TeamBadge name={match.teamB.name} color={match.teamB.color} logo={match.teamB.logoUrl} size={32} />
+                      <TeamBadge
+                        name={match.teamB.name}
+                        color={match.teamB.color}
+                        logo={match.teamB.logoUrl}
+                        size={32}
+                      />
                       <span className="text-sm font-semibold">{match.teamB.name}</span>
                     </div>
                   </div>

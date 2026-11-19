@@ -1280,7 +1280,12 @@ export function MatchModal({
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-center rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
           <div className="flex items-center gap-3">
-            <TeamBadge name={match.teamA.name} color={match.teamA.color} logo={match.teamA.logoUrl} size={42} />
+            <TeamBadge
+              name={match.teamA.name}
+              color={match.teamA.color}
+              logo={match.teamA.logoUrl}
+              size={42}
+            />
             <div>
               <p className="text-xs text-neutral-400">Time A</p>
               <p className="text-base font-semibold">{match.teamA.name}</p>
@@ -1297,7 +1302,12 @@ export function MatchModal({
               <p className="text-xs text-neutral-400">Time B</p>
               <p className="text-base font-semibold">{match.teamB.name}</p>
             </div>
-            <TeamBadge name={match.teamB.name} color={match.teamB.color} logo={match.teamB.logoUrl} size={42} />
+            <TeamBadge
+              name={match.teamB.name}
+              color={match.teamB.color}
+              logo={match.teamB.logoUrl}
+              size={42}
+            />
           </div>
         </div>
 
@@ -1982,7 +1992,12 @@ export default function ResultadosDoDiaAdmin({
 
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <TeamBadge name={item.match.teamA.name} color={item.match.teamA.color} logo={item.match.teamA.logoUrl} size={38} />
+                  <TeamBadge
+                    name={item.match.teamA.name}
+                    color={item.match.teamA.color}
+                    logo={item.match.teamA.logoUrl}
+                    size={38}
+                  />
                   <div>
                     <p className="text-xs text-neutral-400">Time A</p>
                     <p className="text-sm font-semibold text-white">{item.match.teamA.name}</p>
@@ -1998,7 +2013,12 @@ export default function ResultadosDoDiaAdmin({
                     <p className="text-xs text-neutral-400">Time B</p>
                     <p className="text-sm font-semibold text-white">{item.match.teamB.name}</p>
                   </div>
-                  <TeamBadge name={item.match.teamB.name} color={item.match.teamB.color} logo={item.match.teamB.logoUrl} size={38} />
+                  <TeamBadge
+                    name={item.match.teamB.name}
+                    color={item.match.teamB.color}
+                    logo={item.match.teamB.logoUrl}
+                    size={38}
+                  />
                 </div>
               </div>
 

@@ -35,7 +35,6 @@ type TabKey = "active" | "archived";
 type ModalMode = "create" | "edit";
 type TeamModalState = { mode: ModalMode; team?: Time } | null;
 
-
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof TimesApiError) {
     if (error.code === "TEAM_HAS_HISTORICAL_USAGE") {
@@ -125,7 +124,12 @@ function TeamCard({
   return (
     <article className="group flex min-w-0 flex-col rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.18)] transition hover:border-yellow-400/35 hover:bg-zinc-900/90">
       <div className="flex min-w-0 items-start gap-4">
-        <TeamBadge name={time.nome} color={color} logo={time.logoUrl !== undefined ? time.logoUrl : time.logo} size={64} />
+        <TeamBadge
+          name={time.nome}
+          color={color}
+          logo={time.logoUrl !== undefined ? time.logoUrl : time.logo}
+          size={64}
+        />
         <div className="min-w-0 flex-1">
           <h2 className="line-clamp-2 break-words text-lg font-extrabold leading-tight text-white">
             {time.nome}
@@ -309,7 +313,7 @@ function TeamFormModal({
     if (!state) return;
     setNome(state.team?.nome || "");
     setCor(state.team?.cor || state.team?.color || DEFAULT_COLOR);
-    setLogoUrl(state.team?.logoUrl !== undefined ? state.team.logoUrl : state.team?.logo ?? null);
+    setLogoUrl(state.team?.logoUrl !== undefined ? state.team.logoUrl : (state.team?.logo ?? null));
     setUploadError(null);
     setFormError(null);
   }, [state]);
@@ -482,7 +486,8 @@ function TeamFormModal({
                         {visibleTeamLogo(logoUrl) ? "Logo enviada" : "Enviar logo"}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-zinc-400">
-                        Opcional. Se não enviar uma logo, usaremos as iniciais e a cor do time. JPEG, PNG ou WebP com até 2 MB.
+                        Opcional. Se não enviar uma logo, usaremos as iniciais e a cor do time.
+                        JPEG, PNG ou WebP com até 2 MB.
                       </p>
                       <input
                         ref={fileRef}
@@ -512,8 +517,12 @@ function TeamFormModal({
                             : "Enviar logo"}
                       </button>
                       {visibleTeamLogo(logoUrl) && (
-                        <button type="button" onClick={() => setLogoUrl(null)} disabled={uploading || saving}
-                          className="ml-3 min-h-10 rounded-xl px-3 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/10">
+                        <button
+                          type="button"
+                          onClick={() => setLogoUrl(null)}
+                          disabled={uploading || saving}
+                          className="ml-3 min-h-10 rounded-xl px-3 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/10"
+                        >
                           Remover logo
                         </button>
                       )}
