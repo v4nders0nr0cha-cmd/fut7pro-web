@@ -340,11 +340,11 @@ export default function AdminGuideContext() {
             </span>
             <span className="w-min text-xs">Tentar novamente</span>
           </div>
-          <div className="flex min-h-11 min-w-0 max-w-full items-center gap-2 [grid-area:1/1]">
+          <div className="grid min-h-11 min-w-0 max-w-full grid-cols-[minmax(0,1fr)_auto] items-center justify-items-start gap-2 [grid-area:1/1]">
             {guide ? (
               params?.get("guiaOrigem") === "pagina" ? (
                 <Link
-                  className={`${actionClass} ${failed ? "min-w-0 flex-1" : ""}`}
+                  className={`${actionClass} ${failed ? "min-w-min w-full" : ""}`}
                   href="/admin/guia-fut7pro"
                 >
                   {returnContent}
@@ -352,7 +352,7 @@ export default function AdminGuideContext() {
               ) : (
                 <button
                   type="button"
-                  className={`${actionClass} ${failed ? "min-w-0 flex-1" : ""}`}
+                  className={`${actionClass} ${failed ? "min-w-min w-full" : ""}`}
                   onClick={controller.openGuide}
                 >
                   {returnContent}
