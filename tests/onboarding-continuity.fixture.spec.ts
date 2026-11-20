@@ -344,9 +344,50 @@ for (const width of [1280, 390, 320]) {
     await expect(guide.getByText("Etapa concluída!", { exact: true })).toHaveCount(0);
     const shareLink = guide.getByRole("link", { name: "Compartilhar no WhatsApp" });
     await expect(shareLink).toHaveAttribute("href", /wa\.me/);
+    const manual = guide.getByRole("region", { name: "Cadastro manual de jogadores" });
+    await expect(manual).toHaveText(/Prefere cadastrar os jogadores manualmente/);
+    await expect(manual).toContainText(
+      "Você não precisa esperar os atletas criarem suas contas. Pode cadastrá-los manualmente e vinculá-los às contas deles posteriormente."
+    );
+    const manualLink = manual.getByRole("link", { name: "Cadastrar jogador", exact: true });
+    await expect(manualLink).toHaveAttribute(
+      "href",
+      "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard"
+    );
+    const manualBox = (await manual.boundingBox())!;
+    const cards = guide.getByRole("region", { name: "WhatsApp", exact: true });
+    const cardBox = (await cards.boundingBox())!;
+    expect(manualBox.y).toBeGreaterThanOrEqual(cardBox.y + cardBox.height);
+    expect(manualBox.height).toBeLessThanOrEqual(width < 768 ? 240 : 150);
+    await manual.scrollIntoViewIfNeeded();
+    await guide.screenshot({ path: info.outputPath(`manual-invitation-${width}.png`) });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true
+    );
+    const actionsBeforeRegistration = [...fixture.actions];
+    const completedBeforeRegistration = [...fixture.completed];
+    await manualLink.click();
+    await expect(page).toHaveURL(
+      /\/admin\/jogadores\/listar-cadastrar\?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard/
+    );
+    await expect(guide).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Cadastrar Jogador", exact: true })
+    ).toBeVisible();
+    expect(fixture.actions).toEqual(actionsBeforeRegistration);
+    expect([...fixture.completed]).toEqual(completedBeforeRegistration);
+    // Only a fresh official response changes eligibility; navigating does not increment it.
+    fixture.setEligible(1);
+    await page.getByRole("button", { name: "Continuar no Guia Interativo", exact: true }).click();
+    await expect(phase.locator("li")).toHaveCount(4);
+    await expect(guide.getByText("1 / 10", { exact: true })).toBeVisible();
+    await expect(guide.getByText("Faltam 9 atletas para liberar", { exact: true })).toBeVisible();
+    expect(fixture.actions).toEqual(actionsBeforeRegistration);
+    expect([...fixture.completed]).toEqual(completedBeforeRegistration);
+    await guide.getByRole("button", { name: "Convidar jogadores", exact: true }).click();
     await guide.getByRole("button", { name: "Voltar à Fase 2", exact: true }).click();
     await expect(phase.locator("li")).toHaveCount(4);
-    await expect(guide.getByText("0 / 10", { exact: true })).toBeVisible();
+    await expect(guide.getByText("1 / 10", { exact: true })).toBeVisible();
     fixture.setEligible(9);
     await page.evaluate(() => window.dispatchEvent(new Event("fut7pro:guide-data-changed")));
     await expect(guide.getByText("9 / 10", { exact: true })).toBeVisible();

@@ -116,6 +116,12 @@ function InvitationFlow({
     unlocked &&
     guide.capabilities.managePlayers === true &&
     guide.tasks.some((task) => task.id === "ACTIVE_PLAYERS" && task.canAct);
+  const canRegisterMore =
+    reinvite &&
+    guide.eligibility?.preparationComplete === true &&
+    guide.eligibility?.footballUnlocked === false &&
+    guide.administrator.status === "APROVADO" &&
+    guide.capabilities.managePlayers === true;
   const invite = `Fala, galera! ⚽🔥\n\nNosso site da pelada já está no ar!\n\nEntrem pelo link e criem suas contas para acompanhar partidas, estatísticas e conquistas.\n\n👉 ${publicUrl}\n\nTamo junto! 👊⚽`;
   const appHref =
     channel === "WHATSAPP"
@@ -550,6 +556,36 @@ function InvitationFlow({
               </section>
             ))}
           </div>
+          {canRegisterMore && !updating && (
+            <section
+              aria-label="Cadastro manual de jogadores"
+              className="grid grid-cols-[16px_minmax(0,1fr)] gap-x-2.5 rounded-xl border border-white/10 px-3 py-2 text-sm"
+            >
+              <UserRoundPlus size={16} aria-hidden="true" className="mt-0.5 text-zinc-400" />
+              <div className="min-w-0">
+                <h3 className="font-semibold text-zinc-200">
+                  Prefere cadastrar os jogadores manualmente?
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                  Você não precisa esperar os atletas criarem suas contas. Pode cadastrá-los
+                  manualmente e vinculá-los às contas deles posteriormente.
+                </p>
+                <Link
+                  className="inline-flex min-h-11 items-center gap-1.5 text-xs text-zinc-300 underline decoration-white/20 underline-offset-4 hover:text-white"
+                  href={contextualGuideHref(
+                    "/admin/jogadores/listar-cadastrar",
+                    "ACTIVE_PLAYERS",
+                    origin,
+                    returnTo
+                  )}
+                  onClick={onNavigate}
+                >
+                  <UserRoundPlus size={14} aria-hidden="true" />
+                  Cadastrar jogador
+                </Link>
+              </div>
+            </section>
+          )}
           {!publicUrl && (
             <p role="status" className="text-sm text-zinc-400">
               O endereço público ainda não está disponível.
