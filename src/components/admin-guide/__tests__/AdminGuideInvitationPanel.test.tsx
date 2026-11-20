@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminGuideInvitationPanel from "../AdminGuideInvitationPanel";
 import type { AdminGuideData } from "@/types/admin-guide";
@@ -5,7 +6,10 @@ let guide: AdminGuideData;
 const update = jest.fn();
 const onBack = jest.fn();
 const onContinue = jest.fn();
-function panel(mode?: "onboarding" | "reinvite") {
+function panel(
+  mode?: "onboarding" | "reinvite",
+  props: Partial<ComponentProps<typeof AdminGuideInvitationPanel>> = {}
+) {
   return (
     <AdminGuideInvitationPanel
       guide={guide}
@@ -15,6 +19,7 @@ function panel(mode?: "onboarding" | "reinvite") {
       onBack={onBack}
       onContinue={onContinue}
       origin="dashboard"
+      {...props}
     />
   );
 }
@@ -28,7 +33,8 @@ beforeEach(() => {
   });
   guide = {
     tenant: { id: "group", slug: "pelada", publicUrl: "https://app.fut7pro.com.br/pelada" },
-    administrator: { membershipId: "admin" },
+    administrator: { membershipId: "admin", status: "APROVADO" },
+    eligibility: { preparationComplete: true, footballUnlocked: false },
     capabilities: { managePlayers: true },
     pedagogicalState: {
       revision: 0,
@@ -191,4 +197,60 @@ it("remembers the declared Instagram channel even if recording the preceding cop
   render(panel());
   expect(screen.getByRole("button", { name: "Compartilhar também no WhatsApp" })).toBeVisible();
   expect(screen.queryByRole("button", { name: "Divulgar também no Instagram" })).toBeNull();
+});
+
+it("offers contextual manual registration independently of the initial invitation step", () => {
+  guide.tasks.forEach((task) => {
+    task.completed = true;
+    task.canAct = false;
+  });
+  guide.actionAvailability = { ACTIVE_PLAYERS: { allowed: false, reason: "PREVIOUS_STEPS" } };
+  const onNavigate = jest.fn();
+  render(panel("reinvite", { onNavigate, returnTo: "/admin/dashboard" }));
+  const section = screen.getByRole("region", { name: "Cadastro manual de jogadores" });
+  expect(section).toHaveTextContent("Prefere cadastrar os jogadores manualmente?");
+  expect(section).toHaveTextContent(
+    "Você não precisa esperar os atletas criarem suas contas. Pode cadastrá-los manualmente e vinculá-los às contas deles posteriormente."
+  );
+  const link = screen.getByRole("link", { name: "Cadastrar jogador", exact: true });
+  expect(link).toHaveAttribute(
+    "href",
+    "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard"
+  );
+  const share = screen.getByRole("region", { name: "Instagram", exact: true });
+  const back = screen.getByRole("button", { name: "Voltar à Fase 2" });
+  expect(share.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(section.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  fireEvent.click(link);
+  expect(onNavigate).toHaveBeenCalledTimes(1);
+  expect(update).not.toHaveBeenCalled();
+  expect(guide.tasks.every((task) => task.completed)).toBe(true);
+});
+it.each(["permission", "pending", "updating", "unlocked", "onboarding"])(
+  "hides the additional manual registration shortcut for %s",
+  (condition) => {
+    if (condition === "permission") guide.capabilities.managePlayers = false;
+    if (condition === "pending") guide.administrator.status = "PENDENTE";
+    if (condition === "unlocked") guide.eligibility!.footballUnlocked = true;
+    render(
+      panel(condition === "onboarding" ? "onboarding" : "reinvite", {
+        updating: condition === "updating",
+      })
+    );
+    expect(screen.queryByRole("region", { name: "Cadastro manual de jogadores" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Cadastrar jogador", exact: true })).toBeNull();
+    expect(update).not.toHaveBeenCalled();
+  }
+);
+it("keeps full-page and contextual return destinations for manual registration", () => {
+  const view = render(panel("reinvite", { origin: "pagina" }));
+  expect(screen.getByRole("link", { name: "Cadastrar jogador", exact: true })).toHaveAttribute(
+    "href",
+    "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=pagina"
+  );
+  view.rerender(panel("reinvite", { returnTo: "/admin/partidas/criar-times" }));
+  expect(screen.getByRole("link", { name: "Cadastrar jogador", exact: true })).toHaveAttribute(
+    "href",
+    "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard&guiaRetorno=%2Fadmin%2Fpartidas%2Fcriar-times"
+  );
 });
