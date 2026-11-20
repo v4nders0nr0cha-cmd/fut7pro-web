@@ -95,6 +95,9 @@ export function guideResourceDestinations(guide: AdminGuideData) {
   };
 }
 
+// Contexto de apoio à Fase 2; não integra a lista de etapas do onboarding.
+export const GUIDE_RECRUITING_CONTEXT = "FOOTBALL_PLAYERS";
+
 export type GuideOrigin = "dashboard" | "pagina";
 export function guideReturnPath(value?: string | null) {
   return value &&

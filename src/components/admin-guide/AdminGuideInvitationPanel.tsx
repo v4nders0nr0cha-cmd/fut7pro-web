@@ -11,7 +11,11 @@ import {
   UserRoundPlus,
 } from "lucide-react";
 import { FaInstagram, FaWhatsapp } from "react-icons/fa";
-import { contextualGuideHref, type GuideOrigin } from "@/lib/admin-guide-navigation";
+import {
+  GUIDE_RECRUITING_CONTEXT,
+  contextualGuideHref,
+  type GuideOrigin,
+} from "@/lib/admin-guide-navigation";
 import { isOnboardingActionUnlocked } from "@/lib/admin-onboarding";
 import type { AdminGuideData, AdminGuidePatch } from "@/types/admin-guide";
 
@@ -574,7 +578,7 @@ function InvitationFlow({
                   className="inline-flex min-h-11 items-center gap-1.5 text-xs text-zinc-300 underline decoration-white/20 underline-offset-4 hover:text-white"
                   href={contextualGuideHref(
                     "/admin/jogadores/listar-cadastrar",
-                    "ACTIVE_PLAYERS",
+                    GUIDE_RECRUITING_CONTEXT,
                     origin,
                     returnTo
                   )}
