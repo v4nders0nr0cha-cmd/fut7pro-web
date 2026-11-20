@@ -352,7 +352,7 @@ for (const width of [1280, 390, 320]) {
     const manualLink = manual.getByRole("link", { name: "Cadastrar jogador", exact: true });
     await expect(manualLink).toHaveAttribute(
       "href",
-      "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard"
+      "/admin/jogadores/listar-cadastrar?guia=FOOTBALL_PLAYERS&guiaOrigem=dashboard"
     );
     const manualBox = (await manual.boundingBox())!;
     const cards = guide.getByRole("region", { name: "WhatsApp", exact: true });
@@ -368,16 +368,39 @@ for (const width of [1280, 390, 320]) {
     const completedBeforeRegistration = [...fixture.completed];
     await manualLink.click();
     await expect(page).toHaveURL(
-      /\/admin\/jogadores\/listar-cadastrar\?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard/
+      /\/admin\/jogadores\/listar-cadastrar\?guia=FOOTBALL_PLAYERS&guiaOrigem=dashboard/
     );
     await expect(guide).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Cadastrar Jogador", exact: true })
     ).toBeVisible();
+    const recruitmentContext = page.getByRole("complementary", { name: "Orientação do guia" });
+    await expect(
+      recruitmentContext.getByRole("heading", { name: "Reúna os jogadores para começar" })
+    ).toBeVisible();
+    await expect(recruitmentContext.getByText("Apoio à Fase 2", { exact: true })).toBeVisible();
+    await expect(recruitmentContext.getByText("Etapa 2 de 8", { exact: true })).toHaveCount(0);
+    await expect(recruitmentContext.getByText("Etapa concluída!", { exact: true })).toHaveCount(0);
+    await expect(recruitmentContext.getByText("0 / 10", { exact: true })).toBeVisible();
+    await recruitmentContext.screenshot({
+      path: info.outputPath(`recruiting-context-${width}.png`),
+    });
     expect(fixture.actions).toEqual(actionsBeforeRegistration);
     expect([...fixture.completed]).toEqual(completedBeforeRegistration);
-    // Only a fresh official response changes eligibility; navigating does not increment it.
-    fixture.setEligible(1);
+    // Exercise the existing form and its guide-change event with an isolated official response.
+    await page.route(/\/api\/jogadores(?:\?|$)/, async (route) => {
+      if (route.request().method() === "GET") return route.fulfill({ json: [] });
+      const body = route.request().postDataJSON();
+      fixture.setEligible(1);
+      await route.fulfill({ status: 201, json: { id: "manual-fixture", ...body } });
+    });
+    await page.getByRole("button", { name: "Cadastrar Jogador", exact: true }).click();
+    const form = page.locator("form").filter({ has: page.locator('input[name="nome"]') });
+    await form.locator('input[name="nome"]').fill("Atleta adicional de teste");
+    await form.locator('select[name="posicao"]').selectOption("goleiro");
+    await form.getByRole("button", { name: "Cadastrar Jogador", exact: true }).click();
+    await expect(form).toHaveCount(0);
+    await expect(recruitmentContext.getByText("1 / 10", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Continuar no Guia Interativo", exact: true }).click();
     await expect(phase.locator("li")).toHaveCount(4);
     await expect(guide.getByText("1 / 10", { exact: true })).toBeVisible();

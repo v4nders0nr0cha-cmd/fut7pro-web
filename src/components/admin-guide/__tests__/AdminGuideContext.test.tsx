@@ -238,3 +238,128 @@ it.each([
   view.rerender(<AdminGuideContext />);
   expect(screen.queryByRole("complementary")).toBeNull();
 });
+
+function recruit(players = 7, minimum = 10) {
+  pathname = "/admin/jogadores/listar-cadastrar";
+  params = "guia=FOOTBALL_PLAYERS&guiaOrigem=dashboard";
+  guide().capabilities = { managePlayers: true };
+  guide().eligibility = {
+    eligiblePlayers: players,
+    minimumPlayers: minimum,
+    missingPlayers: Math.max(0, minimum - players),
+    preparationComplete: true,
+    footballUnlocked: players >= minimum,
+  };
+  Object.assign(task(), {
+    id: "ACTIVE_PLAYERS",
+    title: "Traga seus primeiros jogadores",
+    route: pathname,
+    completed: true,
+    canAct: false,
+  });
+}
+it.each([7, 9, 10, 12])(
+  "shows recruitment eligibility %s without a phase-one achievement",
+  (players) => {
+    recruit(players);
+    render(<AdminGuideContext />);
+    expect(screen.getByRole("heading", { name: "Reúna os jogadores para começar" })).toBeVisible();
+    expect(screen.getByText("Apoio à Fase 2")).toBeVisible();
+    expect(screen.queryByText("Etapa 2 de 8")).toBeNull();
+    expect(screen.queryByText("Etapa concluída!")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Traga seus primeiros jogadores" })).toBeNull();
+    expect(screen.getByText(`${players} / 10`)).toBeVisible();
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      String(Math.min(players, 10))
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      players >= 10 ? "Requisito atendido" : "Reunindo jogadores"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continuar no Guia Interativo" }));
+    expect(openGuide).toHaveBeenCalledTimes(1);
+    expect(task().completed).toBe(true);
+    expect(retry).not.toHaveBeenCalled();
+  }
+);
+it.each(["permission", "membership", "route", "preparation", "normal-menu", "unknown"])(
+  "rejects recruitment context for %s",
+  (reason) => {
+    recruit();
+    if (reason === "permission") guide().capabilities.managePlayers = false;
+    if (reason === "membership") guide().administrator.status = "PENDENTE";
+    if (reason === "route") pathname = "/admin/financeiro";
+    if (reason === "preparation") guide().eligibility.preparationComplete = false;
+    if (reason === "normal-menu") params = "";
+    if (reason === "unknown") params = "guia=FOOTBALL_PLAYERS_OTHER";
+    render(<AdminGuideContext />);
+    expect(screen.queryByRole("complementary")).toBeNull();
+  }
+);
+it("keeps the original ACTIVE_PLAYERS context, achievement and ordinal", () => {
+  recruit();
+  task().canAct = true;
+  params = "guia=ACTIVE_PLAYERS";
+  render(<AdminGuideContext />);
+  expect(screen.getByText("Etapa 2 de 8")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("Etapa concluída!");
+  expect(screen.getByRole("heading", { name: "Traga seus primeiros jogadores" })).toBeVisible();
+  expect(screen.queryByRole("progressbar")).toBeNull();
+});
+it("uses fresh official recruitment counts and minimum, preserving form drafts and history", () => {
+  recruit(7, 12);
+  const Page = () => (
+    <>
+      <AdminGuideContext />
+      <input aria-label="Jogador em edição" defaultValue="Nome preservado" />
+    </>
+  );
+  const view = render(<Page />);
+  const input = screen.getByRole("textbox");
+  input.focus();
+  expect(screen.getByText("7 / 12")).toBeVisible();
+  expect(screen.getByText("Faltam 5 atletas para liberar")).toBeVisible();
+  guide().eligibility = { ...guide().eligibility, eligiblePlayers: 8, missingPlayers: 4 };
+  view.rerender(<Page />);
+  expect(screen.getByText("8 / 12")).toBeVisible();
+  expect(input).toHaveFocus();
+  expect(input).toHaveValue("Nome preservado");
+  expect(task().completed).toBe(true);
+  params = "guia=FOOTBALL_PLAYERS&guiaOrigem=pagina";
+  view.rerender(<Page />);
+  expect(screen.getByRole("link", { name: "Continuar no Guia Interativo" })).toHaveAttribute(
+    "href",
+    "/admin/guia-fut7pro"
+  );
+});
+it("hides stale eligibility during loading/errors and never fabricates zero counts", () => {
+  recruit();
+  state().validating = true;
+  const view = render(<AdminGuideContext />);
+  expect(screen.queryByRole("progressbar")).toBeNull();
+  expect(screen.queryByText("7 / 10")).toBeNull();
+  state().validating = false;
+  state().error = new Error("offline");
+  view.rerender(<AdminGuideContext />);
+  expect(screen.queryByRole("progressbar")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  expect(retry).toHaveBeenCalledTimes(1);
+  state().error = null;
+  guide().eligibility.eligiblePlayers = undefined;
+  view.rerender(<AdminGuideContext />);
+  expect(screen.queryByRole("progressbar")).toBeNull();
+  expect(screen.queryByText("0 / 10")).toBeNull();
+  expect(screen.getByText(/A contagem de atletas elegíveis não está disponível/)).toBeVisible();
+});
+
+it("keeps the official nine for ten active participants including a president without matches", () => {
+  recruit(9);
+  guide().administrator.role = "PRESIDENTE";
+  guide().operationalState.activeHumanPlayers = 10;
+  guide().operationalState.validMatchCount = 0;
+  render(<AdminGuideContext />);
+  expect(screen.getByText("9 / 10")).toBeVisible();
+  expect(screen.getByText("Falta 1 atleta para liberar")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("Reunindo jogadores");
+  expect(task().completed).toBe(true);
+});
