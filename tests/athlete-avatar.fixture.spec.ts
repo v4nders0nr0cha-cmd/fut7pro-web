@@ -2,6 +2,9 @@ import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { installGuide, login } from "./fixtures/guide-continuity";
 
+const placeholderUrl =
+  /^(?:https?:\/\/127\.0\.0\.1:(?:3000|3443))?\/images\/avatar-placeholder\.svg$/;
+
 for (const width of [1280, 390, 320]) {
   test(`athlete avatar ${width}`, async ({ page }, info) => {
     test.setTimeout(150_000);
@@ -52,16 +55,16 @@ for (const width of [1280, 390, 320]) {
     for (const name of ["Semfoto", "Removida", "Invalida", "Legado"]) {
       await expect(
         page.getByRole("img", { name: `${name} (sem foto)`, exact: true })
-      ).toHaveAttribute("src", "/images/avatar-placeholder.svg");
+      ).toHaveAttribute("src", placeholderUrl);
     }
     await page.getByText("Quebrada", { exact: true }).first().scrollIntoViewIfNeeded();
     await expect(
       page.getByRole("img", { name: "Quebrada (sem foto)", exact: true })
-    ).toHaveAttribute("src", "/images/avatar-placeholder.svg");
+    ).toHaveAttribute("src", placeholderUrl);
     await page.screenshot({ path: info.outputPath(`avatars-admin-${width}.png`), fullPage: true });
     await page.getByRole("button", { name: "Cadastrar Jogador", exact: true }).click();
     const preview = page.getByRole("img", { name: "Foto do jogador (sem foto)", exact: true });
-    await expect(preview).toHaveAttribute("src", "/images/avatar-placeholder.svg");
+    await expect(preview).toHaveAttribute("src", placeholderUrl);
     await expect
       .poll(() => preview.evaluate((image) => (image as HTMLImageElement).naturalWidth))
       .toBeGreaterThan(0);
@@ -77,14 +80,14 @@ for (const width of [1280, 390, 320]) {
     for (const name of ["Semfoto", "Removida", "Invalida", "Legado"]) {
       await expect(
         page.getByRole("img", { name: `Foto do atleta ${name} (sem foto)`, exact: true })
-      ).toHaveAttribute("src", "/images/avatar-placeholder.svg");
+      ).toHaveAttribute("src", placeholderUrl);
     }
     await page
       .getByRole("link", { name: "Abrir perfil de Quebrada", exact: true })
       .scrollIntoViewIfNeeded();
     await expect(
       page.getByRole("img", { name: "Foto do atleta Quebrada (sem foto)", exact: true })
-    ).toHaveAttribute("src", "/images/avatar-placeholder.svg");
+    ).toHaveAttribute("src", placeholderUrl);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true
     );
