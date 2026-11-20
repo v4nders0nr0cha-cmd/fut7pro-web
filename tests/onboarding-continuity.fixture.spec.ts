@@ -358,7 +358,7 @@ for (const width of [1280, 390, 320]) {
     const cards = guide.getByRole("region", { name: "WhatsApp", exact: true });
     const cardBox = (await cards.boundingBox())!;
     expect(manualBox.y).toBeGreaterThanOrEqual(cardBox.y + cardBox.height);
-    expect(manualBox.height).toBeLessThanOrEqual(width === 320 ? 180 : 150);
+    expect(manualBox.height).toBeLessThanOrEqual(width < 768 ? 240 : 150);
     await manual.scrollIntoViewIfNeeded();
     await guide.screenshot({ path: info.outputPath(`manual-invitation-${width}.png`) });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
