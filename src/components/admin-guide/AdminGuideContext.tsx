@@ -257,7 +257,7 @@ export default function AdminGuideContext() {
               "Mínimo de atletas elegíveis atingido — atletas",
               "Faltam atletas para liberar",
             ]}
-            className="text-xs text-[#f5e8d2]"
+            className="text-xs text-[#f5e8d2] [&>span]:pb-1"
           >
             {eligibility ? (
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
