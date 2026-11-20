@@ -1,16 +1,18 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { TeamBadge } from "@/components/teams/TeamBadge";
 
 import { useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { usePublicMatch } from "@/hooks/usePublicMatch";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
-const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
+const FALLBACK_PLAYER = DEFAULT_ATHLETE_AVATAR;
 
 type LineupPlayer = { id: string; nome: string; foto: string };
 type HighlightPlayer = {
@@ -219,7 +221,7 @@ export default function PartidaDetalhesPage() {
             <h2 className="text-lg font-bold text-brand mb-2">Artilheiro (gols)</h2>
             {highlights.artilheiro ? (
               <div className="flex items-center gap-3">
-                <Image
+                <AvatarFut7Pro
                   src={highlights.artilheiro.foto}
                   alt={`Foto ${highlights.artilheiro.nome}`}
                   width={36}
@@ -240,7 +242,7 @@ export default function PartidaDetalhesPage() {
             <h2 className="text-lg font-bold text-brand mb-2">Maestro (assistências)</h2>
             {highlights.maestro ? (
               <div className="flex items-center gap-3">
-                <Image
+                <AvatarFut7Pro
                   src={highlights.maestro.foto}
                   alt={`Foto ${highlights.maestro.nome}`}
                   width={36}
@@ -267,7 +269,7 @@ export default function PartidaDetalhesPage() {
               <ul className="space-y-2 text-sm text-neutral-200">
                 {lineups.timeA.map((jogador) => (
                   <li key={jogador.id} className="flex items-center gap-2">
-                    <Image
+                    <AvatarFut7Pro
                       src={jogador.foto}
                       alt={`Foto ${jogador.nome}`}
                       width={28}
@@ -289,7 +291,7 @@ export default function PartidaDetalhesPage() {
               <ul className="space-y-2 text-sm text-neutral-200">
                 {lineups.timeB.map((jogador) => (
                   <li key={jogador.id} className="flex items-center gap-2">
-                    <Image
+                    <AvatarFut7Pro
                       src={jogador.foto}
                       alt={`Foto ${jogador.nome}`}
                       width={28}

@@ -1,6 +1,6 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
-import Image from "next/image";
 import type { TimeSorteado, Participante } from "@/types/sorteio";
 import {
   getCoeficiente,
@@ -175,7 +175,7 @@ export default function TimesGerados({
           editando ? "cursor-grab" : "cursor-default"
         }`}
       >
-        <Image
+        <AvatarFut7Pro
           src={jogador.foto}
           alt={jogador.nome}
           width={28}

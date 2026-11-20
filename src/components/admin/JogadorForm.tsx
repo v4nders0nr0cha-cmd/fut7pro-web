@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
 import { toast } from "react-hot-toast";
 import type { Jogador, PosicaoJogador } from "@/types/jogador";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import {
@@ -180,7 +181,6 @@ export default function JogadorForm({
     }
   }
 
-  const hasPreview = !!fotoPreview && fotoPreview !== "null" && fotoPreview !== "undefined";
   const secondaryOptions = getValidSecondaryCanonicalOptions(form.posicao) as PosicaoJogador[];
   const showSecondary = !isGoalkeeperPosition(form.posicao);
 
@@ -197,16 +197,13 @@ export default function JogadorForm({
           className="w-20 h-20 bg-[#222] rounded-lg border-2 border-dashed border-yellow-600 flex items-center justify-center cursor-pointer hover:border-yellow-400 transition"
           title="Clique para selecionar uma foto"
         >
-          {hasPreview ? (
-            <img
-              src={fotoPreview}
-              alt="Preview foto"
-              className="object-cover w-full h-full rounded-lg"
-              onError={() => setFotoPreview("")}
-            />
-          ) : (
-            <span className="text-gray-400 text-sm text-center px-2">+ Foto</span>
-          )}
+          <AvatarFut7Pro
+            src={fotoPreview}
+            alt="Foto do jogador"
+            width={80}
+            height={80}
+            className="h-full w-full rounded-lg object-cover"
+          />
           <input
             ref={fileInputRef}
             type="file"

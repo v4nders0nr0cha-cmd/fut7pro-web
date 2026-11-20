@@ -1,4 +1,5 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 import type { ChangeEvent, FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -2130,7 +2131,9 @@ function CadastroRachaPageContent() {
                   <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
                     {showGoogleAvatarPreview ? (
                       <div className="flex items-center gap-3">
-                        <img
+                        <AvatarFut7Pro
+                          width={40}
+                          height={40}
                           src={adminAvatar}
                           alt="Foto da sua Conta Google"
                           className="h-10 w-10 rounded-full object-cover"
@@ -2162,7 +2165,9 @@ function CadastroRachaPageContent() {
                               className="w-full text-xs text-gray-200 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-yellow-400 file:text-black hover:file:bg-yellow-300 cursor-pointer"
                             />
                             {adminAvatar && (
-                              <img
+                              <AvatarFut7Pro
+                                width={40}
+                                height={40}
                                 src={adminAvatar}
                                 alt="Preview do presidente"
                                 className="h-10 w-10 rounded-full object-cover"

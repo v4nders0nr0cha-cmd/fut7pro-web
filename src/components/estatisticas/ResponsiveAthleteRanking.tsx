@@ -1,6 +1,6 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
-import Image from "next/image";
 import Link from "next/link";
 import type { RankingAtleta } from "@/types/estatisticas";
 
@@ -52,7 +52,7 @@ export default function ResponsiveAthleteRanking({
                   aria-label={`Ver perfil de ${athlete.nome}`}
                   className="shrink-0"
                 >
-                  <Image
+                  <AvatarFut7Pro
                     src={athlete.foto}
                     alt={`Foto de ${athlete.nome}`}
                     width={40}
@@ -118,7 +118,7 @@ export default function ResponsiveAthleteRanking({
                   <td className="p-2">
                     <div className="flex items-center gap-2 whitespace-nowrap">
                       <Link href={publicHref(`/atletas/${athlete.slug}`)}>
-                        <Image
+                        <AvatarFut7Pro
                           src={athlete.foto}
                           alt={`Foto de ${athlete.nome}`}
                           width={32}

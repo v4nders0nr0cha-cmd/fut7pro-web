@@ -1,5 +1,6 @@
 "use client";
 
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import Image from "next/image";
 import Link from "next/link";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
@@ -54,7 +55,7 @@ export default function CampeaoPosicaoCard({
         )}
         {posicao}
       </span>
-      <Image
+      <AvatarFut7Pro
         src={image}
         alt={`Imagem do jogador ${nome} - ${posicao}`}
         width={80}

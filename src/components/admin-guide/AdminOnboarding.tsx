@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import {
   CheckCircle2,
   ChevronRight,
@@ -207,16 +208,14 @@ export default function AdminOnboarding({
               className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1d2026]/75 via-transparent to-[#1d2026]/10 shadow-[inset_0_0_35px_rgba(20,22,27,0.45)]"
             />
           </div>
-          {session?.user?.image && (
-            <Image
-              unoptimized
-              src={session.user.image}
-              alt="Sua foto de perfil"
-              width={68}
-              height={68}
-              className="absolute -bottom-4 left-1/2 h-12 w-12 -translate-x-1/2 rounded-full border-2 border-amber-300 object-cover shadow-[0_0_0_5px_#111214] md:-bottom-6 md:h-16 md:w-16"
-            />
-          )}
+          <AvatarFut7Pro
+            unoptimized
+            src={session?.user?.image}
+            alt="Sua foto de perfil"
+            width={68}
+            height={68}
+            className="absolute -bottom-4 left-1/2 h-12 w-12 -translate-x-1/2 rounded-full border-2 border-amber-300 object-cover shadow-[0_0_0_5px_#111214] md:-bottom-6 md:h-16 md:w-16"
+          />
         </div>
         <h2 className="mt-6 text-lg font-bold md:mt-9 md:text-xl">
           {returning

@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -88,7 +91,7 @@ export default function PlayerCard({
     highlightIcon,
   } = normalizedPlayer;
 
-  const imagePath = foto && foto.length > 0 ? foto : "/images/jogadores/jogador_padrao_01.jpg";
+  const imagePath = foto && foto.length > 0 ? foto : DEFAULT_ATHLETE_AVATAR;
   const safeName = playerName || name || "Jogador";
 
   const attendancePercent = partidas > 0 ? `${Math.round((presencas / partidas) * 100)}%` : "0%";
@@ -151,7 +154,7 @@ export default function PlayerCard({
       </div>
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-14 h-14 relative rounded-md overflow-hidden flex-shrink-0 bg-[#111]">
-          <Image
+          <AvatarFut7Pro
             src={imagePath}
             alt={safeName}
             fill
@@ -187,7 +190,7 @@ export default function PlayerCard({
     >
       <div className="flex items-center gap-4 w-full">
         <div className="w-[64px] h-[64px] sm:w-[80px] sm:h-[80px] relative rounded-md overflow-hidden flex-shrink-0 bg-[#111]">
-          <Image
+          <AvatarFut7Pro
             src={imagePath}
             alt={safeName}
             fill

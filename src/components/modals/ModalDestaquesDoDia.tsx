@@ -1,8 +1,10 @@
 // src/components/modals/ModalDestaquesDoDia.tsx
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useState } from "react";
-import Image from "next/image";
 import { IoClose } from "react-icons/io5";
 
 // Mocks de destaques do dia
@@ -11,25 +13,25 @@ const destaquesTimeCampeao = [
     title: "ATACANTE DO DIA",
     name: "Jogador XPTO",
     info: "3 gols",
-    image: "/images/jogadores/jogador_padrao_01.jpg",
+    image: DEFAULT_ATHLETE_AVATAR,
   },
   {
     title: "MEIA DO DIA",
     name: "Jogador Genérico",
     info: "2 assistências",
-    image: "/images/jogadores/jogador_padrao_02.jpg",
+    image: DEFAULT_ATHLETE_AVATAR,
   },
   {
     title: "ZAGUEIRO DO DIA",
     name: "Jogador Modelo",
     info: "1 desarme",
-    image: "/images/jogadores/jogador_padrao_03.jpg",
+    image: DEFAULT_ATHLETE_AVATAR,
   },
   {
     title: "GOLEIRO DO DIA",
     name: "Jogador Fictício",
     info: "3 defesas",
-    image: "/images/jogadores/jogador_padrao_04.jpg",
+    image: DEFAULT_ATHLETE_AVATAR,
   },
 ];
 
@@ -38,13 +40,13 @@ const destaquesGerais = [
     title: "ARTILHEIRO DO DIA",
     name: "Jogador XPTO",
     info: "3 gols",
-    image: "/images/jogadores/jogador_padrao_01.jpg",
+    image: DEFAULT_ATHLETE_AVATAR,
   },
   {
     title: "MAESTRO DO DIA",
     name: "Camisa 10",
     info: "4 assistências",
-    image: "/images/jogadores/jogador_padrao_03.jpg",
+    image: DEFAULT_ATHLETE_AVATAR,
   },
 ];
 
@@ -77,7 +79,7 @@ export default function ModalDestaquesDoDia({
           <div className="flex flex-col gap-4">
             {destaquesTimeCampeao.map((d, idx) => (
               <div key={idx} className="flex items-center gap-3 bg-[#111] rounded-xl p-3">
-                <Image
+                <AvatarFut7Pro
                   src={d.image}
                   alt={d.name}
                   width={60}
@@ -100,7 +102,7 @@ export default function ModalDestaquesDoDia({
           <div className="flex flex-col gap-4 mb-2">
             {destaquesGerais.map((d, idx) => (
               <div key={idx} className="flex items-center gap-3 bg-[#111] rounded-xl p-3">
-                <Image
+                <AvatarFut7Pro
                   src={d.image}
                   alt={d.name}
                   width={60}

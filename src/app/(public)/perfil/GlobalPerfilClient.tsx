@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Image from "next/image";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
@@ -20,7 +23,7 @@ import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-au
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { getValidSecondaryDisplayOptions, isGoalkeeperPosition } from "@/utils/position-secondary";
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 type Posicao = (typeof POSICOES)[number] | "";
 const POSITION_LABELS: Record<string, Posicao> = {
@@ -822,7 +825,7 @@ export default function GlobalPerfilClient() {
         <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
           <div className="flex items-center gap-5">
             <div className="relative">
-              <Image
+              <AvatarFut7Pro
                 src={user.avatarUrl || DEFAULT_AVATAR}
                 alt={user.name}
                 width={96}
@@ -948,7 +951,7 @@ export default function GlobalPerfilClient() {
 
           <div className="flex flex-col md:flex-row gap-6">
             <div className="relative w-max">
-              <img
+              <AvatarFut7Pro
                 src={avatarPreview || DEFAULT_AVATAR}
                 alt="Foto do perfil"
                 width={120}

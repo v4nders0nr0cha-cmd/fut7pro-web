@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { Fragment, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
@@ -34,7 +37,7 @@ import TurnstileWidget, {
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const DIAS = Array.from({ length: 31 }, (_, index) => String(index + 1));
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
 const MAX_INLINE_AVATAR_LENGTH = 1_500_000;
@@ -788,7 +791,7 @@ export default function RegisterClient() {
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                  <img
+                  <AvatarFut7Pro
                     src={avatarPreview || DEFAULT_AVATAR}
                     alt="Foto do atleta"
                     width={64}

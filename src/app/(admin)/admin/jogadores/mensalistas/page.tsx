@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -12,7 +13,7 @@ import type { Jogador } from "@/types/jogador";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { revalidateAdminRequestBadges } from "@/lib/admin-request-badges";
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 const POSICAO_LABEL: Record<string, string> = {
   goleiro: "Goleiro",
   zagueiro: "Zagueiro",

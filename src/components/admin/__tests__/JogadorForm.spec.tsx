@@ -66,3 +66,30 @@ describe("JogadorForm", () => {
     expect(screen.queryByRole("option", { name: "Suspenso" })).not.toBeInTheDocument();
   });
 });
+
+it("uses the shared placeholder when creating or editing a player without a photo", () => {
+  const view = render(<JogadorForm onSave={jest.fn()} />);
+  expect(screen.getByRole("img", { name: "Foto do jogador (sem foto)" })).toHaveAttribute(
+    "src",
+    expect.stringContaining("avatar-placeholder.svg")
+  );
+  view.rerender(
+    <JogadorForm
+      jogador={{ id: "1", nome: "Atleta", foto: "/uploads/real.jpg" } as any}
+      onSave={jest.fn()}
+    />
+  );
+  expect(screen.getByRole("img", { name: "Foto do jogador" })).toHaveAttribute(
+    "src",
+    expect.stringContaining("real.jpg")
+  );
+  fireEvent.error(screen.getByRole("img", { name: "Foto do jogador" }));
+  expect(screen.getByRole("img", { name: "Foto do jogador (sem foto)" })).toHaveAttribute(
+    "src",
+    expect.stringContaining("avatar-placeholder.svg")
+  );
+  view.rerender(
+    <JogadorForm jogador={{ id: "1", nome: "Atleta", foto: null } as any} onSave={jest.fn()} />
+  );
+  expect(screen.getByRole("img", { name: "Foto do jogador (sem foto)" })).toBeVisible();
+});

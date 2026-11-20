@@ -1,11 +1,12 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
-import Image from "next/image";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 const jogadores = [
-  { nome: "Bruno Silva", partidas: 22, img: "/images/jogadores/jogador_padrao_01.jpg" },
-  { nome: "Pedro Alves", partidas: 20, img: "/images/jogadores/jogador_padrao_02.jpg" },
-  { nome: "César Souza", partidas: 19, img: "/images/jogadores/jogador_padrao_03.jpg" },
+  { nome: "Bruno Silva", partidas: 22, img: DEFAULT_ATHLETE_AVATAR },
+  { nome: "Pedro Alves", partidas: 20, img: DEFAULT_ATHLETE_AVATAR },
+  { nome: "César Souza", partidas: 19, img: DEFAULT_ATHLETE_AVATAR },
 ];
 
 export default function CardJogadoresAssiduos() {
@@ -15,7 +16,7 @@ export default function CardJogadoresAssiduos() {
       <div className="flex flex-col gap-1 mt-2">
         {jogadores.map((j, i) => (
           <div key={i} className="flex items-center gap-2 text-white text-sm">
-            <Image
+            <AvatarFut7Pro
               src={j.img}
               alt={`Foto de ${j.nome}`}
               width={24}

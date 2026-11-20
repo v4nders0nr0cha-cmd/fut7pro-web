@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -12,7 +13,7 @@ import DestaquesRegrasModal from "@/components/modals/DestaquesRegrasModal";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { getAvatarSrc } from "@/utils/avatar";
 
-const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_IMAGE = DEFAULT_ATHLETE_AVATAR;
 const BADGE_AUTOMATICO = "Automático";
 const CRITERIA_DIA = {
   artilheiro: "Mais gols no dia (qualquer time)",
@@ -119,7 +120,7 @@ export default function Sidebar() {
         ? `/atletas/${artilheiroDia.slug}`
         : "/estatisticas/melhores-por-posicao/atacantes"
     ),
-    image: safeImage(artilheiroDia?.photoUrl, "/images/jogadores/jogador_padrao_01.jpg"),
+    image: safeImage(artilheiroDia?.photoUrl, DEFAULT_ATHLETE_AVATAR),
   };
 
   const maestroDiaData = {
@@ -144,42 +145,42 @@ export default function Sidebar() {
     href: publicHref(
       maestroDia?.slug ? `/atletas/${maestroDia.slug}` : "/estatisticas/melhores-por-posicao/meias"
     ),
-    image: safeImage(maestroDia?.photoUrl, "/images/jogadores/jogador_padrao_03.jpg"),
+    image: safeImage(maestroDia?.photoUrl, DEFAULT_ATHLETE_AVATAR),
   };
 
   const atacanteAnoData = {
     name: atacanteAno?.nome ?? "Atacante em atualização",
     value: atacanteAno ? `${atacanteAno.pontos ?? 0} pontos` : "Em processamento",
     href: publicHref("/estatisticas/melhores-por-posicao/atacantes"),
-    image: safeImage(atacanteAno?.foto, "/images/jogadores/jogador_padrao_01.jpg"),
+    image: safeImage(atacanteAno?.foto, DEFAULT_ATHLETE_AVATAR),
   };
 
   const meiaAnoData = {
     name: meiaAno?.nome ?? "Meia em atualização",
     value: meiaAno ? `${meiaAno.pontos ?? 0} pontos` : "Em processamento",
     href: publicHref("/estatisticas/melhores-por-posicao/meias"),
-    image: safeImage(meiaAno?.foto, "/images/jogadores/jogador_padrao_03.jpg"),
+    image: safeImage(meiaAno?.foto, DEFAULT_ATHLETE_AVATAR),
   };
 
   const zagueiroAnoData = {
     name: zagueiroAno?.nome ?? "Zagueiro em atualização",
     value: zagueiroAno ? `${zagueiroAno.pontos ?? 0} pontos` : "Em processamento",
     href: publicHref("/estatisticas/melhores-por-posicao/zagueiros"),
-    image: safeImage(zagueiroAno?.foto, "/images/jogadores/jogador_padrao_07.jpg"),
+    image: safeImage(zagueiroAno?.foto, DEFAULT_ATHLETE_AVATAR),
   };
 
   const goleiroAnoData = {
     name: goleiroAno?.nome ?? "Goleiro em atualização",
     value: goleiroAno ? `${goleiroAno.pontos ?? 0} pontos` : "Em processamento",
     href: publicHref("/estatisticas/melhores-por-posicao/goleiros"),
-    image: safeImage(goleiroAno?.foto, "/images/jogadores/jogador_padrao_09.jpg"),
+    image: safeImage(goleiroAno?.foto, DEFAULT_ATHLETE_AVATAR),
   };
 
   const melhorDoAnoData = {
     name: melhorDoAno?.nome ?? "Ranking em atualização",
     value: melhorDoAno ? `${melhorDoAno.pontos ?? 0} pontos` : "Em processamento",
     href: publicHref(melhorDoAno?.slug ? `/atletas/${melhorDoAno.slug}` : "/estatisticas"),
-    image: safeImage(melhorDoAno?.foto, "/images/jogadores/jogador_padrao_05.jpg"),
+    image: safeImage(melhorDoAno?.foto, DEFAULT_ATHLETE_AVATAR),
   };
 
   return (

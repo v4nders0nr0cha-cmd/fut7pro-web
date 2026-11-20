@@ -1,8 +1,10 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
-import Image from "next/image";
 import { X, Info } from "lucide-react";
 
 type DestaqueItem = {
@@ -13,7 +15,7 @@ type DestaqueItem = {
   criteria?: string;
 };
 
-const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_IMAGE = DEFAULT_ATHLETE_AVATAR;
 
 // Componente institucional do box de regras
 function BoxRegras() {
@@ -84,7 +86,7 @@ export default function GamesOfTheDayMobileModal({
       key={item.title}
       className="flex items-center bg-neutral-900 rounded-xl px-3 py-2 gap-3 shadow-md"
     >
-      <Image
+      <AvatarFut7Pro
         src={item.image || DEFAULT_IMAGE}
         alt={item.name || item.title}
         width={52}

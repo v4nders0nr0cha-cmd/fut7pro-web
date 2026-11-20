@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
 import Link from "next/link";
 
 type PlayerCardProps = {
@@ -14,7 +15,13 @@ type PlayerCardProps = {
 export function PlayerCard({ title, name, value, imageUrl, href }: PlayerCardProps) {
   const content = (
     <div className="bg-[#1a1a1a] rounded-xl p-3 flex gap-3 items-center mb-4 shadow-md transition-all duration-300 hover:bg-[#2a2a2a] hover:shadow-brand cursor-pointer">
-      <Image src={imageUrl} alt={name} width={70} height={70} className="rounded-md object-cover" />
+      <AvatarFut7Pro
+        src={imageUrl}
+        alt={name}
+        width={70}
+        height={70}
+        className="rounded-md object-cover"
+      />
       <div>
         <p className="text-[11px] text-brand font-bold leading-none uppercase">{title}</p>
         <p className="text-sm font-semibold text-white leading-tight">{name}</p>

@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
 import Image from "next/image";
@@ -30,7 +33,7 @@ import type {
 } from "@/types/paginasInstitucionais";
 import type { Admin } from "@/types/racha";
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 const DEFAULT_RACHA_NAME = "de futebol entre amigos";
 const DEFAULT_PRESIDENTE_NAME = "a administração";
 const DESCRICAO_TEMPLATE =
@@ -1016,7 +1019,7 @@ export default function NossaHistoriaPage() {
                   key={dep.id}
                   className={`bg-neutral-900 rounded-2xl p-4 flex flex-col items-center ${dep.destaque ? "border-2 border-brand" : ""}`}
                 >
-                  <Image
+                  <AvatarFut7Pro
                     src={dep.foto || DEFAULT_AVATAR}
                     alt={dep.nome}
                     width={64}
@@ -1074,7 +1077,7 @@ export default function NossaHistoriaPage() {
                   key={idx}
                   className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-36 hover:border-brand border border-neutral-700"
                 >
-                  <Image
+                  <AvatarFut7Pro
                     src={membro.foto || DEFAULT_AVATAR}
                     alt={membro.nome}
                     width={60}
@@ -1105,7 +1108,7 @@ export default function NossaHistoriaPage() {
                 >
                   <div className="text-brand-soft text-lg font-extrabold mb-1">#{idx + 1}</div>
                   {jogador.foto && (
-                    <Image
+                    <AvatarFut7Pro
                       src={jogador.foto}
                       alt={jogador.nome}
                       width={64}
@@ -1134,7 +1137,7 @@ export default function NossaHistoriaPage() {
                   className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-48 hover:border-brand border border-neutral-700 transition"
                 >
                   {membro.foto && (
-                    <Image
+                    <AvatarFut7Pro
                       src={membro.foto}
                       alt={membro.nome}
                       width={64}

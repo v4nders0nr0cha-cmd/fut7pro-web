@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
@@ -102,7 +105,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
       id: j.id,
       nome: j.nome || j.apelido || "Jogador",
       apelido: j.apelido || "",
-      avatar: j.avatar || j.foto || "/images/jogadores/jogador_padrao_01.jpg",
+      avatar: j.avatar || j.foto || DEFAULT_ATHLETE_AVATAR,
       posicao: mapPosicao(j.posicao),
       slug: (j as any).slug ?? slugify(j.nome || j.apelido || j.id),
     }));
@@ -350,7 +353,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
       (torneio.jogadoresCampeoes || []).map((j: any) => ({
         id: j.athleteId || j.id || j.athleteSlug || "",
         nome: j.nome || "",
-        avatar: j.fotoUrl || j.avatar || "/images/jogadores/jogador_padrao_01.jpg",
+        avatar: j.fotoUrl || j.avatar || DEFAULT_ATHLETE_AVATAR,
         posicao: (j.posicao as Posicao) || "Meia",
         slug: j.athleteSlug || j.slug,
       }))
@@ -608,8 +611,8 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
             >
               {jogador ? (
                 <>
-                  <Image
-                    src={jogador.avatar ?? "/images/jogadores/jogador_padrao_01.jpg"}
+                  <AvatarFut7Pro
+                    src={jogador.avatar ?? DEFAULT_ATHLETE_AVATAR}
                     alt={`Avatar de ${jogador.nome}`}
                     width={34}
                     height={34}
@@ -712,8 +715,8 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
                           setVagaEmSelecao(null);
                         }}
                       >
-                        <Image
-                          src={jogador.avatar ?? "/images/jogadores/jogador_padrao_01.jpg"}
+                        <AvatarFut7Pro
+                          src={jogador.avatar ?? DEFAULT_ATHLETE_AVATAR}
                           alt={`Avatar de ${jogador.nome}`}
                           width={32}
                           height={32}

@@ -1,7 +1,9 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { usePublicBirthdays } from "@/hooks/usePublicBirthdays";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
@@ -128,8 +130,8 @@ export default function AniversariantesPage() {
                         HOJE!
                       </div>
                     )}
-                    <Image
-                      src={aniv.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+                    <AvatarFut7Pro
+                      src={aniv.photoUrl || DEFAULT_ATHLETE_AVATAR}
                       alt={`Foto de ${aniv.name}`}
                       width={74}
                       height={74}

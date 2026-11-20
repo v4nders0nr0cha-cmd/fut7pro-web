@@ -1,9 +1,11 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { TeamBadge } from "@/components/teams/TeamBadge";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
@@ -14,7 +16,7 @@ import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/
 import type { RegisteredRoundSummary } from "@/types/destaques";
 import type { SorteioHistoricoItem } from "@/types/sorteio";
 
-const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
+const FALLBACK_PLAYER = DEFAULT_ATHLETE_AVATAR;
 const PAGE_SIZE = 30;
 const HISTORICO_LIMIT = 90;
 
@@ -610,7 +612,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
         {withStats.map((player) => (
           <li key={player.id} className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Image
+              <AvatarFut7Pro
                 src={player.photoUrl}
                 alt={player.name}
                 width={28}

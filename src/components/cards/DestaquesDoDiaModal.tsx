@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 export default function DestaquesDoDiaModal({
   destaques,
@@ -46,7 +46,7 @@ export default function DestaquesDoDiaModal({
               key={i}
               className="flex items-center gap-3 bg-[#181818] rounded-xl p-3 hover:scale-[1.01] transition"
             >
-              <Image
+              <AvatarFut7Pro
                 src={d.image}
                 alt={`Foto de ${d.name}`}
                 width={50}

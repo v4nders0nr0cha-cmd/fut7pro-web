@@ -1,6 +1,6 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
-import Image from "next/image";
 import { TeamBadge } from "@/components/teams/TeamBadge";
 import type { TimeDoDia } from "@/types/partida";
 
@@ -54,7 +54,7 @@ export function CardTimeDoDia({ time }: Props) {
               >
                 {posicoesAbrev[jogador.posicao]}
               </span>
-              <Image
+              <AvatarFut7Pro
                 src={jogador.foto}
                 alt={`Foto de ${jogador.nome}`}
                 width={36}

@@ -1,5 +1,7 @@
 // src/app/grandes-torneios/torneio-matador/page.tsx
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -54,8 +56,8 @@ export default function TorneioMatadorPage() {
             {[1, 2, 3, 4, 5, 6].map((id) => (
               <Link key={id} href={publicHref(`/atletas/jogador-${id}`)}>
                 <div className="text-center text-white hover:text-brand transition">
-                  <Image
-                    src={`/images/jogadores/jogador_padrao_0${id}.jpg`}
+                  <AvatarFut7Pro
+                    src={DEFAULT_ATHLETE_AVATAR}
                     alt={`Foto do Jogador ${id} - Campeão Torneio Matador`}
                     width={80}
                     height={80}

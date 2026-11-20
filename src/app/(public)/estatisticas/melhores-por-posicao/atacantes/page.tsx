@@ -1,7 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 import Head from "next/head";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -150,7 +150,7 @@ export default function RankingAtacantesPage() {
                       <td className="p-2 font-bold text-brand">{idx + 1}</td>
                       <td className="flex items-center gap-2 p-2 whitespace-nowrap">
                         <Link href={publicHref(`/atletas/${atleta.slug}`)}>
-                          <Image
+                          <AvatarFut7Pro
                             src={atleta.foto}
                             alt={`Foto do atleta ${atleta.nome} - Ranking Atacantes`}
                             width={32}

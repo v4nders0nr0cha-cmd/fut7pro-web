@@ -1,9 +1,11 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import Image from "next/image";
 import { useParams } from "next/navigation";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { useRacha } from "@/context/RachaContext";
@@ -85,8 +87,8 @@ export default function ListaAtletasSlugPage() {
                   aria-label={`Abrir perfil de ${atleta.nome}`}
                   className="flex items-center gap-3 mb-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                 >
-                  <Image
-                    src={atleta.foto || "/images/jogadores/jogador_padrao_01.jpg"}
+                  <AvatarFut7Pro
+                    src={atleta.foto || DEFAULT_ATHLETE_AVATAR}
                     alt={`Foto do atleta ${atleta.nome}`}
                     width={48}
                     height={48}

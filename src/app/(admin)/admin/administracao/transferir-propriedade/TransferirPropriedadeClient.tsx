@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useEffect, useState } from "react";
 import {
@@ -381,8 +384,10 @@ export default function TransferirPropriedadeClient() {
                           : "border-[#2a2d34] hover:border-yellow-500/40"
                       }`}
                     >
-                      <img
-                        src={candidate.avatarUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+                      <AvatarFut7Pro
+                        width={40}
+                        height={40}
+                        src={candidate.avatarUrl || DEFAULT_ATHLETE_AVATAR}
                         alt=""
                         className="h-10 w-10 rounded-full border border-[#2a2d34] object-cover"
                       />

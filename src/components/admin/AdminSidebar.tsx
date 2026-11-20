@@ -1,6 +1,6 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSession, signOut } from "next-auth/react";
@@ -168,7 +168,7 @@ export default function AdminSidebar({ racha }: AdminSidebarProps) {
         }`}
       >
         <div className="flex flex-col items-center gap-2 mb-8">
-          <Image
+          <AvatarFut7Pro
             src={avatarSrc}
             alt={displayName}
             width={80}

@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import CardTimeDoDia from "@/components/cards/CardTimeDoDia";
@@ -10,7 +11,7 @@ import { useAboutPublic } from "@/hooks/useAbout";
 import { useFooterConfigAdmin, useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import type { PublicMatch, TimeDoDia } from "@/types/partida";
 
-const DEFAULT_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_PLAYER = DEFAULT_ATHLETE_AVATAR;
 const DEFAULT_COLOR = "#facc15";
 const INTERVALO_TROCA_SEG = 85;
 

@@ -1,5 +1,8 @@
 // src/components/admin/AdminHeader.tsx
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Image from "next/image";
 import { useBranding } from "@/hooks/useBranding";
@@ -12,8 +15,7 @@ export default function AdminHeader() {
   const brandingNome = aboutAdmin?.nome || nome;
   const brandingLogo = aboutAdmin?.logoUrl || logo;
   const presidenteNome = aboutAdmin?.presidente?.nome || "Presidente";
-  const presidenteAvatar =
-    aboutAdmin?.presidente?.avatarUrl || "/images/jogadores/jogador_padrao_01.jpg";
+  const presidenteAvatar = aboutAdmin?.presidente?.avatarUrl || DEFAULT_ATHLETE_AVATAR;
 
   return (
     <header className="w-full bg-[#23272F] shadow px-6 py-4 flex items-center justify-between z-40 backdrop-blur-sm">
@@ -36,7 +38,7 @@ export default function AdminHeader() {
         </button>
         <div className="flex items-center gap-2">
           <span className="text-white text-sm hidden sm:inline">Ola, {presidenteNome}</span>
-          <Image
+          <AvatarFut7Pro
             src={presidenteAvatar}
             alt={`Avatar do presidente do racha - ${brandingNome}`}
             width={32}

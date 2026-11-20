@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -93,7 +96,7 @@ type AthletePremiumProfileViewProps = {
   onStatsPeriodChange?: (period: "current" | "all") => void;
 };
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 
 const METRIC_HELP = {
   legendaryProgress:
@@ -459,7 +462,9 @@ function PremiumAthleteMedallion({
             <div className="absolute h-[200px] w-[200px] rounded-full bg-[#f8c64a]/20 blur-2xl sm:h-[260px] sm:w-[260px]" />
             <div className="relative h-[178px] w-[178px] sm:h-[266px] sm:w-[266px]">
               <div className="absolute left-[25.5%] top-[27%] z-0 h-[48%] w-[49%] overflow-hidden rounded-full bg-zinc-950">
-                <img
+                <AvatarFut7Pro
+                  width={256}
+                  height={256}
                   src={avatar}
                   alt={`Foto de ${athlete.name}`}
                   className="h-full w-full object-cover"

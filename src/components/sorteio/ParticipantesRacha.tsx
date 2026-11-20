@@ -1,7 +1,9 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import type { Participante, ConfiguracaoRacha, AvaliacaoEstrela, Posicao } from "@/types/sorteio";
 import { FaCheckCircle, FaUserPlus } from "react-icons/fa";
 import { useJogadores } from "@/hooks/useJogadores";
@@ -128,7 +130,7 @@ function PopoverSelecionarJogador({
             tabIndex={0}
             aria-label={`Selecionar ${p.nome}`}
           >
-            <Image
+            <AvatarFut7Pro
               src={p.foto}
               alt={`Foto de ${p.nome}, posição: ${p.posicao}`}
               width={28}
@@ -367,7 +369,7 @@ export default function ParticipantesRacha({
           id: jogador.id,
           nome: jogador.nome || jogador.apelido || "Jogador",
           slug: slugify(jogador.nome || jogador.apelido || jogador.id),
-          foto: jogador.avatar || jogador.foto || "/images/jogadores/jogador_padrao_01.jpg",
+          foto: jogador.avatar || jogador.foto || DEFAULT_ATHLETE_AVATAR,
           posicao: normalizarPosicao(jogador.posicao),
           posicaoSecundaria: jogador.posicaoSecundaria
             ? normalizarPosicao(jogador.posicaoSecundaria)
@@ -658,7 +660,7 @@ export default function ParticipantesRacha({
       >
         <div className="flex flex-row items-center justify-between w-full">
           <div className="flex flex-row items-center gap-2 min-w-0 flex-1">
-            <Image
+            <AvatarFut7Pro
               src={jogador.foto}
               alt={`Foto de ${jogador.nome}, ${jogador.posicao}`}
               width={48}
