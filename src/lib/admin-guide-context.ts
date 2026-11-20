@@ -1,4 +1,4 @@
-import { guideDestination } from "@/lib/admin-guide-navigation";
+import { GUIDE_RECRUITING_CONTEXT, guideDestination } from "@/lib/admin-guide-navigation";
 import { ONBOARDING_IDS } from "@/lib/admin-onboarding";
 import type { AdminGuideData, AdminGuideTask } from "@/types/admin-guide";
 
@@ -188,4 +188,39 @@ export function contextSummary(guide: AdminGuideData, task: AdminGuideTask) {
   )
     return "A finalização oficial das partidas foi confirmada. A publicação do campeão continua sendo uma etapa própria.";
   return "Esta etapa já foi concluída. Você pode continuar trabalhando nesta página. As condições atuais da funcionalidade continuam valendo para novas ações.";
+}
+
+export const RECRUITING_CONTEXT = {
+  title: "Reúna os jogadores para começar",
+  summary: "Cadastre os atletas do seu grupo para liberar a próxima fase do Guia Interativo.",
+  details: [
+    "Abra Cadastrar Jogador e preencha o perfil do atleta.",
+    "Salve e aguarde a confirmação. A contagem considera somente os atletas elegíveis confirmados pelo sistema.",
+    "Use Continuar no Guia Interativo para retornar à Fase 2 com o progresso atualizado.",
+  ],
+};
+
+export function isRecruitingContext(guide: AdminGuideData, id: string | null, pathname: string) {
+  return (
+    id === GUIDE_RECRUITING_CONTEXT &&
+    pathname === "/admin/jogadores/listar-cadastrar" &&
+    guide.administrator.status === "APROVADO" &&
+    guide.capabilities.managePlayers === true &&
+    guide.eligibility?.preparationComplete === true
+  );
+}
+
+export function recruitingEligibility(guide: AdminGuideData) {
+  const value = guide.eligibility;
+  if (
+    !value ||
+    !Number.isInteger(value.eligiblePlayers) ||
+    value.eligiblePlayers < 0 ||
+    !Number.isInteger(value.minimumPlayers) ||
+    value.minimumPlayers <= 0 ||
+    !Number.isInteger(value.missingPlayers) ||
+    value.missingPlayers < 0
+  )
+    return null;
+  return value;
 }

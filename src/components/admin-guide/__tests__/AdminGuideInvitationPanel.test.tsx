@@ -215,7 +215,7 @@ it("offers contextual manual registration independently of the initial invitatio
   const link = screen.getByRole("link", { name: "Cadastrar jogador" });
   expect(link).toHaveAttribute(
     "href",
-    "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard"
+    "/admin/jogadores/listar-cadastrar?guia=FOOTBALL_PLAYERS&guiaOrigem=dashboard"
   );
   const share = screen.getByRole("region", { name: "Instagram" });
   const back = screen.getByRole("button", { name: "Voltar à Fase 2" });
@@ -246,11 +246,11 @@ it("keeps full-page and contextual return destinations for manual registration",
   const view = render(panel("reinvite", { origin: "pagina" }));
   expect(screen.getByRole("link", { name: "Cadastrar jogador" })).toHaveAttribute(
     "href",
-    "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=pagina"
+    "/admin/jogadores/listar-cadastrar?guia=FOOTBALL_PLAYERS&guiaOrigem=pagina"
   );
   view.rerender(panel("reinvite", { returnTo: "/admin/partidas/criar-times" }));
   expect(screen.getByRole("link", { name: "Cadastrar jogador" })).toHaveAttribute(
     "href",
-    "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard&guiaRetorno=%2Fadmin%2Fpartidas%2Fcriar-times"
+    "/admin/jogadores/listar-cadastrar?guia=FOOTBALL_PLAYERS&guiaOrigem=dashboard&guiaRetorno=%2Fadmin%2Fpartidas%2Fcriar-times"
   );
 });
