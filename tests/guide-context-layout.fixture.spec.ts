@@ -182,6 +182,14 @@ for (const width of [1280, 390, 320]) {
                           height: child.getBoundingClientRect().height,
                           width: child.getBoundingClientRect().width,
                           className: child.className,
+                          descendants: [...child.querySelectorAll("*")].slice(0, 25).map((el) => ({
+                            tag: el.tagName,
+                            height: el.getBoundingClientRect().height,
+                            width: el.getBoundingClientRect().width,
+                            className: el.getAttribute("class"),
+                            display: getComputedStyle(el).display,
+                            alignSelf: getComputedStyle(el).alignSelf,
+                          })),
                         })),
                       };
                     })
@@ -277,7 +285,14 @@ for (const width of [1280, 390, 320]) {
           results.push(row);
           // Uma unidade de pixel físico cobre o arredondamento das bordas rasterizadas.
           // O limite não é percentual nem proporcional ao tamanho do salto original.
-          if (!before) expect(Math.abs(delta), JSON.stringify(row)).toBeLessThanOrEqual(1 / b.dpr);
+          if (!before) {
+            expect(Math.abs(delta), JSON.stringify(row)).toBeLessThanOrEqual(1 / b.dpr);
+            for (const event of events) {
+              if (typeof event.guideHeight === "number")
+                expect(Math.abs(event.guideHeight - b.height), JSON.stringify(row))
+                  .toBeLessThanOrEqual(1 / b.dpr);
+            }
+          }
         };
         await measure("initial-to-confirmed", first, confirmed);
         if (id === "ATHLETE_LEVELS")

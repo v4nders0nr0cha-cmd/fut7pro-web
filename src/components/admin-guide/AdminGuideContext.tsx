@@ -329,7 +329,7 @@ export default function AdminGuideContext() {
             </div>
           )}
         </div>
-        <div className="grid max-w-full">
+        <div className="grid max-w-full grid-cols-[minmax(0,1fr)] items-start">
           <div
             aria-hidden="true"
             className="pointer-events-none invisible flex min-h-11 max-w-full items-center gap-2 [grid-area:1/1]"
