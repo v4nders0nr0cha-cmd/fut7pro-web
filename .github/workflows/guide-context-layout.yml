@@ -44,7 +44,7 @@ jobs:
 
       - name: Restore original banner for baseline measurements
         if: matrix.variant == 'before'
-        run: git show "$GUIDE_LAYOUT_BASELINE_REF:src/components/admin-guide/AdminGuideContext.tsx" > src/components/admin-guide/AdminGuideContext.tsx
+        run: git -c safe.directory="$GITHUB_WORKSPACE" show "$GUIDE_LAYOUT_BASELINE_REF:src/components/admin-guide/AdminGuideContext.tsx" > src/components/admin-guide/AdminGuideContext.tsx
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -94,6 +94,26 @@ jobs:
           PLAYWRIGHT_WEB_SERVER: "1"
           PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
         run: pnpm exec playwright test tests/guide-context-layout.fixture.spec.ts --project=mobile-iphone --grep "context layout (390|320)" --workers=1 --reporter=line --output=test-results/layout-webkit
+      - name: Emit measurement evidence
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          function walk(dir) {
+            if (!fs.existsSync(dir)) return;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(file);
+              else if (entry.name === 'layout-metrics.json') {
+                console.log('GUIDE_LAYOUT_METRICS ' + fs.readFileSync(file, 'utf8').replace(/\n/g, ''));
+              } else if (file.includes('layout-chromium') && /-320-completed-(loading|confirmed|refreshing)\.png$/.test(entry.name)) {
+                console.log('GUIDE_LAYOUT_IMAGE ' + JSON.stringify({ name: entry.name, base64: fs.readFileSync(file).toString('base64') }));
+              }
+            }
+          }
+          walk('test-results');
+          NODE
       - name: Upload measurements and comparisons
         if: always()
         uses: actions/upload-artifact@v4

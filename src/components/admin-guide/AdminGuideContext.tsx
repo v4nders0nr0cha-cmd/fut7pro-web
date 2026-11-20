@@ -230,7 +230,7 @@ export default function AdminGuideContext() {
       {layout.progress && (
         <TextSlot
           samples={[layout.progress, ...(progress ? [progress] : [])]}
-          className="mt-2 text-sm text-[#f5e8d2]"
+          className={`mt-2 text-sm text-[#f5e8d2] ${id === "SCHEDULE" ? "[&>span]:pb-1" : ""}`}
         >
           {id === "SCHEDULE" ? (
             <ScheduleSummary
@@ -253,7 +253,10 @@ export default function AdminGuideContext() {
           className="mt-3 max-w-md rounded-lg border border-[#d8ad62]/25 px-3 py-2"
         >
           <TextSlot
-            samples={["Mínimo de atletas elegíveis atingido", "Faltam atletas para liberar"]}
+            samples={[
+              "Mínimo de atletas elegíveis atingido — atletas",
+              "Faltam atletas para liberar",
+            ]}
             className="text-xs text-[#f5e8d2]"
           >
             {eligibility ? (
