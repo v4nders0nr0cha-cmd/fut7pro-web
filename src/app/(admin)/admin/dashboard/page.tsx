@@ -1,9 +1,9 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import Image from "next/image";
 import {
   FaRandom,
   FaClipboardList,
@@ -41,7 +41,7 @@ const DIAS_SEMANA = [
   "Sabado",
 ];
 const WEEKDAYS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 
 function formatNextAgendaDate(value?: string | null) {
   if (!value) return null;
@@ -315,8 +315,8 @@ export default function AdminDashboard() {
                 <div className="flex flex-col gap-2">
                   {aniversariantes.map((a) => (
                     <div key={a.id} className="flex items-center gap-3">
-                      <Image
-                        src={a.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+                      <AvatarFut7Pro
+                        src={a.photoUrl || DEFAULT_ATHLETE_AVATAR}
                         alt={`Aniversariante ${a.name}`}
                         width={32}
                         height={32}

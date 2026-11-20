@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -278,8 +281,10 @@ export default function AdministradoresClient() {
       </div>
     ) : (
       <div className="flex min-w-0 items-start gap-3">
-        <img
-          src={slot.avatarUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+        <AvatarFut7Pro
+          width={56}
+          height={56}
+          src={slot.avatarUrl || DEFAULT_ATHLETE_AVATAR}
           alt={slot.name || "Administrador"}
           className="h-14 w-14 shrink-0 rounded-full border border-[#333] object-cover"
         />
@@ -672,8 +677,10 @@ export default function AdministradoresClient() {
                           : "border-[#2a2d34] hover:border-yellow-500/50"
                       } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
                     >
-                      <img
-                        src={athlete.avatarUrl || "/images/jogadores/jogador_padrao_02.jpg"}
+                      <AvatarFut7Pro
+                        width={40}
+                        height={40}
+                        src={athlete.avatarUrl || DEFAULT_ATHLETE_AVATAR}
                         alt={athlete.nome}
                         className="w-10 h-10 rounded-full border border-[#2a2d34] object-cover"
                       />

@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
 import Link from "next/link";
@@ -12,7 +15,7 @@ import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import type { PublicMatch } from "@/types/partida";
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 const FORTALEZA_TZ = "America/Fortaleza";
 const STAT_PERIODS = [
   { value: "current", label: "Temporada atual" },
@@ -241,7 +244,7 @@ export default function PerfilAtletaPage() {
 
         <div className="mt-4 bg-neutral-900 rounded-2xl p-6 border border-neutral-800 shadow">
           <div className="flex flex-col md:flex-row items-center gap-4">
-            <img
+            <AvatarFut7Pro
               src={displayAvatar}
               alt={`Foto de ${displayName}`}
               width={96}

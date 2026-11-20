@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
 import { useMemo, useState } from "react";
@@ -15,7 +16,7 @@ const PERIODOS = [
   { label: "Todos os anos", value: "todos" },
 ];
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 
 export default function RankingAssiduidade() {
   const [periodo, setPeriodo] = useState<AttendancePeriod>("mes");

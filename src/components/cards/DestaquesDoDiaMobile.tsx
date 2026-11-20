@@ -1,15 +1,16 @@
 // src/components/cards/DestaquesDoDiaMobile.tsx
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
-import Image from "next/image";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 export default function DestaquesDoDiaMobile() {
   return (
     <div className="flex flex-col gap-4 sm:hidden w-full mb-3">
       {/* Artilheiro do Dia */}
       <div className="bg-[#1A1A1A] rounded-xl p-3 flex items-center gap-3 shadow-md">
-        <Image
-          src="/images/jogadores/jogador_padrao_01.jpg"
+        <AvatarFut7Pro
+          src={DEFAULT_ATHLETE_AVATAR}
           alt="Foto do Jogador XPTO"
           width={48}
           height={48}
@@ -23,8 +24,8 @@ export default function DestaquesDoDiaMobile() {
       </div>
       {/* Maestro do Dia */}
       <div className="bg-[#1A1A1A] rounded-xl p-3 flex items-center gap-3 shadow-md">
-        <Image
-          src="/images/jogadores/jogador_padrao_03.jpg"
+        <AvatarFut7Pro
+          src={DEFAULT_ATHLETE_AVATAR}
           alt="Foto do Maestro do Dia"
           width={48}
           height={48}

@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
 import { useMemo, useState } from "react";
@@ -16,7 +17,7 @@ const PERIODOS: Array<{ label: string; value: RankingCampeoesPeriodo }> = [
   { label: "Histórico completo", value: "todos" },
 ];
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 
 export default function RankingCampeoesDoDiaPage() {
   const [periodo, setPeriodo] = useState<RankingCampeoesPeriodo>("ano");

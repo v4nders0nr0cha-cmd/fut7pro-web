@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import useSWR from "swr";
 import type { RankingAtleta } from "@/types/estatisticas";
@@ -51,7 +52,7 @@ const athletesFetcher = async (url: string): Promise<PublicAthletesResponse> => 
   return res.json();
 };
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 
 function normalizePosition(value?: string | null) {
   if (!value) return "";

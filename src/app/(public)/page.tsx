@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
@@ -20,7 +21,7 @@ import { resolvePublicTenantSlug } from "@/utils/public-links";
 import type { PublicDestaquesDoDiaResponse } from "@/types/destaques";
 import type { PublicMatch, PublicMatchesResponse } from "@/types/partida";
 
-const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_PLAYER_IMAGE = DEFAULT_ATHLETE_AVATAR;
 const DEFAULT_TEAM_IMAGE = "/images/torneios/torneio-matador.jpg";
 const BOT_PLAYER_IMAGE = "/images/jogadores/Jogador-Reserva.png";
 const BOT_GOALKEEPER_IMAGE = "/images/jogadores/Goleiro-Reserva.png";

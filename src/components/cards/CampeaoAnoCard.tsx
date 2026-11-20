@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Image from "next/image";
 import { TeamBadge } from "@/components/teams/TeamBadge";
@@ -29,8 +32,7 @@ export default function CampeaoAnoCard({
   temporario = false,
 }: CampeaoAnoCardProps) {
   const { publicHref } = usePublicLinks();
-  const resolvedImage =
-    image && image.trim().length > 0 ? image : "/images/jogadores/jogador_padrao_01.jpg";
+  const resolvedImage = image && image.trim().length > 0 ? image : DEFAULT_ATHLETE_AVATAR;
   const paddingClass = temporario ? "pt-7" : "";
   // Garante que rankings de campeões do ano sempre vão para as rotas ANUAIS
   const destino = href.startsWith("/estatisticas") ? href : slug ? `/atletas/${slug}` : "#";
@@ -75,7 +77,7 @@ export default function CampeaoAnoCard({
       {titulo === "Campeão do Ano" ? (
         <TeamBadge name={nome} color={teamColor} logo={image} size={100} className="mb-2" />
       ) : (
-        <Image
+        <AvatarFut7Pro
           src={resolvedImage}
           alt={`Imagem do campeão ${nome} - ${titulo}`}
           width={100}

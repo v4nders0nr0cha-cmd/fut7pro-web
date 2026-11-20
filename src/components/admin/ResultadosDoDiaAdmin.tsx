@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { TeamBadge } from "@/components/teams/TeamBadge";
 
@@ -14,7 +15,7 @@ import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
 import { Fut7ConfirmDialog, Fut7DestructiveDialog } from "@/components/ui/feedback";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 
-const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
+const FALLBACK_PLAYER = DEFAULT_ATHLETE_AVATAR;
 const OWN_GOAL_ID = "own-goal";
 const NO_ASSIST_ID = "no-assist";
 const UNKNOWN_GOAL_ID = "unknown-goal";

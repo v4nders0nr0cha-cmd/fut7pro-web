@@ -1,4 +1,8 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRacha } from "@/context/RachaContext";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
@@ -15,7 +19,7 @@ import type { DestaqueDiaFaltou } from "@/types/destaques";
 
 const BOT_PLAYER_IMAGE = "/images/jogadores/Jogador-Reserva.png";
 const BOT_GOALKEEPER_IMAGE = "/images/jogadores/Goleiro-Reserva.png";
-const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_PLAYER_IMAGE = DEFAULT_ATHLETE_AVATAR;
 
 function normalizeKey(value?: string | null) {
   return (value ?? "").trim().toLowerCase();
@@ -324,7 +328,9 @@ export default function CardsDestaquesDiaV2({
                   Manual
                 </span>
               </div>
-              <img
+              <AvatarFut7Pro
+                width={56}
+                height={56}
                 src={displayFoto}
                 alt={displayNome || titulo}
                 className="h-14 w-14 rounded-full border-2 border-yellow-400/70 object-cover"
@@ -393,7 +399,9 @@ export default function CardsDestaquesDiaV2({
               </span>
             )}
           </div>
-          <img
+          <AvatarFut7Pro
+            width={56}
+            height={56}
             src={displayFoto}
             alt={displayNome || titulo}
             className="h-14 w-14 rounded-full border-2 border-yellow-400/70 object-cover"

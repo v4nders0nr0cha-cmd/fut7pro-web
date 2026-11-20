@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useParams, notFound } from "next/navigation";
 import Image from "next/image";
@@ -69,11 +72,7 @@ const normalizeCampeao = (
     nome,
     posicao: source.posicao ?? source.position ?? "Atleta",
     fotoUrl:
-      source.fotoUrl ??
-      source.avatarUrl ??
-      source.avatar ??
-      source.foto ??
-      "/images/jogadores/jogador_padrao_01.jpg",
+      source.fotoUrl ?? source.avatarUrl ?? source.avatar ?? source.foto ?? DEFAULT_ATHLETE_AVATAR,
     slug,
   };
 };
@@ -142,7 +141,7 @@ export default function DetalheTorneioPage() {
                 const content = (
                   <>
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-brand-strong bg-zinc-950">
-                      <Image
+                      <AvatarFut7Pro
                         src={jogador.fotoUrl}
                         alt={`Foto de ${jogador.nome}`}
                         fill

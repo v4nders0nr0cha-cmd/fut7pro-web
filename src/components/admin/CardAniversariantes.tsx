@@ -1,6 +1,8 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
-import Image from "next/image";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
+
 import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
 
 export default function CardAniversariantes() {
@@ -19,8 +21,8 @@ export default function CardAniversariantes() {
         ) : birthdays.length ? (
           birthdays.map((a) => (
             <div key={a.id} className="flex items-center gap-2 text-white text-sm">
-              <Image
-                src={a.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+              <AvatarFut7Pro
+                src={a.photoUrl || DEFAULT_ATHLETE_AVATAR}
                 alt={`Foto de ${a.name}`}
                 width={24}
                 height={24}

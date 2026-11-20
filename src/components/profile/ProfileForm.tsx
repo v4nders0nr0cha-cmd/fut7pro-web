@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useEffect, useState, type ChangeEvent } from "react";
 import { toast } from "react-hot-toast";
@@ -13,7 +16,7 @@ import {
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 type Posicao = (typeof POSICOES)[number] | "";
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
 
@@ -157,7 +160,7 @@ export default function ProfileForm({
     <div className="bg-[#181818] border border-[#292929] rounded-lg shadow-md p-6">
       <div className="flex flex-col md:flex-row items-center gap-6">
         <div className="relative">
-          <img
+          <AvatarFut7Pro
             src={avatarPreview || DEFAULT_AVATAR}
             alt="Avatar do perfil"
             width={120}

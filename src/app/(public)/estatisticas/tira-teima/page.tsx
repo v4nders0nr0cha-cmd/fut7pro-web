@@ -1,7 +1,9 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ConquistasAtleta, TituloAtleta } from "@/types/estatisticas";
@@ -14,7 +16,7 @@ const PERIODOS = [
   { label: "Temporada atual", value: "current" },
   { label: "Todas as temporadas", value: "all" },
 ];
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 
 type AthleteOption = {
   id: string;
@@ -107,7 +109,7 @@ function AthletePicker({
         aria-expanded={open}
       >
         <span className="flex items-center gap-2 min-w-0">
-          <Image
+          <AvatarFut7Pro
             src={resolveAvatar(selected?.foto)}
             alt={selected?.nome ? `Foto de ${selected.nome}` : "Foto do atleta"}
             width={28}
@@ -150,7 +152,7 @@ function AthletePicker({
                   }}
                   aria-label={`Selecionar ${athlete.nome}`}
                 >
-                  <Image
+                  <AvatarFut7Pro
                     src={resolveAvatar(athlete.foto)}
                     alt={`Foto de ${athlete.nome}`}
                     width={28}
@@ -517,7 +519,7 @@ export default function TiraTeimaPage() {
                 >
                   <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-6">
                     <div className="flex items-center gap-3 min-w-0">
-                      <Image
+                      <AvatarFut7Pro
                         src={resolveAvatar(atletaA?.foto)}
                         alt={atletaA?.nome ? `Foto de ${atletaA.nome}` : "Foto do atleta A"}
                         width={40}
@@ -532,7 +534,7 @@ export default function TiraTeimaPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 min-w-0">
-                      <Image
+                      <AvatarFut7Pro
                         src={resolveAvatar(atletaB?.foto)}
                         alt={atletaB?.nome ? `Foto de ${atletaB.nome}` : "Foto do atleta B"}
                         width={40}

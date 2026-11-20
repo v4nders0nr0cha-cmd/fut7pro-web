@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { forwardRef } from "react";
 import type { PremiumIndex, PremiumPosition, PremiumStats } from "@/utils/athlete-premium";
@@ -39,7 +42,7 @@ type ShareablePremiumCardStoryProps = {
   legendaryProgress: StoryLegendaryProgress;
 };
 
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 
 const ShareablePremiumCardStory = forwardRef<HTMLDivElement, ShareablePremiumCardStoryProps>(
   function ShareablePremiumCardStory({ athlete, tenant, stats, index, legendaryProgress }, ref) {
@@ -95,7 +98,9 @@ const ShareablePremiumCardStory = forwardRef<HTMLDivElement, ShareablePremiumCar
             <div className="relative mx-auto h-[438px] w-[438px]">
               <div className="absolute inset-0 rounded-full bg-[#f8c64a]/25 blur-3xl" />
               <div className="absolute left-[25.5%] top-[27%] z-0 h-[48%] w-[49%] overflow-hidden rounded-full bg-zinc-950">
-                <img
+                <AvatarFut7Pro
+                  width={512}
+                  height={512}
                   src={avatar}
                   alt={`Foto de ${athlete.name}`}
                   className="h-full w-full object-cover"

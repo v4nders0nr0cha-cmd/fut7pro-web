@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { TeamBadge } from "@/components/teams/TeamBadge";
 import { notifyAdminGuideChanged } from "@/lib/admin-guide-events";
@@ -172,8 +175,10 @@ function AthleteChampionCard({ jogador }: { jogador: JogadorDestaque }) {
           : undefined
       }
     >
-      <img
-        src={jogador.foto || "/images/jogadores/jogador_padrao_01.jpg"}
+      <AvatarFut7Pro
+        width={44}
+        height={44}
+        src={jogador.foto || DEFAULT_ATHLETE_AVATAR}
         alt={jogador.nome}
         className="h-11 w-11 rounded-full border border-yellow-400/50 object-cover"
       />

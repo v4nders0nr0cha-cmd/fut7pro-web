@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
 import Image from "next/image";
@@ -15,7 +16,7 @@ import type { RankingAtleta, QuadrimestresAno } from "@/types/estatisticas";
 import type { TeamRankingEntry } from "@/hooks/usePublicTeamRankings";
 
 const CURRENT_YEAR = new Date().getFullYear();
-const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_PLAYER_IMAGE = DEFAULT_ATHLETE_AVATAR;
 const SUCCESS_TITLE = "Temporada finalizada com sucesso!";
 const SUCCESS_MESSAGE =
   "Obrigado por mais um ano de racha. As premia\u00e7\u00f5es foram aplicadas nos perfis dos campe\u00f5es e os rankings j\u00e1 est\u00e3o prontos para o pr\u00f3ximo ano. Boa virada e que venha uma temporada ainda mais braba!";
@@ -47,21 +48,21 @@ const positionMeta = [
     label: "Meia do Ano",
     icon: "/images/icons/meia-do-ano.png",
     href: "/estatisticas/melhores-por-posicao/meias",
-    fallback: "/images/jogadores/jogador_padrao_03.jpg",
+    fallback: DEFAULT_ATHLETE_AVATAR,
   },
   {
     key: "zagueiro",
     label: "Zagueiro do Ano",
     icon: "/images/icons/zagueiro-do-ano.png",
     href: "/estatisticas/melhores-por-posicao/zagueiros",
-    fallback: "/images/jogadores/jogador_padrao_07.jpg",
+    fallback: DEFAULT_ATHLETE_AVATAR,
   },
   {
     key: "goleiro",
     label: "Goleiro do Ano",
     icon: "/images/icons/luva-de-ouro.png",
     href: "/estatisticas/melhores-por-posicao/goleiros",
-    fallback: "/images/jogadores/jogador_padrao_09.jpg",
+    fallback: DEFAULT_ATHLETE_AVATAR,
   },
 ];
 
@@ -205,7 +206,7 @@ export default function OsCampeoesAdminPage() {
         titulo: "Maestro do Ano",
         nome: topAssist?.nome ?? "Maestro em processamento",
         valor: topAssist ? `${topAssist.assistencias} assistências` : "Em processamento",
-        image: safeImage(topAssist?.foto, "/images/jogadores/jogador_padrao_05.jpg"),
+        image: safeImage(topAssist?.foto, DEFAULT_ATHLETE_AVATAR),
         icone: "/images/icons/chuteira-de-ouro.png",
         href: `/estatisticas/assistencias?period=temporada&year=${anoBase}`,
         slug: topAssist?.slug,

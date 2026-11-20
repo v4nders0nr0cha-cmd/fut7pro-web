@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
 
 type AvatarFut7ProProps = Omit<ImageProps, "src" | "alt" | "width" | "height"> & {
@@ -13,37 +13,39 @@ type AvatarFut7ProProps = Omit<ImageProps, "src" | "alt" | "width" | "height"> &
   fallbackSrc?: string;
 };
 
-export default function AvatarFut7Pro({
+export default function AvatarFut7Pro({ src, fallbackSrc, ...props }: AvatarFut7ProProps) {
+  const fallback = getAvatarSrc(fallbackSrc, DEFAULT_ATHLETE_AVATAR);
+  const source = getAvatarSrc(src, fallback);
+  // Uma nova foto (ou sua remoção) reinicia o estado de erro imediatamente.
+  return (
+    <AvatarImage key={`${source}:${fallback}`} {...props} src={source} fallbackSrc={fallback} />
+  );
+}
+
+function AvatarImage({
   src,
+  fallbackSrc,
   alt,
   size = 40,
   width,
   height,
-  fallbackSrc = DEFAULT_ATHLETE_AVATAR,
   onError,
   ...props
-}: AvatarFut7ProProps) {
-  const resolvedWidth = width ?? size;
-  const resolvedHeight = height ?? size;
-  const safeSrc = getAvatarSrc(src, fallbackSrc);
-  const [currentSrc, setCurrentSrc] = useState<string>(safeSrc);
-
-  useEffect(() => {
-    setCurrentSrc(safeSrc);
-  }, [safeSrc]);
-
+}: AvatarFut7ProProps & { src: string; fallbackSrc: string }) {
+  const [failed, setFailed] = useState(false);
+  const currentSrc = failed ? fallbackSrc : src;
+  const placeholder = currentSrc === DEFAULT_ATHLETE_AVATAR;
+  const dimensions = props.fill ? {} : { width: width ?? size, height: height ?? size };
   return (
     <Image
       {...props}
+      {...dimensions}
       src={currentSrc}
-      alt={alt}
-      width={resolvedWidth}
-      height={resolvedHeight}
+      alt={placeholder && alt ? `${alt} (sem foto)` : alt}
+      data-avatar-placeholder={placeholder ? "true" : undefined}
       onError={(event) => {
         onError?.(event);
-        if (currentSrc !== fallbackSrc) {
-          setCurrentSrc(fallbackSrc);
-        }
+        if (currentSrc !== fallbackSrc) setFailed(true);
       }}
     />
   );

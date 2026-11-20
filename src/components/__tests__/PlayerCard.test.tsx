@@ -74,10 +74,10 @@ describe("PlayerCard", () => {
 
     render(<PlayerCard player={playerWithoutImage} racha={mockRacha} />);
 
-    const defaultImage = screen.getByAltText("João Silva");
+    const defaultImage = screen.getByAltText("João Silva (sem foto)");
     expect(defaultImage).toBeInTheDocument();
     // Verificar se usa imagem padrão
-    expect(defaultImage).toHaveAttribute("src", "/images/jogadores/jogador_padrao_01.jpg");
+    expect(defaultImage).toHaveAttribute("src", "/images/avatar-placeholder.svg");
   });
 
   it("should display correct statistics", () => {

@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import Head from "next/head";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -802,7 +803,7 @@ export default function NivelDosAtletasPage() {
                           jogador.avatarUrl ||
                           jogador.avatar ||
                           jogador.foto ||
-                          "/images/jogadores/jogador_padrao_01.jpg"
+                          DEFAULT_ATHLETE_AVATAR
                         }
                         alt={`Foto de ${jogador.nome || "Atleta"}`}
                         width={48}

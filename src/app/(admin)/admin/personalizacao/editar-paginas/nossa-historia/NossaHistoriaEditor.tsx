@@ -1,4 +1,7 @@
 "use client";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -48,7 +51,7 @@ const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const DEFAULT_RACHA_NAME = "seu racha";
 const DEFAULT_PRESIDENTE_NAME = "o presidente do racha";
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_AVATAR = DEFAULT_ATHLETE_AVATAR;
 const DESCRICAO_TEMPLATE =
   "O racha {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por {nomePresidente}, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.";
 const LEGACY_ANO_REGEX = /^ano\s*\d+/i;
@@ -409,7 +412,7 @@ function AthleteSelect({ label, options, value, onChange, disabled }: AthleteSel
                 option.id === value ? "bg-[#1f2330]" : "hover:bg-[#1a1e28]"
               }`}
             >
-              <Image
+              <AvatarFut7Pro
                 src={option.foto || DEFAULT_AVATAR}
                 alt={option.nome}
                 width={32}
@@ -1548,7 +1551,7 @@ export default function NossaHistoriaEditor() {
                     const cargo = adminMatch ? roleLabels[adminMatch.role] || "Atleta" : "Atleta";
                     return (
                       <div className="mt-2 flex items-center gap-2 text-brand-soft font-semibold">
-                        <Image
+                        <AvatarFut7Pro
                           src={athlete?.foto || adminMatch?.foto || DEFAULT_AVATAR}
                           alt={nome}
                           width={28}
