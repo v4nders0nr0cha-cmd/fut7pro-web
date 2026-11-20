@@ -9,7 +9,7 @@ describe("avatar source", () => {
     "null",
     "undefined",
     "not-a-url",
-    "javascript:alert(1)",
+    "javascript:void(0)",
     "https://[invalid",
     "//external.test/photo.jpg",
   ])("uses the neutral local placeholder for %s", (value) => {
