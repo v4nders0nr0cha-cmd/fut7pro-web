@@ -289,8 +289,10 @@ for (const width of [1280, 390, 320]) {
             expect(Math.abs(delta), JSON.stringify(row)).toBeLessThanOrEqual(1 / b.dpr);
             for (const event of events) {
               if (typeof event.guideHeight === "number")
-                expect(Math.abs(event.guideHeight - b.height), JSON.stringify(row))
-                  .toBeLessThanOrEqual(1 / b.dpr);
+                expect(
+                  Math.abs(event.guideHeight - b.height),
+                  JSON.stringify(row)
+                ).toBeLessThanOrEqual(1 / b.dpr);
             }
           }
         };
