@@ -61,7 +61,15 @@ for (const width of [1280, 390, 320]) {
           )?.value
       )
       .toBe("grupo-fixture");
-    await page.goto("/admin/jogadores/listar-cadastrar");
+    if (width < 1024) {
+      await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
+    }
+    const navigation = page.getByTestId(
+      width < 1024 ? "admin-sidebar-mobile" : "admin-sidebar-desktop"
+    );
+    await navigation.getByRole("button", { name: "Jogadores", exact: true }).click();
+    await navigation.getByRole("link", { name: "Listar/Cadastrar", exact: true }).click();
+    await expect(page).toHaveURL(/\/admin\/jogadores\/listar-cadastrar/);
     await expect(page.getByRole("img", { name: "Comfoto", exact: true })).toHaveAttribute(
       "src",
       realPhoto
