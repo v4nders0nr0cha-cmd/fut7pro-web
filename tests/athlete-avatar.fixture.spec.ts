@@ -46,7 +46,21 @@ for (const width of [1280, 390, 320]) {
     await page.route(/\/api\/public\/grupo-fixture\/player-rankings(?:\?|$)/, (route) =>
       route.fulfill({ json: { slug: "grupo-fixture", type: "geral", results: [], total: 0 } })
     );
+    await page.route(/\/api\/admin\/solicitacoes(?:\?|$)/, (route) => route.fulfill({ json: [] }));
+    await page.route("**/api/admin/solicitacoes/auto-approve", (route) =>
+      route.fulfill({ json: { autoApproveAthletes: false, autoApproveAthletesUntil: null } })
+    );
     await login(page);
+    // The URL changes before WebKit finishes resolving the active group.
+    await expect(page.getByTestId("admin-dashboard-card-sorteio-inteligente")).toBeVisible();
+    await expect
+      .poll(
+        async () =>
+          (await page.context().cookies()).find(
+            (cookie) => cookie.name === "fut7pro_admin_active_tenant"
+          )?.value
+      )
+      .toBe("grupo-fixture");
     await page.goto("/admin/jogadores/listar-cadastrar");
     await expect(page.getByRole("img", { name: "Comfoto", exact: true })).toHaveAttribute(
       "src",
