@@ -165,6 +165,28 @@ for (const width of [1280, 390, 320]) {
               value: item.value,
               recentInput: item.hadRecentInput,
               scrollY,
+              guideRegions: (() => {
+                const panel = document.querySelector('[aria-label="Orientação do guia"]');
+                return panel
+                  ? [...panel.children].map((node) => {
+                      const rect = node.getBoundingClientRect();
+                      return {
+                        tag: node.tagName,
+                        className: node.className,
+                        height: rect.height,
+                        width: rect.width,
+                        text: node.textContent?.slice(0, 300),
+                        details: [...node.querySelectorAll("details")].map((d) => d.open),
+                        children: [...node.children].map((child) => ({
+                          tag: child.tagName,
+                          height: child.getBoundingClientRect().height,
+                          width: child.getBoundingClientRect().width,
+                          className: child.className,
+                        })),
+                      };
+                    })
+                  : [];
+              })(),
               guideHeight: document
                 .querySelector('[aria-label="Orientação do guia"]')
                 ?.getBoundingClientRect().height,
