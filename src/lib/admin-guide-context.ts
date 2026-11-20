@@ -158,6 +158,27 @@ export function contextProgress(guide: AdminGuideData, task: AdminGuideTask): st
   return null;
 }
 
+export const CONTEXT_COMPLETED_SUMMARY: Record<string, string> = {
+  OFFICIAL_TEAMS:
+    "Os dois times necessários já estão cadastrados. Se seu grupo utiliza mais equipes, você pode continuar adicionando times nesta página.",
+  SCHEDULE:
+    "O dia e o horário dos jogos do seu grupo foram cadastrados com sucesso. Seu grupo joga em outros dias da semana? Você pode cadastrar mais horários no formulário abaixo.",
+  ACTIVE_PLAYERS:
+    "Você já deu o primeiro passo para trazer jogadores ao Fut7Pro. Continue incentivando cada atleta a criar sua conta. O cadastro manual permanece disponível como alternativa.",
+  ATHLETE_LEVELS:
+    "As avaliações dos atletas elegíveis estão salvas. Você pode continuar ajustando habilidade e condição física nesta página.",
+  FIRST_MATCHDAY:
+    "A preparação do primeiro jogo foi salva. Você pode continuar organizando as partidas do grupo.",
+  RESULTS_RECORDED:
+    "Os resultados de todas as partidas de um dia estão salvos. Confira os registros antes de finalizar oficialmente a rodada.",
+  CHAMPION_PUBLISHED:
+    "O Time Campeão do Dia foi publicado em um ciclo válido. Você pode continuar organizando as publicações nesta página.",
+  MATCHES_FINISHED:
+    "A finalização oficial das partidas foi confirmada. A publicação do campeão continua sendo uma etapa própria.",
+  HISTORY:
+    "Esta etapa já foi concluída. Você pode continuar trabalhando nesta página. As condições atuais da funcionalidade continuam valendo para novas ações.",
+};
+
 export function contextSummary(guide: AdminGuideData, task: AdminGuideTask) {
   if (!task.completed)
     return task.id === "OFFICIAL_TEAMS" && count(guide, "activeOfficialTeams") === 1
@@ -165,29 +186,28 @@ export function contextSummary(guide: AdminGuideData, task: AdminGuideTask) {
       : GUIDE_CONTEXT[task.id].summary;
   // A conquista histórica permanece; condições atuais continuam sendo verificadas pelo backend.
   if (task.id === "OFFICIAL_TEAMS" && (count(guide, "activeOfficialTeams") ?? 0) >= 2)
-    return "Os dois times necessários já estão cadastrados. Se seu grupo utiliza mais equipes, você pode continuar adicionando times nesta página.";
+    return CONTEXT_COMPLETED_SUMMARY.OFFICIAL_TEAMS;
   if (task.id === "SCHEDULE" && guide.operationalState.agendaConfigured === true)
-    return "O dia e o horário dos jogos do seu grupo foram cadastrados com sucesso. Seu grupo joga em outros dias da semana? Você pode cadastrar mais horários no formulário abaixo.";
-  if (task.id === "ACTIVE_PLAYERS")
-    return "Você já deu o primeiro passo para trazer jogadores ao Fut7Pro. Continue incentivando cada atleta a criar sua conta. O cadastro manual permanece disponível como alternativa.";
+    return CONTEXT_COMPLETED_SUMMARY.SCHEDULE;
+  if (task.id === "ACTIVE_PLAYERS") return CONTEXT_COMPLETED_SUMMARY.ACTIVE_PLAYERS;
   if (
     task.id === "ATHLETE_LEVELS" &&
     guide.operationalState.eligibleLevelCoverage === 100 &&
     (count(guide, "eligiblePlayerCount") ?? 0) >= 10
   )
-    return "As avaliações dos atletas elegíveis estão salvas. Você pode continuar ajustando habilidade e condição física nesta página.";
+    return CONTEXT_COMPLETED_SUMMARY.ATHLETE_LEVELS;
   if (task.id === "FIRST_MATCHDAY" && (count(guide, "validMatchCount") ?? 0) > 0)
-    return "A preparação do primeiro jogo foi salva. Você pode continuar organizando as partidas do grupo.";
+    return CONTEXT_COMPLETED_SUMMARY.FIRST_MATCHDAY;
   if (task.id === "RESULTS_RECORDED" && guide.operationalState.hasMatchdayWithAllResults === true)
-    return "Os resultados de todas as partidas de um dia estão salvos. Confira os registros antes de finalizar oficialmente a rodada.";
+    return CONTEXT_COMPLETED_SUMMARY.RESULTS_RECORDED;
   if (task.id === "CHAMPION_PUBLISHED" && guide.operationalState.championPublished === true)
-    return "O Time Campeão do Dia foi publicado em um ciclo válido. Você pode continuar organizando as publicações nesta página.";
+    return CONTEXT_COMPLETED_SUMMARY.CHAMPION_PUBLISHED;
   if (
     task.id === "MATCHES_FINISHED" &&
     guide.operationalState.hasOfficiallyFinishedMatchday === true
   )
-    return "A finalização oficial das partidas foi confirmada. A publicação do campeão continua sendo uma etapa própria.";
-  return "Esta etapa já foi concluída. Você pode continuar trabalhando nesta página. As condições atuais da funcionalidade continuam valendo para novas ações.";
+    return CONTEXT_COMPLETED_SUMMARY.MATCHES_FINISHED;
+  return CONTEXT_COMPLETED_SUMMARY.HISTORY;
 }
 
 export const RECRUITING_CONTEXT = {

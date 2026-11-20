@@ -1,0 +1,125 @@
+name: Guide Context Layout
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: guide-layout-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "10.19.0"
+defaults:
+  run:
+    shell: bash
+jobs:
+  measure:
+    name: Context Layout (${{ matrix.variant }})
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.57.0-noble
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [before, after]
+    env:
+      GUIDE_LAYOUT_VARIANT: ${{ matrix.variant }}
+      GUIDE_LAYOUT_BASELINE_REF: 16a2270d130faf1fd4a1f2aa9ac66c4abf940bc8
+      ADMIN_SMOKE_FIXTURE: "1"
+      FIXTURE_TLS_KEY: /tmp/admin-fixture.key
+      FIXTURE_TLS_CERT: /tmp/admin-fixture.crt
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:4317
+      API_URL: http://127.0.0.1:4317
+      BACKEND_URL: http://127.0.0.1:4317
+      NEXT_PUBLIC_APP_URL: https://127.0.0.1:3443
+      NEXTAUTH_URL: https://127.0.0.1:3443
+      NEXTAUTH_SECRET: ci-guide-layout-fixture-only
+      NEXT_PUBLIC_TURNSTILE_ENABLED: "false"
+      DISABLE_WEB_DIRECT_DB: "true"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore original banner for baseline measurements
+        if: matrix.variant == 'before'
+        run: git -c safe.directory="$GITHUB_WORKSPACE" show "$GUIDE_LAYOUT_BASELINE_REF:src/components/admin-guide/AdminGuideContext.tsx" > src/components/admin-guide/AdminGuideContext.tsx
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create local env for CI web server
+        run: |
+          {
+            echo "NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}"
+            echo "API_URL=${API_URL}"
+            echo "BACKEND_URL=${BACKEND_URL}"
+            echo "NEXT_PUBLIC_APP_URL=https://127.0.0.1:3443"
+            echo "NEXTAUTH_URL=https://127.0.0.1:3443"
+            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}"
+            echo "DISABLE_WEB_DIRECT_DB=true"
+          } > .env.local
+
+      - name: Create ephemeral loopback certificate
+        run: openssl req -x509 -newkey rsa:2048 -nodes -keyout "$FIXTURE_TLS_KEY" -out "$FIXTURE_TLS_CERT" -days 1 -subj "/CN=127.0.0.1" -addext "subjectAltName=IP:127.0.0.1"
+
+      - name: Build isolated admin frontend
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096 --require ./tests/admin/deny-production-api.cjs
+        run: pnpm build
+
+      - name: Measure Chromium desktop and mobile
+        env:
+          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
+        run: pnpm exec playwright test tests/guide-context-layout.fixture.spec.ts --project=chromium --workers=1 --reporter=line --output=test-results/layout-chromium
+      - name: Measure mobile WebKit
+        env:
+          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
+        run: pnpm exec playwright test tests/guide-context-layout.fixture.spec.ts --project=mobile-iphone --grep "context layout (390|320)" --workers=1 --reporter=line --output=test-results/layout-webkit
+      - name: Emit measurement evidence
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          function walk(dir) {
+            if (!fs.existsSync(dir)) return;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(file);
+              else if (entry.name === 'layout-metrics.json') {
+                console.log('GUIDE_LAYOUT_METRICS ' + fs.readFileSync(file, 'utf8').replace(/\n/g, ''));
+              } else if ((entry.name === 'test-failed-1.png') || file.includes('layout-chromium') && /-(?:(?:1280|390)-completed-confirmed|320-completed-(?:loading|confirmed|refreshing))\.png$/.test(entry.name)) {
+                console.log('GUIDE_LAYOUT_IMAGE ' + JSON.stringify({ name: entry.name, base64: fs.readFileSync(file).toString('base64') }));
+              }
+            }
+          }
+          walk('test-results');
+          NODE
+      - name: Upload measurements and comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guide-layout-${{ matrix.variant }}
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: error
