@@ -212,12 +212,12 @@ it("offers contextual manual registration independently of the initial invitatio
   expect(section).toHaveTextContent(
     "Você não precisa esperar os atletas criarem suas contas. Pode cadastrá-los manualmente e vinculá-los às contas deles posteriormente."
   );
-  const link = screen.getByRole("link", { name: "Cadastrar jogador", exact: true });
+  const link = screen.getByRole("link", { name: "Cadastrar jogador" });
   expect(link).toHaveAttribute(
     "href",
     "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard"
   );
-  const share = screen.getByRole("region", { name: "Instagram", exact: true });
+  const share = screen.getByRole("region", { name: "Instagram" });
   const back = screen.getByRole("button", { name: "Voltar à Fase 2" });
   expect(share.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(section.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -238,18 +238,18 @@ it.each(["permission", "pending", "updating", "unlocked", "onboarding"])(
       })
     );
     expect(screen.queryByRole("region", { name: "Cadastro manual de jogadores" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Cadastrar jogador", exact: true })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Cadastrar jogador" })).toBeNull();
     expect(update).not.toHaveBeenCalled();
   }
 );
 it("keeps full-page and contextual return destinations for manual registration", () => {
   const view = render(panel("reinvite", { origin: "pagina" }));
-  expect(screen.getByRole("link", { name: "Cadastrar jogador", exact: true })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Cadastrar jogador" })).toHaveAttribute(
     "href",
     "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=pagina"
   );
   view.rerender(panel("reinvite", { returnTo: "/admin/partidas/criar-times" }));
-  expect(screen.getByRole("link", { name: "Cadastrar jogador", exact: true })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Cadastrar jogador" })).toHaveAttribute(
     "href",
     "/admin/jogadores/listar-cadastrar?guia=ACTIVE_PLAYERS&guiaOrigem=dashboard&guiaRetorno=%2Fadmin%2Fpartidas%2Fcriar-times"
   );
