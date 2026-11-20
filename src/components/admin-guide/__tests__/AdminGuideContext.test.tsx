@@ -115,7 +115,8 @@ it("masks stale completion while verifying or failed and retries without changin
   state().validating = true;
   const view = render(<AdminGuideContext />);
   expect(screen.getByRole("status")).toHaveTextContent("Verificando progresso...");
-  expect(screen.queryByText(/0 de 2 times/)).toBeNull();
+  expect(screen.getByText(/0 de 2 times/)).toBeVisible();
+  expect(screen.getByText("Última confirmação:")).toBeVisible();
   state().validating = false;
   state().error = new Error("Offline");
   view.rerender(<AdminGuideContext />);
@@ -332,16 +333,18 @@ it("uses fresh official recruitment counts and minimum, preserving form drafts a
     "/admin/guia-fut7pro"
   );
 });
-it("hides stale eligibility during loading/errors and never fabricates zero counts", () => {
+it("identifies previous eligibility during loading/errors and never fabricates zero counts", () => {
   recruit();
   state().validating = true;
   const view = render(<AdminGuideContext />);
-  expect(screen.queryByRole("progressbar")).toBeNull();
-  expect(screen.queryByText("7 / 10")).toBeNull();
+  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "7");
+  expect(screen.getByText("7 / 10")).toBeVisible();
+  expect(screen.getByText("Última confirmação:")).toBeVisible();
   state().validating = false;
   state().error = new Error("offline");
   view.rerender(<AdminGuideContext />);
-  expect(screen.queryByRole("progressbar")).toBeNull();
+  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "7");
+  expect(screen.getByRole("status")).not.toHaveTextContent("Requisito atendido");
   fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
   expect(retry).toHaveBeenCalledTimes(1);
   state().error = null;
@@ -361,5 +364,78 @@ it("keeps the official nine for ten active participants including a president wi
   expect(screen.getByText("9 / 10")).toBeVisible();
   expect(screen.getByText("Falta 1 atleta para liberar")).toBeVisible();
   expect(screen.getByRole("status")).toHaveTextContent("Reunindo jogadores");
+  expect(task().completed).toBe(true);
+});
+
+it("reserva o carregamento inicial sem inventar contagens nem liberar ações", () => {
+  state().guide = null;
+  state().loading = true;
+  const view = render(<AdminGuideContext />);
+  expect(screen.getByRole("status")).toHaveTextContent("Verificando progresso...");
+  expect(view.container.querySelector("[data-guide-skeleton]")).toBeInTheDocument();
+  expect(screen.queryByRole("heading")).toBeNull();
+  expect(screen.queryByRole("button", { name: /Voltar ao guia|Continuar no Guia/ })).toBeNull();
+  expect(screen.queryByText(/0 de 2/)).toBeNull();
+  state().loading = false;
+  state().error = new Error("Offline");
+  view.rerender(<AdminGuideContext />);
+  expect(screen.getByRole("status")).toHaveTextContent("Não foi possível");
+  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  expect(retry).toHaveBeenCalledTimes(1);
+});
+
+it.each(["guia=constructor", "guia=__proto__", "guia=ATHLETE_LEVELS", ""])(
+  "não reserva contextos inválidos ou de outra página: %s",
+  (query) => {
+    params = query;
+    state().guide = null;
+    state().loading = true;
+    render(<AdminGuideContext />);
+    expect(screen.queryByRole("complementary")).toBeNull();
+  }
+);
+
+it.each([401, 403, 404])("oculta informações após recusa oficial %s", (status) => {
+  state().error = Object.assign(new Error("Não autorizado"), { status });
+  render(<AdminGuideContext />);
+  expect(screen.queryByRole("complementary")).toBeNull();
+});
+
+it("mantém descrição, contagem e foco da última confirmação sem selo atual durante revalidação", () => {
+  pathname = "/admin/jogadores/nivel-dos-atletas";
+  params = "guia=ATHLETE_LEVELS";
+  Object.assign(task(), { id: "ATHLETE_LEVELS", route: pathname, completed: true });
+  guide().capabilities.manageAthleteLevels = true;
+  Object.assign(guide().operationalState, {
+    eligiblePlayerCount: 10,
+    evaluatedEligiblePlayers: 10,
+    eligibleLevelCoverage: 100,
+  });
+  const Page = () => (
+    <>
+      <AdminGuideContext />
+      <input aria-label="Avaliação em edição" defaultValue="Preservado" />
+    </>
+  );
+  const view = render(<Page />);
+  const input = screen.getByRole("textbox");
+  input.focus();
+  state().validating = true;
+  view.rerender(<Page />);
+  expect(screen.getByText(/As avaliações dos atletas elegíveis estão salvas/)).toBeVisible();
+  expect(screen.getByText(/10 de 10 atletas elegíveis/)).toBeVisible();
+  expect(screen.getByText("Última confirmação:")).toBeVisible();
+  expect(screen.getByRole("status")).not.toHaveTextContent("Etapa concluída!");
+  expect(input).toHaveFocus();
+  state().validating = false;
+  state().error = new Error("offline");
+  view.rerender(<Page />);
+  expect(screen.getByText("Última confirmação:")).toBeVisible();
+  expect(input).toHaveValue("Preservado");
+  state().error = null;
+  guide().operationalState.eligiblePlayerCount = 11;
+  view.rerender(<Page />);
+  expect(screen.getByText(/10 de 11 atletas elegíveis/)).toBeVisible();
+  expect(screen.queryByText("Última confirmação:")).toBeNull();
   expect(task().completed).toBe(true);
 });
