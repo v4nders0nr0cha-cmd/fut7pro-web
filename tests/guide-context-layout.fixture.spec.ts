@@ -164,6 +164,14 @@ for (const width of [1280, 390, 320]) {
               time: item.startTime,
               value: item.value,
               recentInput: item.hadRecentInput,
+              scrollY,
+              guideHeight: document
+                .querySelector('[aria-label="Orientação do guia"]')
+                ?.getBoundingClientRect().height,
+              contentTop: (() => {
+                const anchor = document.querySelector("[data-layout-content-anchor]");
+                return anchor ? anchor.getBoundingClientRect().top + scrollY : null;
+              })(),
               sources: (item.sources ?? []).map((source: any) => {
                 const node =
                   source.node instanceof Element ? source.node : source.node?.parentElement;
@@ -299,13 +307,16 @@ for (const width of [1280, 390, 320]) {
             await field.fill("Rascunho");
             await field.focus();
           }
+          // A digitação filtra a lista e pode ajustar a rolagem. Sua geometria
+          // é uma ação da página, separada da consulta do guia.
+          const beforeError = await geometry(target);
           fail = true;
           await target.evaluate(() =>
             window.dispatchEvent(new Event("fut7pro:guide-data-changed"))
           );
           await expect(panel.getByRole("status")).toContainText("Não foi possível");
           const failed = await geometry(target);
-          await measure("confirmed-to-error", saved, failed);
+          await measure("confirmed-to-error", beforeError, failed);
           await expect(field).toBeFocused();
           fail = false;
           await panel.getByRole("button", { name: "Tentar novamente", exact: true }).click();
