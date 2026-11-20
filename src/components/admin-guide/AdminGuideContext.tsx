@@ -340,7 +340,7 @@ export default function AdminGuideContext() {
             </span>
             <span className="w-min text-xs">Tentar novamente</span>
           </div>
-          <div className="grid min-h-11 min-w-0 max-w-full grid-cols-[minmax(0,1fr)_auto] items-center justify-items-start gap-2 [grid-area:1/1]">
+          <div className="grid min-h-11 min-w-0 max-w-full grid-cols-[minmax(0,1fr)_min-content] items-center justify-items-start gap-2 [grid-area:1/1]">
             {guide ? (
               params?.get("guiaOrigem") === "pagina" ? (
                 <Link
