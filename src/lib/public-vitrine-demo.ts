@@ -1,3 +1,4 @@
+import { DEFAULT_ATHLETE_AVATAR } from "@/utils/avatar";
 import type {
   LiveEvent,
   LiveMatch,
@@ -19,7 +20,7 @@ export const VITRINE_DEMO_PUBLICATION_DATE = "2026-08-29T22:30:00.000Z";
 
 const TENANT_ID = "vitrine-tenant";
 const LOCAL = "Arena Fut7Pro";
-const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_PLAYER_IMAGE = DEFAULT_ATHLETE_AVATAR;
 const VITRINE_LOGO = "/images/logos/logo_fut7pro.png";
 
 type DemoPosition = "Goleiro" | "Zagueiro" | "Meia" | "Atacante";

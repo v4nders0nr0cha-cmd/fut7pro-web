@@ -1,5 +1,6 @@
 "use client";
 
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import Image from "next/image";
 
 interface CampeaoCardProps {
@@ -30,7 +31,7 @@ export default function CampeaoCard({ titulo, nome, image, valor, icone }: Campe
         )}
         {titulo}
       </span>
-      <Image
+      <AvatarFut7Pro
         src={image}
         alt={`Foto do jogador ${nome} - ${titulo}`}
         width={100}
