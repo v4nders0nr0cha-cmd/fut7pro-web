@@ -15,7 +15,11 @@ function currentGuide() {
       { id: "FIRST_MATCHDAY", route: "/admin/partidas/criar", applicable: true, canAct: true },
     ],
     actionAvailability: { FIRST_MATCHDAY: { allowed: true } },
-    operationalState: { eligiblePlayerCount: 10, eligibleLevelCoverage: 100 },
+    operationalState: {
+      eligiblePlayerCount: 10,
+      eligibleLevelCoverage: 100,
+      evaluatedEligiblePlayers: 10,
+    },
   };
 }
 beforeEach(() => {
@@ -87,6 +91,17 @@ it.each(["loading", "refreshing", "error", "permission", "blocked", "unapproved"
     expect(screen.getByRole("link", { name: "Criar Partida Clássica" })).toBeVisible();
   }
 );
+
+it("does not infer complete evaluations from a rounded percentage", () => {
+  query = "guia=FIRST_MATCHDAY";
+  const guide = currentGuide();
+  guide.operationalState.eligiblePlayerCount = 200;
+  guide.operationalState.evaluatedEligiblePlayers = 199;
+  readGuide.mockReturnValue({ guide });
+  render(<CriarPartidasPage />);
+  expect(screen.queryByText(/avaliações dos atletas elegíveis estão salvas/)).toBeNull();
+  expect(screen.getByText(/Você pode revisar as avaliações disponíveis/)).toBeVisible();
+});
 
 it("ignores unrelated guide contexts", () => {
   query = "guia=ATHLETE_LEVELS";

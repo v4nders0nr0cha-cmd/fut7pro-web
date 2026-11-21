@@ -114,7 +114,7 @@ jobs:
               if (entry.isDirectory()) walk(file);
               else if (entry.name === 'layout-metrics.json') {
                 console.log('GUIDE_LAYOUT_METRICS ' + fs.readFileSync(file, 'utf8').replace(/\n/g, ''));
-              } else if ((entry.name === 'test-failed-1.png') || file.includes('layout-chromium') && /-(?:(?:1280|390)-completed-confirmed|320-completed-(?:loading|confirmed|refreshing))\.png$/.test(entry.name)) {
+              } else if ((entry.name === 'test-failed-1.png') || file.includes('phase2-chromium') && entry.name.endsWith('.png') || file.includes('layout-chromium') && /-(?:(?:1280|390)-completed-confirmed|320-completed-(?:loading|confirmed|refreshing))\.png$/.test(entry.name)) {
                 console.log('GUIDE_LAYOUT_IMAGE ' + JSON.stringify({ name: entry.name, base64: fs.readFileSync(file).toString('base64') }));
               }
             }

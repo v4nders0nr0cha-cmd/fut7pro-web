@@ -16,7 +16,8 @@ export default function FirstMatchdayDrawHint() {
   const complete =
     current?.eligibleLevelCoverage === 100 &&
     typeof current.eligiblePlayerCount === "number" &&
-    current.eligiblePlayerCount >= 10;
+    current.eligiblePlayerCount >= 10 &&
+    current.evaluatedEligiblePlayers === current.eligiblePlayerCount;
 
   // Reserva as variantes na tipografia real, inclusive durante a consulta.
   // A URL sozinha não autoriza orientações sobre os dados do grupo.

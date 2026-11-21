@@ -29,6 +29,7 @@ for (const width of [1280, 390, 320]) {
     expect(
       fixture.posts.filter((post) => /sorteio\/publicar|\/api\/partidas$/.test(post.url))
     ).toEqual([]);
+    await page.keyboard.press("Tab");
     for (const link of [draw, classic]) {
       await link.focus();
       await expect(link).toBeFocused();
