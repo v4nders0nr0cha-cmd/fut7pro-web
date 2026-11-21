@@ -18,12 +18,11 @@ test.beforeEach(async ({ page }) => {
 
 async function login(page: Page) {
   await page.goto("/admin/login");
-  await page.getByRole("button", { name: "Entrar com senha" }).click();
   await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
+  await page.getByRole("button", { name: "Entrar com senha" }).click();
   await page.getByTestId("admin-login-password").fill(fixturePassword);
   await page.getByTestId("admin-login-submit").click();
   await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 90_000 });
-  await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
 }
 
 async function expectFitsViewport(page: Page, dialog: ReturnType<Page["getByRole"]>) {
@@ -83,6 +82,7 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
     })
   );
   await login(page);
+  await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
   await page.goto("/admin/administracao/administradores");
   const opener = page.getByRole("button", { name: "Selecionar atleta" }).first();
   await opener.click();
