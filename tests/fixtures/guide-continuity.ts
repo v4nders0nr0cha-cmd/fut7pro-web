@@ -1,5 +1,9 @@
 import { expect, type Page } from "@playwright/test";
-export const ids = [
+export // Os testes de navegação aceitam as ações específicas; os testes de componente verificam cada texto exato.
+const GUIDE_STEP_ACTION_NAME =
+  /^(Definir dias e horários|Revisar dias e horários|Cadastrar times|Gerenciar times|Avaliar atletas|Revisar avaliações|Criar primeira rodada|Organizar próxima rodada|Registrar resultados|Ver resultados|Publicar campeão|Revisar campeão)$/;
+
+const ids = [
   "ACCOUNT_READY",
   "ACTIVE_PLAYERS",
   "SCHEDULE",

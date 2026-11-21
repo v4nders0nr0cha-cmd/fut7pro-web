@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { addTeam, ids, installGuide, login, signOut } from "./fixtures/guide-continuity";
+import {
+  GUIDE_STEP_ACTION_NAME,
+  addTeam,
+  ids,
+  installGuide,
+  login,
+  signOut,
+} from "./fixtures/guide-continuity";
 const dashboard = "/admin/dashboard";
 const teamsPage = "/admin/partidas/criar-times";
 const dialogName = "Guia Interativo Fut7Pro";
@@ -18,7 +25,7 @@ test("contextual team creation resumes the current page, persists X by real logi
       .then((r) => r.json())
       .then((s) => s.user.onboardingLoginId)
   );
-  await guide.getByRole("link", { name: "Continuar", exact: true }).click();
+  await guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
   await expect(page).toHaveURL(/criar-times\?guia=OFFICIAL_TEAMS&guiaOrigem=dashboard/);
   await expect(guide).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Mostrar Novo Time", exact: true })).toHaveCount(0);
@@ -34,7 +41,7 @@ test("contextual team creation resumes the current page, persists X by real logi
   await expect(
     guide.getByRole("heading", { name: "Cadastre os times", exact: true })
   ).toBeVisible();
-  await guide.getByRole("link", { name: "Continuar", exact: true }).click();
+  await guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
   await addTeam(page, "Time Verde");
   await expect(page.getByRole("status").filter({ hasText: "Etapa concluída!" })).toBeVisible();
   await expect(page).toHaveURL(/criar-times/);
@@ -68,10 +75,16 @@ test("contextual team creation resumes the current page, persists X by real logi
   await expect(
     guide.getByRole("list", { name: "Etapas de Entre em campo" }).locator("li")
   ).toHaveCount(4);
-  await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toHaveCount(0);
+  await expect(
+    guide.getByRole("button", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+  ).toHaveCount(0);
   await guide.getByRole("button", { name: "Avalie o nível dos atletas", exact: true }).click();
-  await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
-  await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toHaveCount(0);
+  await expect(
+    guide.getByRole("button", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+  ).toBeDisabled();
+  await expect(guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true })).toHaveCount(
+    0
+  );
   await guide.getByRole("button", { name: "Recolher orientação", exact: true }).click();
   await guide.screenshot({ path: info.outputPath("locked-football-phase.png") });
   await guide.getByRole("button", { name: "Rever etapas da Fase 1", exact: true }).click();
@@ -96,7 +109,9 @@ test("contextual team creation resumes the current page, persists X by real logi
   ).toHaveCount(4);
   await expect(guide.getByRole("list", { name: "Etapas de Prepare seu grupo" })).toHaveCount(0);
   if (info.project.name === "chromium")
-    await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toBeInViewport({
+    await expect(
+      guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+    ).toBeInViewport({
       ratio: 1,
     });
   await guide.screenshot({ path: info.outputPath("active-football-phase.png") });
@@ -176,7 +191,7 @@ test("teams saved through the sidebar have the same conclusion and full-page gui
   const guide = page.getByRole("dialog", { name: dialogName });
   await expect(guide).toBeVisible();
   // Navigation away, unlike X, must not suspend the next Dashboard presentation.
-  await guide.getByRole("link", { name: "Continuar", exact: true }).click();
+  await guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
   const openTeamsFromSidebar = async () => {
     const sidebar = page.getByTestId("admin-sidebar-desktop");
     const toggle = sidebar.getByTestId("admin-sidebar-toggle-partidas");
@@ -191,7 +206,7 @@ test("teams saved through the sidebar have the same conclusion and full-page gui
   await expect(
     guide.getByRole("heading", { name: "Cadastre os times", exact: true })
   ).toBeVisible();
-  await guide.getByRole("link", { name: "Continuar", exact: true }).click();
+  await guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
   await openTeamsFromSidebar();
   await addTeam(page, "Time do Menu B");
   await page.goto(dashboard);
@@ -232,7 +247,7 @@ for (const reward of [false, true])
           exact: true,
         })
       ).toBeVisible();
-      await guide.getByRole("link", { name: "Continuar", exact: true }).click();
+      await guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
       const destination = fixture.snapshot().tasks.find((task) => task.id === id)!.route;
       await expect(page).toHaveURL((url) => url.pathname === destination);
       await expect(guide).toHaveCount(0);
@@ -288,7 +303,9 @@ for (const width of [1280, 390, 320]) {
     const listBox = (await phase.boundingBox())!;
     expect(indicatorBox.y + indicatorBox.height).toBeLessThanOrEqual(listBox.y);
     expect(indicatorBox.height).toBeLessThanOrEqual(width >= 1024 ? 104 : 128);
-    await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toHaveCount(0);
+    await expect(
+      guide.getByRole("button", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+    ).toHaveCount(0);
     if (width >= 1024) {
       await expect(indicator).toBeInViewport({ ratio: 1 });
       await expect(
@@ -304,8 +321,12 @@ for (const width of [1280, 390, 320]) {
     ]) {
       await guide.getByRole("button", { name: title, exact: true }).click();
       await expect(guide.getByRole("heading", { name: title, exact: true })).toBeVisible();
-      await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
-      await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toHaveCount(0);
+      await expect(
+        guide.getByRole("button", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+      ).toBeDisabled();
+      await expect(
+        guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+      ).toHaveCount(0);
     }
     await guide.getByRole("button", { name: "Rever etapas da Fase 1", exact: true }).click();
     await expect(
@@ -420,12 +441,13 @@ for (const width of [1280, 390, 320]) {
     await expect(
       guide.getByRole("region", { name: "Requisito para liberar a Fase 2", exact: true })
     ).toHaveCount(0);
-    await expect(guide.getByRole("link", { name: "Continuar", exact: true })).toHaveAttribute(
-      "href",
-      /ATHLETE_LEVELS/
-    );
+    await expect(
+      guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+    ).toHaveAttribute("href", /ATHLETE_LEVELS/);
     await guide.getByRole("button", { name: "Registre os resultados", exact: true }).click();
-    await expect(guide.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+    await expect(
+      guide.getByRole("button", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+    ).toBeDisabled();
     expect(fixture.completed.has("OFFICIAL_TEAMS")).toBe(true);
     expect(fixture.actions).not.toContain("FOOTBALL_STARTED");
   });

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { installGuide, login, addTeam } from "./fixtures/guide-continuity";
+import { GUIDE_STEP_ACTION_NAME, installGuide, login, addTeam } from "./fixtures/guide-continuity";
 
 async function capturePanel(page: Page, panel: Locator, path: string) {
   // Inclui a etiqueta que atravessa o contorno, sem cortar o topo da orientação.
@@ -22,7 +22,7 @@ for (const width of [1280, 768, 390, 375, 320]) {
     const fixture = await installGuide(page);
     await login(page);
     const dialog = page.getByRole("dialog", { name: "Guia Interativo Fut7Pro" });
-    await dialog.getByRole("link", { name: "Continuar", exact: true }).click();
+    await dialog.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
     const panel = page.getByRole("complementary", { name: "Orientação do guia" });
     await expect(panel.getByRole("status")).toHaveText("Em andamento");
     await expect(panel.getByText(/0 de 2 times/)).toBeVisible();
@@ -103,7 +103,7 @@ for (const width of [1280, 390, 320]) {
     });
     await login(page);
     const dialog = page.getByRole("dialog", { name: "Guia Interativo Fut7Pro" });
-    await dialog.getByRole("link", { name: "Continuar", exact: true }).click();
+    await dialog.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
     const panel = page.getByRole("complementary", { name: "Orientação do guia" });
     await expect(page).toHaveURL(/\/admin\/rachas\?guia=SCHEDULE/);
     await expect(panel.getByText(/Nenhum dia e horário válido/)).toBeVisible();

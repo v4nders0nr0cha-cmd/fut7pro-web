@@ -43,10 +43,9 @@ for (const width of [1280, 390, 320]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true
     );
-    await info.attach(`modality-${width}`, {
-      body: await page.screenshot({ fullPage: true }),
-      contentType: "image/png",
-    });
+    const screenshot = info.outputPath(`modality-${width}.png`);
+    await page.screenshot({ path: screenshot, fullPage: true });
+    await info.attach(`modality-${width}`, { path: screenshot, contentType: "image/png" });
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(
       /\/admin\/partidas\/criar\/classica\?guia=FIRST_MATCHDAY&guiaOrigem=dashboard/

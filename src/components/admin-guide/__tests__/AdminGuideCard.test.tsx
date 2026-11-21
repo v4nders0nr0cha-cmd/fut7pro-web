@@ -1105,6 +1105,18 @@ it.each([
   expect(screen.queryByText("Consultar funcionalidade")).toBeNull();
 });
 
+it.each([
+  [6, "Ver resultados", "/admin/partidas/resultados-do-dia"],
+  [7, "Revisar campeão", "/admin/partidas/time-campeao-do-dia"],
+])("offers an accurate completed action for step %s", (index, label, route) => {
+  guide.tasks.slice(0, (index as number) + 1).forEach((task: any) => (task.completed = true));
+  render(<AdminOnboarding initialStep={guide.tasks[index as number].id} />);
+  expect(screen.getByRole("link", { name: label as string })).toHaveAttribute(
+    "href",
+    `${route}?guia=${guide.tasks[index as number].id}&guiaOrigem=pagina`
+  );
+});
+
 it("describes the first round and returns to modality selection after completion", () => {
   finishPreparation();
   guide.tasks[4].completed = true;

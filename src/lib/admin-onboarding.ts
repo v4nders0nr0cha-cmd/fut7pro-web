@@ -13,7 +13,7 @@ const STEP_ACTIONS: Record<string, { pending: string; completed: string }> = {
   // A etapa continua abrindo a escolha das modalidades, inclusive após a conclusão.
   FIRST_MATCHDAY: { pending: "Criar primeira rodada", completed: "Organizar próxima rodada" },
   RESULTS_RECORDED: { pending: "Registrar resultados", completed: "Ver resultados" },
-  CHAMPION_PUBLISHED: { pending: "Publicar campeão", completed: "Ver campeão publicado" },
+  CHAMPION_PUBLISHED: { pending: "Publicar campeão", completed: "Revisar campeão" },
 };
 
 export function onboardingActionLabel(task: Pick<AdminGuideTask, "id" | "completed">) {
