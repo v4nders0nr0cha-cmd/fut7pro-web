@@ -63,7 +63,7 @@ export const GUIDE_CONTEXT: Record<string, ContextDefinition> = {
   FIRST_MATCHDAY: {
     capability: "manageMatchesAndResults",
     summary:
-      "Escolha o Sorteio Inteligente ou a Partida Clássica e salve a preparação do primeiro jogo.",
+      "Experimente o Sorteio Inteligente para usar as avaliações na formação dos times ou escolha a Partida Clássica. Salve a preparação da rodada para concluir esta etapa.",
     details: [
       "Escolha o modo de criação da partida.",
       "Confira os times, os jogadores, a data e o local.",

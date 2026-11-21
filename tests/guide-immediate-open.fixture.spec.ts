@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { installGuide, login } from "./fixtures/guide-continuity";
+import { GUIDE_STEP_ACTION_NAME, installGuide, login } from "./fixtures/guide-continuity";
 function gate(fail = false) {
   let release!: () => void;
   const pending = new Promise<void>((resolve) => {
@@ -139,7 +139,9 @@ for (const viewport of [
     await expect(
       second.dialog.getByRole("heading", { name: "Cadastre os times", exact: true })
     ).toBeVisible();
-    await expect(second.dialog.getByRole("link", { name: "Continuar", exact: true })).toBeEnabled();
+    await expect(
+      second.dialog.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true })
+    ).toBeEnabled();
     expect(
       await second.dialog.locator(".overflow-y-auto").evaluate((element) => element.scrollTop)
     ).toBe(0);

@@ -202,7 +202,7 @@ beforeEach(() => {
       ["SCHEDULE", "Defina os dias e horários", "/admin/rachas", false],
       ["OFFICIAL_TEAMS", "Cadastre os times", "/admin/partidas/criar-times", false],
       ["ATHLETE_LEVELS", "Avalie o nível dos atletas", "/admin/jogadores/nivel-dos-atletas", false],
-      ["FIRST_MATCHDAY", "Prepare a primeira rodada", "/admin/partidas/criar", false],
+      ["FIRST_MATCHDAY", "Crie sua primeira rodada", "/admin/partidas/criar", false],
       ["RESULTS_RECORDED", "Registre os resultados", "/admin/partidas/resultados-do-dia", false],
       [
         "CHAMPION_PUBLISHED",
@@ -408,8 +408,16 @@ it.each([2, 3])(
     render(<AdminOnboarding />);
     fireEvent.click(screen.getByRole("button", { name: guide.tasks[index].title }));
     expect(screen.getByRole("heading", { name: guide.tasks[index].title })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
-    expect(screen.queryByRole("link", { name: "Continuar" })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: ["Definir dias e horários", "Cadastrar times"][index - 2],
+      })
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("link", {
+        name: ["Definir dias e horários", "Cadastrar times"][index - 2],
+      })
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(
         index >= 4
@@ -424,7 +432,20 @@ it.each([2, 3, 4, 5, 6, 7])("unlocks step %s only after all predecessors complet
   for (let i = 0; i < index; i++) guide.tasks[i].completed = true;
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: guide.tasks[index].title }));
-  expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
+  expect(
+    screen.getByRole("link", {
+      name: [
+        "Ver site do grupo",
+        "Convidar jogadores agora",
+        "Definir dias e horários",
+        "Cadastrar times",
+        "Avaliar atletas",
+        "Criar primeira rodada",
+        "Registrar resultados",
+        "Publicar campeão",
+      ][index],
+    })
+  ).toHaveAttribute(
     "href",
     `${guide.tasks[index].route}?guia=${guide.tasks[index].id}&guiaOrigem=pagina`
   );
@@ -434,14 +455,14 @@ it("future stages stay readable without offering skip or unlocking their action"
   render(<AdminOnboarding />);
   expect(screen.queryByRole("button", { name: "Pular por enquanto" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Defina os dias e horários" }));
-  expect(screen.getByRole("button", { name: /^Continuar$/ })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Definir dias e horários" })).toBeDisabled();
   expect(update).not.toHaveBeenCalled();
 });
 
 it("responds to prerequisite completion received from the server", () => {
   const { rerender } = render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Defina os dias e horários" }));
-  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Definir dias e horários" })).toBeDisabled();
   guide = {
     ...guide,
     tasks: guide.tasks.map((task) =>
@@ -449,7 +470,7 @@ it("responds to prerequisite completion received from the server", () => {
     ),
   };
   rerender(<AdminOnboarding />);
-  expect(screen.getByRole("link", { name: "Continuar" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Definir dias e horários" })).toBeVisible();
 });
 
 it("keeps later actions locked when an earlier prerequisite is missing despite later records", () => {
@@ -457,15 +478,15 @@ it("keeps later actions locked when an earlier prerequisite is missing despite l
   guide.tasks[5].completed = true;
   render(<AdminOnboarding />);
   fireEvent.click(screen.getByRole("button", { name: "Publique o Time Campeão do Dia" }));
-  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Publicar campeão" })).toBeDisabled();
 });
 
 it("preserves permissions after prerequisites complete", () => {
   guide.tasks.slice(0, 2).forEach((task) => (task.completed = true));
   guide.tasks[2].canAct = false;
   render(<AdminOnboarding />);
-  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
-  expect(screen.queryByRole("link", { name: "Continuar" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Definir dias e horários" })).toBeDisabled();
+  expect(screen.queryByRole("link", { name: "Definir dias e horários" })).not.toBeInTheDocument();
 });
 
 it("navigation to the next explanation does not write to the backend", () => {
@@ -569,7 +590,7 @@ it("selects the next real pending task on return rather than a completed histori
   render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
   expect(screen.getByRole("heading", { name: "Cadastre os times" })).toBeVisible();
-  expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Cadastrar times" })).toHaveAttribute(
     "href",
     "/admin/partidas/criar-times?guia=OFFICIAL_TEAMS&guiaOrigem=dashboard"
   );
@@ -620,7 +641,7 @@ it("does not consume the final celebration during an operational navigation in f
   guide.pedagogicalState.footballStartedAt = "2026-11-17T00:00:00Z";
   const view = render(<AdminGuidePresenter />);
   await screen.findByRole("dialog");
-  const link = screen.getByRole("link", { name: "Continuar" });
+  const link = screen.getByRole("link", { name: "Publicar campeão" });
   link.addEventListener("click", (event) => event.preventDefault());
   fireEvent.click(link);
   guide = {
@@ -674,7 +695,11 @@ it.each([5, 6, 7])(
     render(<AdminOnboarding />);
     fireEvent.click(screen.getByRole("button", { name: guide.tasks[index].title }));
     expect(screen.getByRole("heading", { name: guide.tasks[index].title })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", {
+        name: ["Criar primeira rodada", "Registrar resultados", "Publicar campeão"][index - 5],
+      })
+    ).toBeDisabled();
     expect(screen.getByText("Conclua as etapas anteriores para liberar esta ação.")).toBeVisible();
     expect(update).not.toHaveBeenCalled();
   }
@@ -857,7 +882,7 @@ it("shows sports steps 5–8 after preparation even with zero eligible athletes"
       .map((item) => item.textContent)
   ).toEqual([
     "5Avalie o nível dos atletas",
-    "6Prepare a primeira rodada",
+    "6Crie sua primeira rodada",
     "7Registre os resultados",
     "8Publique o Time Campeão do Dia",
   ]);
@@ -877,8 +902,30 @@ it("keeps every locked sports explanation readable without executing actions", (
     expect(control).toHaveAttribute("aria-describedby", "onboarding-step-locked");
     fireEvent.click(control);
     expect(screen.getByRole("heading", { name: task.title })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
-    expect(screen.queryByRole("link", { name: "Continuar" })).toBeNull();
+    expect(
+      screen.getByRole("button", {
+        name: (
+          {
+            ATHLETE_LEVELS: "Avaliar atletas",
+            FIRST_MATCHDAY: "Criar primeira rodada",
+            RESULTS_RECORDED: "Registrar resultados",
+            CHAMPION_PUBLISHED: "Publicar campeão",
+          } as Record<string, string>
+        )[task.id],
+      })
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("link", {
+        name: (
+          {
+            ATHLETE_LEVELS: "Avaliar atletas",
+            FIRST_MATCHDAY: "Criar primeira rodada",
+            RESULTS_RECORDED: "Registrar resultados",
+            CHAMPION_PUBLISHED: "Publicar campeão",
+          } as Record<string, string>
+        )[task.id],
+      })
+    ).toBeNull();
   }
   expect(update).not.toHaveBeenCalled();
 });
@@ -897,12 +944,12 @@ it("uses the official minimum and updates counts without unlocking future action
   eligiblePlayers = 12;
   view.rerender(<AdminOnboarding />);
   expect(screen.queryByRole("region", { name: "Requisito para liberar a Fase 2" })).toBeNull();
-  expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Avaliar atletas" })).toHaveAttribute(
     "href",
     expect.stringContaining("ATHLETE_LEVELS")
   );
   fireEvent.click(screen.getByRole("button", { name: "Registre os resultados" }));
-  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Registrar resultados" })).toBeDisabled();
   expect(update).not.toHaveBeenCalled();
 });
 
@@ -943,9 +990,9 @@ it.each(["loading", "missing", "error"])("does not fabricate a player count duri
   render(<AdminOnboarding />);
   expect(screen.queryByText("0 / 10")).toBeNull();
   expect(screen.queryByRole("progressbar", { name: "Atletas elegíveis para a Fase 2" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "Continuar" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Avaliar atletas" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Avalie o nível dos atletas" }));
-  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Avaliar atletas" })).toBeDisabled();
   if (state === "error") {
     fireEvent.click(screen.getByRole("button", { name: "Tentar atualizar" }));
     expect(retry).toHaveBeenCalled();
@@ -1005,7 +1052,7 @@ it("keeps individual permissions when the sports phase is unlocked", () => {
   guide.tasks[4].canAct = false;
   render(<AdminOnboarding />);
   expect(screen.getByRole("heading", { name: "Avalie o nível dos atletas" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Avaliar atletas" })).toBeDisabled();
   expect(screen.getByText(/Esta ação cabe a outro responsável autorizado/)).toBeVisible();
   expect(update).not.toHaveBeenCalled();
 });
@@ -1020,7 +1067,7 @@ it("places a compact requirement before the steps and keeps explanations collaps
   expect(within(indicator).getByRole("button", { name: "Convidar jogadores" })).toBeEnabled();
   expect(screen.queryByText("Jogadores necessários")).toBeNull();
   expect(screen.queryByRole("heading", { name: "Avalie o nível dos atletas" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "Continuar" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Avaliar atletas" })).toBeNull();
   for (const button of within(list).getAllByRole("button"))
     expect(button).toHaveAttribute("aria-expanded", "false");
 });
@@ -1036,10 +1083,64 @@ it("opens and collapses a locked explanation, restores focus, and preserves its 
     "id",
     control.getAttribute("aria-controls")
   );
-  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Registrar resultados" })).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Recolher orientação" }));
   expect(control).toHaveAttribute("aria-expanded", "false");
   expect(screen.queryByRole("heading", { name: "Registre os resultados" })).toBeNull();
   expect(control).toHaveFocus();
   expect(update).not.toHaveBeenCalled();
+});
+
+it.each([
+  [false, "Avaliar atletas"],
+  [true, "Revisar avaliações"],
+])("uses an explicit athlete action when completed=%s", (completed, label) => {
+  finishPreparation();
+  guide.tasks[4].completed = completed;
+  render(<AdminOnboarding initialStep="ATHLETE_LEVELS" origin="dashboard" />);
+  expect(screen.getByRole("link", { name: label as string })).toHaveAttribute(
+    "href",
+    "/admin/jogadores/nivel-dos-atletas?guia=ATHLETE_LEVELS&guiaOrigem=dashboard"
+  );
+  expect(screen.queryByText("Consultar funcionalidade")).toBeNull();
+});
+
+it.each([
+  [6, "Ver resultados", "/admin/partidas/resultados-do-dia"],
+  [7, "Revisar campeão", "/admin/partidas/time-campeao-do-dia"],
+])("offers an accurate completed action for step %s", (index, label, route) => {
+  guide.tasks.slice(0, (index as number) + 1).forEach((task: any) => (task.completed = true));
+  render(<AdminOnboarding initialStep={guide.tasks[index as number].id} />);
+  expect(screen.getByRole("link", { name: label as string })).toHaveAttribute(
+    "href",
+    `${route}?guia=${guide.tasks[index as number].id}&guiaOrigem=pagina`
+  );
+});
+
+it("describes the first round and returns to modality selection after completion", () => {
+  finishPreparation();
+  guide.tasks[4].completed = true;
+  const view = render(<AdminOnboarding initialStep="FIRST_MATCHDAY" origin="dashboard" />);
+  expect(screen.getByRole("heading", { name: "Crie sua primeira rodada" })).toBeVisible();
+  expect(
+    screen.getByText(
+      "Organize o primeiro jogo do seu grupo. Experimente o Sorteio Inteligente para montar times equilibrados automaticamente ou escolha a Partida Clássica."
+    )
+  ).toBeVisible();
+  expect(screen.getByRole("link", { name: "Criar primeira rodada" })).toHaveAttribute(
+    "href",
+    "/admin/partidas/criar?guia=FIRST_MATCHDAY&guiaOrigem=dashboard"
+  );
+  guide.tasks[5].completed = true;
+  view.rerender(<AdminOnboarding initialStep="FIRST_MATCHDAY" origin="dashboard" />);
+  expect(screen.getByRole("heading", { name: "Registre os resultados" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Registrar resultados" })).toHaveAttribute(
+    "href",
+    "/admin/partidas/resultados-do-dia?guia=RESULTS_RECORDED&guiaOrigem=dashboard"
+  );
+  fireEvent.click(screen.getByRole("button", { name: /Crie sua primeira rodada$/ }));
+  expect(screen.getByRole("link", { name: "Organizar próxima rodada" })).toHaveAttribute(
+    "href",
+    "/admin/partidas/criar?guia=FIRST_MATCHDAY&guiaOrigem=dashboard"
+  );
 });

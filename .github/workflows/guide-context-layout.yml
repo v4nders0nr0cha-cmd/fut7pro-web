@@ -88,6 +88,13 @@ jobs:
           PLAYWRIGHT_WEB_SERVER: "1"
           PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
         run: pnpm exec playwright test tests/guide-context-layout.fixture.spec.ts --project=chromium --workers=1 --reporter=line --output=test-results/layout-chromium
+      - name: Validate phase 2 modality selection
+        if: matrix.variant == 'after'
+        env:
+          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
+        run: pnpm exec playwright test tests/guide-phase2.fixture.spec.ts --project=chromium --workers=1 --reporter=line --output=test-results/phase2-chromium
       - name: Measure mobile WebKit
         env:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
@@ -107,7 +114,7 @@ jobs:
               if (entry.isDirectory()) walk(file);
               else if (entry.name === 'layout-metrics.json') {
                 console.log('GUIDE_LAYOUT_METRICS ' + fs.readFileSync(file, 'utf8').replace(/\n/g, ''));
-              } else if ((entry.name === 'test-failed-1.png') || file.includes('layout-chromium') && /-(?:(?:1280|390)-completed-confirmed|320-completed-(?:loading|confirmed|refreshing))\.png$/.test(entry.name)) {
+              } else if ((entry.name === 'test-failed-1.png') || file.includes('phase2-chromium') && entry.name.endsWith('.png') || file.includes('layout-chromium') && /-(?:(?:1280|390)-completed-confirmed|320-completed-(?:loading|confirmed|refreshing))\.png$/.test(entry.name)) {
                 console.log('GUIDE_LAYOUT_IMAGE ' + JSON.stringify({ name: entry.name, base64: fs.readFileSync(file).toString('base64') }));
               }
             }

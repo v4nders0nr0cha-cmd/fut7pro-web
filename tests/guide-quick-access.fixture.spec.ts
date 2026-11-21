@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ids, installGuide, login } from "./fixtures/guide-continuity";
+import { GUIDE_STEP_ACTION_NAME, ids, installGuide, login } from "./fixtures/guide-continuity";
 const name = "Guia Interativo Fut7Pro";
 async function refreshed(page: Page) {
   await expect(page).toHaveURL(/\/admin\/dashboard$/);
@@ -48,7 +48,7 @@ test("quick guide access desktop keeps the profile page and manual preferences",
   await guide.getByRole("button", { name: "Fechar modal", exact: true }).click();
   await expect(hint).toHaveCount(0);
   await floatingGuide(page);
-  await guide.getByRole("link", { name: "Continuar", exact: true }).click();
+  await guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
   await expect(page).toHaveURL(/criar-times/);
   await expect(guide).toHaveCount(0);
   const operationalUrl = page.url();
@@ -127,7 +127,7 @@ for (const viewport of [
     await expect(guide).toBeVisible();
     await expect(hint).toHaveCount(0);
     await expect(page).toHaveURL(/\/admin\/dashboard$/);
-    await guide.getByRole("link", { name: "Continuar", exact: true }).click();
+    await guide.getByRole("link", { name: GUIDE_STEP_ACTION_NAME, exact: true }).click();
     await expect(page).toHaveURL(/criar-times/);
     const operationalUrl = page.url();
     await book.click();

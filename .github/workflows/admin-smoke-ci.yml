@@ -133,6 +133,13 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096 --require ./tests/admin/deny-production-api.cjs
         run: pnpm build
 
+      - name: Check administrator invitation viewport and focus
+        env:
+          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
+        run: pnpm exec playwright test tests/modal-ux-viewport.fixture.spec.ts --grep "convite de administrador" --project=chromium --project=mobile-iphone --workers=1 --reporter=line --output=test-results/admin-invite-viewport
+
       - name: Measure guide opening (controlled latency)
         env:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs

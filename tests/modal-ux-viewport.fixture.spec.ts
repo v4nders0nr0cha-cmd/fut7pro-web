@@ -73,6 +73,7 @@ async function expectFitsViewport(page: Page, dialog: ReturnType<Page["getByRole
 }
 
 test("convite de administrador cabe em cinco formatos de tela", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.route("**/api/admin/administradores/atletas**", (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -82,14 +83,21 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
     })
   );
   await login(page);
-  await page.goto("/admin/administracao/administradores");
+  const sidebar = page.getByTestId("admin-sidebar-desktop");
+  await expect(sidebar).toBeVisible();
+  const administration = sidebar.getByTestId("admin-sidebar-toggle-administracao");
+  if ((await administration.getAttribute("aria-expanded")) !== "true") await administration.click();
+  await sidebar
+    .locator('[data-admin-nav-link="true"][href="/admin/administracao/administradores"]')
+    .click();
+  await expect(page).toHaveURL(/\/admin\/administracao\/administradores$/);
   const opener = page.getByRole("button", { name: "Selecionar atleta" }).first();
   await opener.click();
   await page
     .getByRole("dialog", { name: "Selecionar atleta" })
     .getByRole("button", { name: /Atleta de Teste/ })
     .click();
-  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Convidar para Vice-Presidente?" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("Como ficará a mensalidade dele?")).toBeVisible();
@@ -106,7 +114,7 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   const selection = page.getByRole("dialog", { name: "Selecionar atleta" });
-  await expect(selection.getByRole("button", { name: "Continuar" })).toBeFocused();
+  await expect(selection.getByRole("button", { name: "Continuar", exact: true })).toBeFocused();
   await selection.getByRole("button", { name: "Cancelar" }).click();
   await expect(opener).toBeFocused();
 });
