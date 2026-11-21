@@ -219,7 +219,7 @@ test("teams saved through the sidebar have the same conclusion and full-page gui
   await expect(page.getByRole("list", { name: "Etapas de Entre em campo" })).toBeVisible();
   await page.getByRole("button", { name: "Rever etapas da Fase 1", exact: true }).click();
   await page.getByRole("button", { name: /Cadastre os times$/ }).click();
-  await page.getByRole("link", { name: "Consultar funcionalidade", exact: true }).click();
+  await page.getByRole("link", { name: "Gerenciar times", exact: true }).click();
   await expect(page).toHaveURL(/guiaOrigem=pagina/);
   await expect(
     page.getByRole("link", { name: "Continuar no Guia Interativo", exact: true })
