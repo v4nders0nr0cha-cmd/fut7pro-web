@@ -73,6 +73,7 @@ async function expectFitsViewport(page: Page, dialog: ReturnType<Page["getByRole
 }
 
 test("convite de administrador cabe em cinco formatos de tela", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.route("**/api/admin/administradores/atletas**", (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -82,8 +83,15 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
     })
   );
   await login(page);
-  await expect(page.getByTestId("admin-dashboard-card-partidas-resultados")).toBeVisible();
-  await page.goto("/admin/administracao/administradores");
+  const sidebar = page.getByTestId("admin-sidebar-desktop");
+  await expect(sidebar).toBeVisible();
+  const administration = sidebar.getByTestId("admin-sidebar-toggle-administracao");
+  if ((await administration.getAttribute("aria-expanded")) !== "true")
+    await administration.click();
+  await sidebar
+    .locator('[data-admin-nav-link="true"][href="/admin/administracao/administradores"]')
+    .click();
+  await expect(page).toHaveURL(/\/admin\/administracao\/administradores$/);
   const opener = page.getByRole("button", { name: "Selecionar atleta" }).first();
   await opener.click();
   await page
