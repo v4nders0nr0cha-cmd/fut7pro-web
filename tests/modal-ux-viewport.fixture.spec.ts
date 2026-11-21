@@ -86,8 +86,7 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
   const sidebar = page.getByTestId("admin-sidebar-desktop");
   await expect(sidebar).toBeVisible();
   const administration = sidebar.getByTestId("admin-sidebar-toggle-administracao");
-  if ((await administration.getAttribute("aria-expanded")) !== "true")
-    await administration.click();
+  if ((await administration.getAttribute("aria-expanded")) !== "true") await administration.click();
   await sidebar
     .locator('[data-admin-nav-link="true"][href="/admin/administracao/administradores"]')
     .click();
