@@ -1,4 +1,3 @@
-import { GUIDE_STEP_ACTION_NAME } from "./fixtures/guide-continuity";
 import { expect, test, type Page } from "@playwright/test";
 import QRCode from "qrcode";
 
@@ -90,7 +89,7 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
     .getByRole("dialog", { name: "Selecionar atleta" })
     .getByRole("button", { name: /Atleta de Teste/ })
     .click();
-  await page.getByRole("button", { name: GUIDE_STEP_ACTION_NAME }).click();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Convidar para Vice-Presidente?" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("Como ficará a mensalidade dele?")).toBeVisible();
@@ -107,7 +106,7 @@ test("convite de administrador cabe em cinco formatos de tela", async ({ page },
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   const selection = page.getByRole("dialog", { name: "Selecionar atleta" });
-  await expect(selection.getByRole("button", { name: GUIDE_STEP_ACTION_NAME })).toBeFocused();
+  await expect(selection.getByRole("button", { name: "Continuar", exact: true })).toBeFocused();
   await selection.getByRole("button", { name: "Cancelar" }).click();
   await expect(opener).toBeFocused();
 });
