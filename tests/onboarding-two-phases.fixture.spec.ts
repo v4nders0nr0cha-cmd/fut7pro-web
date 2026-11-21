@@ -28,7 +28,7 @@ for (const viewport of [
       "Defina os dias e horários",
       "Cadastre os times",
       "Avalie o nível dos atletas",
-      "Prepare a primeira rodada",
+      "Crie sua primeira rodada",
       "Registre os resultados",
       "Publique o Time Campeão do Dia",
     ];

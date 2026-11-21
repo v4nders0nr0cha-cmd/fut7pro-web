@@ -88,6 +88,13 @@ jobs:
           PLAYWRIGHT_WEB_SERVER: "1"
           PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
         run: pnpm exec playwright test tests/guide-context-layout.fixture.spec.ts --project=chromium --workers=1 --reporter=line --output=test-results/layout-chromium
+      - name: Validate phase 2 modality selection
+        if: matrix.variant == 'after'
+        env:
+          NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
+        run: pnpm exec playwright test tests/guide-phase2.fixture.spec.ts --project=chromium --workers=1 --reporter=line --output=test-results/phase2-chromium
       - name: Measure mobile WebKit
         env:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs

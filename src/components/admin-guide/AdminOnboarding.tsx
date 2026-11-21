@@ -21,6 +21,8 @@ import {
   FOOTBALL_IDS,
   isOnboardingActionUnlocked,
   onboardingBlockMessage,
+  FIRST_MATCHDAY_DESCRIPTION,
+  onboardingActionLabel,
 } from "@/lib/admin-onboarding";
 import AdminGuideInvitationPanel from "./AdminGuideInvitationPanel";
 import {
@@ -37,8 +39,7 @@ const STEP_SUMMARY: Record<string, string> = {
     "Cadastre as equipes que participam dos jogos. Dois times são o mínimo para começar.",
   ATHLETE_LEVELS:
     "Avalie habilidade e físico dos atletas para ajudar a montar times mais equilibrados.",
-  FIRST_MATCHDAY:
-    "Escolha entre o sorteio e a partida clássica e prepare a primeira rodada do grupo.",
+  FIRST_MATCHDAY: FIRST_MATCHDAY_DESCRIPTION,
   RESULTS_RECORDED: "Registre placares, gols e assistências. Revise os dados e finalize a rodada.",
   CHAMPION_PUBLISHED: "Confira a rodada finalizada e publique o time que conquistou o dia.",
 };
@@ -460,11 +461,7 @@ export default function AdminOnboarding({
                   else void update({ action: "STEP_SELECTED", tipId: active.id });
                 }}
               >
-                {active.id === "ACCOUNT_READY"
-                  ? "Ver site do grupo"
-                  : active.completed
-                    ? "Consultar funcionalidade"
-                    : "Continuar"}
+                {onboardingActionLabel(active)}
                 {active.id === "ACCOUNT_READY" && (
                   <ExternalLink size={14} className="ml-2 shrink-0" aria-hidden="true" />
                 )}
@@ -476,11 +473,7 @@ export default function AdminOnboarding({
                 disabled
                 aria-describedby={!actionUnlocked ? "onboarding-action-locked" : undefined}
               >
-                {active.id === "ACCOUNT_READY"
-                  ? "Ver site do grupo"
-                  : active.completed
-                    ? "Consultar funcionalidade"
-                    : "Continuar"}
+                {onboardingActionLabel(active)}
               </button>
             )}
             {!actionUnlocked && (

@@ -3,6 +3,7 @@ import {
   GUIDE_CONTEXT,
   RECRUITING_CONTEXT,
 } from "./admin-guide-context";
+import { FIRST_MATCHDAY_TITLE } from "./admin-onboarding";
 
 // Somente geometria de carregamento. A autorização continua em contextualTask/isRecruitingContext.
 export const CONTEXT_LAYOUT: Record<
@@ -36,7 +37,7 @@ export const CONTEXT_LAYOUT: Record<
       "Quantidade de atletas elegíveis avaliados. Mínimo de dez atletas, todos com avaliação salva.",
   },
   FIRST_MATCHDAY: {
-    title: "Prepare a primeira rodada",
+    title: FIRST_MATCHDAY_TITLE,
     routes: [
       "/admin/partidas/criar",
       "/admin/partidas/criar/classica",

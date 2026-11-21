@@ -298,7 +298,7 @@ for (const width of [1280, 390, 320]) {
 
     for (const title of [
       "Avalie o nível dos atletas",
-      "Prepare a primeira rodada",
+      "Crie sua primeira rodada",
       "Registre os resultados",
       "Publique o Time Campeão do Dia",
     ]) {
