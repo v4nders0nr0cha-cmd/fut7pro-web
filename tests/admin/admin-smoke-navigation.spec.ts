@@ -13,7 +13,7 @@ const destinationContent: Record<string, RegExp> = {
   "/admin/jogadores/mensalistas": /Gestão de Mensalistas/i,
   "/admin/conquistas": /Gestão de Conquistas/i,
   "/admin/financeiro/patrocinadores": /Patrocinadores/i,
-  "/admin/financeiro/planos-limites": /Planos & Limites/i,
+  "/admin/assinatura": /Minha assinatura/i,
   "/admin/personalizacao/identidade-visual": /Identidade visual do grupo/i,
   "/admin/administracao/administradores": /Administradores do Grupo/i,
   "/admin/comunicacao/notificacoes": /Notificações/i,
@@ -48,6 +48,7 @@ async function login(page: Page, email: string) {
 }
 
 async function expectDestination(page: Page, href: string) {
+  if (href === "/admin/financeiro/planos-limites") href = "/admin/assinatura";
   await expect(page, `Clique deve alcançar ${href}`).toHaveURL(
     (url) => `${url.pathname}${url.hash}` === href,
     { timeout: 60000 }

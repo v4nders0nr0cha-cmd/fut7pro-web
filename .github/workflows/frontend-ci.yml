@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, "fix/billing-phase1-scope-20261122"]
 
 env:
   NODE_VERSION: "20"

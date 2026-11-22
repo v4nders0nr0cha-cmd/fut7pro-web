@@ -12,7 +12,7 @@ import {
 import { buildFut7ProOfficialWhatsAppUrl } from "@/config/fut7pro-contact";
 import { buildPublicHref } from "@/utils/public-links";
 
-export const ADMIN_BILLING_HREF = "/admin/financeiro/planos-limites";
+export const ADMIN_BILLING_HREF = "/admin/assinatura";
 
 type ProfileNavigationContext = {
   tenantSlug: string | null;
@@ -74,7 +74,7 @@ export function getAdminProfileSections({
       items: [
         {
           id: "billing",
-          label: "Plano e cobrança",
+          label: "Gerenciar assinatura",
           href: ADMIN_BILLING_HREF,
           icon: CreditCard,
         },

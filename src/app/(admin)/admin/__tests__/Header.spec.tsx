@@ -132,9 +132,9 @@ describe("Admin Header", () => {
     for (const category of ["Minha conta", "Assinatura Fut7Pro", "Ajuda e orientação"]) {
       expect(screen.getByText(category)).toBeInTheDocument();
     }
-    expect(screen.getByRole("link", { name: "Plano e cobrança" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Gerenciar assinatura" })).toHaveAttribute(
       "href",
-      "/admin/financeiro/planos-limites"
+      "/admin/assinatura"
     );
     expect(screen.getByRole("link", { name: "Central de Ajuda" })).toHaveAttribute(
       "href",
@@ -191,7 +191,7 @@ describe("Admin Header", () => {
     expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
 
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole("link", { name: "Plano e cobrança" }));
+    fireEvent.click(screen.getByRole("link", { name: "Gerenciar assinatura" }));
     expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
   });
 
