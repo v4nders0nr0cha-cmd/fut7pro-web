@@ -18,7 +18,8 @@ function useCentralState() {
   const { rachaId, tenantSlug } = useRacha();
   const subscription = useSubscription(rachaId || undefined);
   const { data: session } = useSession();
-  const principal = `${session?.user?.id || session?.user?.email || "session"}:${session?.user?.role || ""}:${rachaId || "none"}:${tenantSlug || ""}`;
+  const actor = session?.user as { id?: string; email?: string | null; role?: string } | undefined;
+  const principal = `${actor?.id || actor?.email || "session"}:${actor?.role || ""}:${rachaId || "none"}:${tenantSlug || ""}`;
   const clock = useRef({ tenant: principal, generation: 0 });
   if (clock.current.tenant !== principal)
     clock.current = { tenant: principal, generation: clock.current.generation + 1 };
