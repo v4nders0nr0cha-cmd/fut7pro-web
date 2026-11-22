@@ -78,15 +78,21 @@ for (const width of [1280, 390, 320]) {
     await expect
       .poll(
         async () =>
-          (await page.context().cookies()).find((cookie) => cookie.name === "fut7pro_admin_active_tenant")?.value
+          (await page.context().cookies()).find(
+            (cookie) => cookie.name === "fut7pro_admin_active_tenant"
+          )?.value
       )
       .toBe("grupo-fixture");
     await page.goto("/admin/financeiro/planos-limites");
+    await expect(page).toHaveURL(/\/admin\/assinatura$/, { timeout: 30000 });
+    const payment = page.getByRole("button", { name: "Regularizar pagamento", exact: true });
+    await expect(payment).toBeEnabled({ timeout: 30000 });
     const accessField = page.getByText("Status de acesso", { exact: true }).locator("..");
     await expect(accessField.getByText("Acesso bloqueado", { exact: true })).toBeVisible();
     await expect(page.getByText("Ativo", { exact: true })).toHaveCount(0);
     canAccess = true;
     await page.reload();
+    await expect(payment).toBeEnabled({ timeout: 30000 });
     await expect(accessField.getByText("Acesso liberado", { exact: true })).toBeVisible();
     await expect(
       page
@@ -94,7 +100,6 @@ for (const width of [1280, 390, 320]) {
         .locator("..")
         .getByText("Pendente", { exact: true })
     ).toBeVisible();
-    const payment = page.getByRole("button", { name: "Regularizar pagamento", exact: true });
     await payment.focus();
     await expect(payment).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
