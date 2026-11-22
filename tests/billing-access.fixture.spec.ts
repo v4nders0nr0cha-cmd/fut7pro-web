@@ -78,7 +78,7 @@ for (const width of [1280, 390, 320]) {
     await expect
       .poll(
         async () =>
-          (await page.context().cookies()).find((cookie) => cookie.name === "f7_active_slug")?.value
+          (await page.context().cookies()).find((cookie) => cookie.name === "fut7pro_admin_active_tenant")?.value
       )
       .toBe("grupo-fixture");
     await page.goto("/admin/financeiro/planos-limites");
