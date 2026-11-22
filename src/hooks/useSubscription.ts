@@ -112,6 +112,13 @@ export function useSubscription(tenantId?: string) {
       if (tenantId && subscription && subscription.tenantId !== tenantId) {
         throw new Error("A assinatura retornada não pertence ao grupo selecionado.");
       }
+      // Preservar o plano confirmado se apenas a consulta de status falhar.
+      // O erro e o carregamento continuam bloqueando as ações financeiras.
+      update(scope, (current) => ({
+        ...current,
+        subscription: subscription ?? null,
+        subscriptionStatus: null,
+      }));
       const subscriptionStatus = subscription?.id
         ? await BillingAPI.getSubscriptionStatus(subscription.id)
         : null;

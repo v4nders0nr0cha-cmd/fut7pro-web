@@ -45,6 +45,19 @@ beforeEach(() => {
   api.getSubscriptionStatus.mockResolvedValue({ active: true } as any);
 });
 
+it("preserva o plano confirmado quando somente o status falha", async () => {
+  api.getSubscriptionByTenant.mockResolvedValueOnce(subscription("grupo-a"));
+  api.getSubscriptionStatus.mockRejectedValueOnce(
+    new BillingApiError("status indisponível", 503, null)
+  );
+  const { result } = renderHook(() => useSubscription("grupo-a"));
+  await waitFor(() => expect(result.current.subscriptionLoading).toBe(false));
+  expect(result.current.subscription?.planKey).toBe("monthly_essential");
+  expect(result.current.subscription?.tenantId).toBe("grupo-a");
+  expect(result.current.subscriptionStatus).toBeNull();
+  expect(result.current.subscriptionError).not.toBeNull();
+});
+
 it("mantém a assinatura pendente mesmo depois do catálogo chegar", async () => {
   const pending = deferred<Subscription | null>();
   api.getSubscriptionByTenant.mockReturnValue(pending.promise);
