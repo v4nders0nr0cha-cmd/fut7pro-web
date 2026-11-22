@@ -163,7 +163,9 @@ for (const width of [1280, 768, 390, 320]) {
     await expect
       .poll(
         async () =>
-          (await page.context().cookies()).find((cookie) => cookie.name === "fut7pro_admin_active_tenant")?.value
+          (await page.context().cookies()).find(
+            (cookie) => cookie.name === "fut7pro_admin_active_tenant"
+          )?.value
       )
       .toBe("grupo-fixture");
     await page.goto("/admin/assinatura");
