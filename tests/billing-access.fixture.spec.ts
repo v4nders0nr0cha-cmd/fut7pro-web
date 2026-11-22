@@ -30,12 +30,13 @@ for (const width of [1280, 390, 320]) {
     });
     await login(page);
     await page.goto("/admin/financeiro/planos-limites");
-    await expect(page.getByText("Acesso bloqueado", { exact: true })).toBeVisible();
+    const accessField = page.getByText("Status de acesso", { exact: true }).locator("..");
+    await expect(accessField.getByText("Acesso bloqueado", { exact: true })).toBeVisible();
     await expect(page.getByText("Ativo", { exact: true })).toHaveCount(0);
     canAccess = true;
     await page.reload();
-    await expect(page.getByText("Acesso liberado", { exact: true })).toBeVisible();
-    await expect(page.getByText("Pendente", { exact: true })).toBeVisible();
+    await expect(accessField.getByText("Acesso liberado", { exact: true })).toBeVisible();
+    await expect(page.getByText("Status financeiro", { exact: true }).locator("..").getByText("Pendente", { exact: true })).toBeVisible();
     const payment = page.getByRole("button", { name: "Atualizar pagamento", exact: true });
     await payment.focus(); await expect(payment).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
