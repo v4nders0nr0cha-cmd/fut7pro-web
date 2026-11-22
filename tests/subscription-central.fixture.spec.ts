@@ -159,6 +159,19 @@ for (const width of [1280, 390, 320]) {
     ).toBeVisible();
     await expect(page.getByText("Acesso liberado", { exact: true })).toBeVisible();
     await expect(page.getByText("Pendente", { exact: true })).toBeVisible();
+    const regularize = page.getByRole("button", { name: "Regularizar pagamento" });
+    await expect(regularize).toBeEnabled();
+    await regularize.click();
+    const paymentDialog = page.getByRole("dialog", { name: "Regularizar assinatura" });
+    await expect(paymentDialog).toBeVisible();
+    await expect(
+      paymentDialog.getByRole("button", { name: "Continuar no Mercado Pago" })
+    ).toBeDisabled();
+    await paymentDialog.getByRole("button", { name: "Gerar PIX" }).click();
+    await expect(paymentDialog.getByText(/Não foi possível confirmar a operação/)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(paymentDialog).not.toBeVisible();
+    await expect(regularize).toBeFocused();
     const nav = page.getByRole("navigation", { name: "Central de Assinatura" });
     await page.screenshot({ path: testInfo.outputPath(`overview-${width}.png`), fullPage: true });
     await nav.getByRole("link", { name: "Benefícios" }).click();
@@ -197,13 +210,18 @@ for (const width of [1280, 390, 320]) {
     await expect(page).toHaveURL(/status=refunds/);
     await page.screenshot({ path: testInfo.outputPath(`payments-${width}.png`), fullPage: true });
     await nav.getByRole("link", { name: "Planos", exact: true }).click();
-    await expect(page.getByText("R$ 150,00", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Planos para o seu grupo" })).toBeVisible();
+    await expect(
+      page
+        .locator("article")
+        .filter({ has: page.getByRole("heading", { name: "Essencial", exact: true }) })
+    ).toContainText(/R\$\s*150,00/);
     await page.screenshot({ path: testInfo.outputPath(`plans-${width}.png`), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true
     );
     await page.goto("/admin/financeiro/planos-limites?faturas=1");
     await expect(page).toHaveURL(/\/admin\/assinatura\/pagamentos/);
-    expect(pixPosts).toBe(0);
+    expect(pixPosts).toBe(1);
   });
 }
