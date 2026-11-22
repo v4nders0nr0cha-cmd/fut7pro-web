@@ -13,20 +13,42 @@ for (const width of [1280, 390, 320]) {
       footballStartedAt: "2026-11-21T12:00:00Z",
     });
     let canAccess = false;
-    const access = () => ({ canAccess, blocked: !canAccess,
+    const access = () => ({
+      canAccess,
+      blocked: !canAccess,
       accessStatus: canAccess ? "LIBERADO_POR_COMPENSACAO" : "EXPIRADO",
-      source: canAccess ? "COMPENSATION" : "SUBSCRIPTION", effectiveAccessUntil: "2099-01-01T00:00:00Z",
-      daysRemaining: 55, compensationActive: canAccess });
-    const subscription = () => ({ id: "fixture-sub", tenantId: "fixture-tenant",
-      planKey: "monthly_essential", interval: "month", amount: 15000,
-      status: "past_due", requiresUpfront: false, marketingEnabled: false,
-      financialStatus: { code: "PENDENTE", label: "Pendente" }, access: access(), invoices: [] });
+      source: canAccess ? "COMPENSATION" : "SUBSCRIPTION",
+      effectiveAccessUntil: "2099-01-01T00:00:00Z",
+      daysRemaining: 55,
+      compensationActive: canAccess,
+    });
+    const subscription = () => ({
+      id: "fixture-sub",
+      tenantId: "fixture-tenant",
+      planKey: "monthly_essential",
+      interval: "month",
+      amount: 15000,
+      status: "past_due",
+      requiresUpfront: false,
+      marketingEnabled: false,
+      financialStatus: { code: "PENDENTE", label: "Pendente" },
+      access: access(),
+      invoices: [],
+    });
     await page.route("**/api/admin/billing/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       expect(route.request().method()).toBe("GET");
-      await route.fulfill({ json: path.endsWith("/plans") ? { plans: [], meta: {} } :
-        path.endsWith("/status") ? { access: access(), active: false,
-          financialStatus: { code: "PENDENTE", label: "Pendente" } } : subscription() });
+      await route.fulfill({
+        json: path.endsWith("/plans")
+          ? { plans: [], meta: {} }
+          : path.endsWith("/status")
+            ? {
+                access: access(),
+                active: false,
+                financialStatus: { code: "PENDENTE", label: "Pendente" },
+              }
+            : subscription(),
+      });
     });
     await login(page);
     await page.goto("/admin/financeiro/planos-limites");
@@ -36,9 +58,17 @@ for (const width of [1280, 390, 320]) {
     canAccess = true;
     await page.reload();
     await expect(accessField.getByText("Acesso liberado", { exact: true })).toBeVisible();
-    await expect(page.getByText("Status financeiro", { exact: true }).locator("..").getByText("Pendente", { exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByText("Status financeiro", { exact: true })
+        .locator("..")
+        .getByText("Pendente", { exact: true })
+    ).toBeVisible();
     const payment = page.getByRole("button", { name: "Atualizar pagamento", exact: true });
-    await payment.focus(); await expect(payment).toBeFocused();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await payment.focus();
+    await expect(payment).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true
+    );
   });
 }

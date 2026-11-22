@@ -430,8 +430,8 @@ export default function PlanosLimitesPage() {
   const hasHardAccessBlock = Boolean(
     effectiveAccess?.manualBlocked || effectiveAccess?.lifecycleBlocked
   );
-  const hasEffectiveAccess = !hasHardAccessBlock &&
-    effectiveAccess?.canAccess === true && effectiveAccess?.blocked !== true;
+  const hasEffectiveAccess =
+    !hasHardAccessBlock && effectiveAccess?.canAccess === true && effectiveAccess?.blocked !== true;
   const isCompensated =
     hasEffectiveAccess &&
     Boolean(
@@ -463,22 +463,21 @@ export default function PlanosLimitesPage() {
       };
     }
     if (effectiveAccess?.canAccess === false || effectiveAccess?.blocked === true) {
-      return { label: "Acesso bloqueado", className: "bg-red-500/15 text-red-200 border-red-500/30" };
+      return {
+        label: "Acesso bloqueado",
+        className: "bg-red-500/15 text-red-200 border-red-500/30",
+      };
     }
     if (!effectiveAccess) {
-      return { label: "Não informado", className: "bg-zinc-500/20 text-zinc-200 border-zinc-500/30" };
+      return {
+        label: "Não informado",
+        className: "bg-zinc-500/20 text-zinc-200 border-zinc-500/30",
+      };
     }
     const accessMeta = resolveAccessMeta(effectiveAccess?.accessStatus);
     if (accessMeta) return accessMeta;
     return resolveStatusMeta(subscription?.status);
-  }, [
-    subscription,
-    loading,
-    error,
-    effectiveAccess,
-    hasEffectiveAccess,
-    isCompensated,
-  ]);
+  }, [subscription, loading, error, effectiveAccess, hasEffectiveAccess, isCompensated]);
   const isTrial = subscription?.status === "trialing";
   const now = new Date();
   const trialExpired =

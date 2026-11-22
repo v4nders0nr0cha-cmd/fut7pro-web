@@ -89,11 +89,25 @@ it("não libera atualização de pagamento enquanto a assinatura está pendente"
 
 it("respeita acesso negado mesmo com prazo futuro", () => {
   mockedHook.mockReturnValue({
-    ...base, loading: false, subscriptionLoading: false, subscriptionResolved: true,
-    subscription: { id: "sub-a", tenantId: "grupo-a", planKey: "monthly_essential",
-      status: "past_due", requiresUpfront: false },
-    subscriptionStatus: { access: { canAccess: false, blocked: true, accessStatus: "EXPIRADO",
-      effectiveAccessUntil: "2099-01-01T00:00:00.000Z" } },
+    ...base,
+    loading: false,
+    subscriptionLoading: false,
+    subscriptionResolved: true,
+    subscription: {
+      id: "sub-a",
+      tenantId: "grupo-a",
+      planKey: "monthly_essential",
+      status: "past_due",
+      requiresUpfront: false,
+    },
+    subscriptionStatus: {
+      access: {
+        canAccess: false,
+        blocked: true,
+        accessStatus: "EXPIRADO",
+        effectiveAccessUntil: "2099-01-01T00:00:00.000Z",
+      },
+    },
   });
   render(<PlanosLimitesPage />);
   expect(screen.queryByText("Ativo")).not.toBeInTheDocument();
@@ -146,4 +160,3 @@ it("permite apenas uma criação de cobrança por cliques repetidos", async () =
     expect(screen.queryByRole("button", { name: "Gerar PIX" })).not.toBeInTheDocument()
   );
 });
-
