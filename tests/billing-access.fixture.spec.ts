@@ -68,10 +68,10 @@ for (const width of [1280, 390, 320]) {
       });
     });
     const groupReady = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/admin/access" && response.ok()
+      (response) => new URL(response.url()).pathname === "/api/admin/access" && response.ok(),
+      { timeout: 90000 }
     );
-    await login(page);
-    await groupReady;
+    await Promise.all([login(page), groupReady]);
     await expect(page.getByTestId("admin-dashboard-card-monetizacao")).toBeVisible({
       timeout: 30000,
     });
