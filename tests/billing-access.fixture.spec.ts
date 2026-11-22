@@ -42,16 +42,29 @@ for (const width of [1280, 390, 320]) {
         json: path.endsWith("/plans")
           ? { plans: [], meta: {} }
           : path.endsWith("/capabilities")
-            ? { tenantId:"fixture-tenant",subscriptionId:"fixture-sub",capabilities:{canViewHistory:true,canPay:true,canUsePix:true,canUseRecurring:true} }
-          : path.endsWith("/overview")
-            ? {subscription:{...subscription(),amountCents:15000},access:access(),financialStatus:{code:"PENDENTE",label:"Pendente"}}
-          : path.endsWith("/status")
             ? {
-                access: access(),
-                active: false,
-                financialStatus: { code: "PENDENTE", label: "Pendente" },
+                tenantId: "fixture-tenant",
+                subscriptionId: "fixture-sub",
+                capabilities: {
+                  canViewHistory: true,
+                  canPay: true,
+                  canUsePix: true,
+                  canUseRecurring: true,
+                },
               }
-            : subscription(),
+            : path.endsWith("/overview")
+              ? {
+                  subscription: { ...subscription(), amountCents: 15000 },
+                  access: access(),
+                  financialStatus: { code: "PENDENTE", label: "Pendente" },
+                }
+              : path.endsWith("/status")
+                ? {
+                    access: access(),
+                    active: false,
+                    financialStatus: { code: "PENDENTE", label: "Pendente" },
+                  }
+                : subscription(),
       });
     });
     await login(page);

@@ -43,9 +43,9 @@ it("organiza conta, ajuda e saída preservando contexto e destinos existentes", 
     "href",
     "/seu-racha/atletas/felipe"
   );
-  expect(screen.getByRole("link", { name: /Plano e cobrança/i })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: /Gerenciar assinatura/i })).toHaveAttribute(
     "href",
-    "/admin/financeiro/planos-limites"
+    "/admin/assinatura"
   );
   expect(screen.getByRole("link", { name: /Guia Interativo/i })).toHaveAttribute(
     "href",

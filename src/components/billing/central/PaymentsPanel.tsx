@@ -366,7 +366,11 @@ export default function PaymentsPanel() {
                   <p className={`${s.value} !text-xl`}>
                     {historicalMoney(invoice.chargedAmountCents, invoice.currency)}
                   </p>
-                  <button className={s.linkButton} aria-label={`Detalhar cobrança ${invoiceRef(invoice.id)}`} onClick={() => setInvoice(invoice.id)}>
+                  <button
+                    className={s.linkButton}
+                    aria-label={`Detalhar cobrança ${invoiceRef(invoice.id)}`}
+                    onClick={() => setInvoice(invoice.id)}
+                  >
                     Ver detalhes da cobrança <ChevronRight size={14} />
                   </button>
                 </div>

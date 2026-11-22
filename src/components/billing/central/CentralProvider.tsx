@@ -45,7 +45,12 @@ function useCentralState() {
     async (signal) => {
       const data = await centralRequest<CapabilityResponse>("capabilities", signal);
       if (data.tenantId !== rachaId) throw new Error("Escopo inválido");
-      if (!data.capabilities || typeof data.capabilities.canPay !== "boolean" || typeof data.capabilities.canViewHistory !== "boolean") throw new Error("Capacidades não confirmadas");
+      if (
+        !data.capabilities ||
+        typeof data.capabilities.canPay !== "boolean" ||
+        typeof data.capabilities.canViewHistory !== "boolean"
+      )
+        throw new Error("Capacidades não confirmadas");
       return data;
     },
     revision

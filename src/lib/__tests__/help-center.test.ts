@@ -143,11 +143,11 @@ describe("Central de Ajuda administrativa", () => {
       path.join(process.cwd(), "src/app/(admin)/admin/adminProfileNavigation.ts"),
       "utf8"
     );
-    expect(profileNavigation).toContain('label: "Plano e cobrança"');
+    expect(profileNavigation).toContain('label: "Gerenciar assinatura"');
     const subscription = DEFAULT_HELP_CENTER_TOPICS.find(
       (topic) => topic.id === "configuracoes-assinatura"
     );
-    expect(subscription?.conteudo).toContain("Assinatura Fut7Pro > Plano e cobrança");
+    expect(subscription?.conteudo).toContain("Assinatura Fut7Pro > Gerenciar assinatura");
   });
 
   it("usa o fallback apenas quando não há tópicos utilizáveis", () => {

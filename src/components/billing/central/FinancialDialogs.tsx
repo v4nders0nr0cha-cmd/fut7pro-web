@@ -356,7 +356,11 @@ export default function FinancialDialogs() {
               autoComplete="off"
               maxLength={100}
             />
-            <button type="submit" className={s.button} disabled={!enabled || !caps?.canApplyCoupon || !coupon.trim()}>
+            <button
+              type="submit"
+              className={s.button}
+              disabled={!enabled || !caps?.canApplyCoupon || !coupon.trim()}
+            >
               Aplicar cupom
             </button>
           </form>
@@ -429,15 +433,17 @@ export default function FinancialDialogs() {
                     onChange={(event) => setEmail(event.target.value)}
                   />
                 </label>
-                {!plan.requiresUpfront && <label className={s.field}>
-                  Cupom, se houver
-                  <input
-                    className={`${s.input} my-3`}
-                    value={coupon}
-                    onChange={(event) => setCoupon(event.target.value)}
-                    maxLength={100}
-                  />
-                </label>}
+                {!plan.requiresUpfront && (
+                  <label className={s.field}>
+                    Cupom, se houver
+                    <input
+                      className={`${s.input} my-3`}
+                      value={coupon}
+                      onChange={(event) => setCoupon(event.target.value)}
+                      maxLength={100}
+                    />
+                  </label>
+                )}
               </>
             )}
             <div className={s.actions}>

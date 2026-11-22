@@ -35,7 +35,8 @@ export default function OverviewPanel() {
   const financial =
     c.subscriptionStatus?.financialStatus ?? sub.financialStatus ?? overview?.financialStatus;
   const allowed = access?.canAccess === true && access.blocked !== true;
-  const accessKnown = !c.subscriptionError && !c.subscriptionLoading && typeof access?.canAccess === "boolean";
+  const accessKnown =
+    !c.subscriptionError && !c.subscriptionLoading && typeof access?.canAccess === "boolean";
   const plan = c.plans.find((plan) => plan.key === sub.planKey);
   const end = access?.effectiveAccessUntil;
   return (
@@ -89,12 +90,20 @@ export default function OverviewPanel() {
                   ? "Acesso liberado"
                   : "Ativo"
                 : "Acesso bloqueado"
-              : c.subscriptionLoading ? "Verificando acesso" : "Não confirmado"}
+              : c.subscriptionLoading
+                ? "Verificando acesso"
+                : "Não confirmado"}
           </Pill>
           <strong className={s.value}>
             {end ? date(end) : allowed ? "Acesso autorizado" : "Consulte a situação"}
           </strong>
-          <p className={s.muted}>{end ? accessKnown ? "Prazo oficial de acesso" : "Último prazo consultado" : "Prazo não informado"}</p>
+          <p className={s.muted}>
+            {end
+              ? accessKnown
+                ? "Prazo oficial de acesso"
+                : "Último prazo consultado"
+              : "Prazo não informado"}
+          </p>
           <p className={s.small}>{accessSource(access?.source)}</p>
           {access?.compensationActive && (
             <p className={s.small}>
