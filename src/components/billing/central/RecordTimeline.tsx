@@ -36,6 +36,11 @@ export default function RecordTimeline() {
   return (
     <section className={s.card} aria-label="Histórico da assinatura">
       <h3>Acontecimentos da assinatura</h3>
+      {query.error && (
+        <Notice error retry={query.retry}>
+          Exibindo a última consulta deste grupo. Não foi possível atualizar os acontecimentos.
+        </Notice>
+      )}
       {!query.data.items.length ? (
         <Empty>Ainda não há acontecimentos registrados neste histórico.</Empty>
       ) : (

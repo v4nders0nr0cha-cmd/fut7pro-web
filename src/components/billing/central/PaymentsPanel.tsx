@@ -299,10 +299,12 @@ export default function PaymentsPanel() {
       </form>
       {query.error && (
         <Notice error retry={query.retry}>
-          {query.error}
+          {items
+            ? "Exibindo a última consulta deste grupo. Não foi possível atualizar as cobranças."
+            : query.error}
         </Notice>
       )}
-      {query.loading && !items ? (
+      {query.error && !items ? null : query.loading && !items ? (
         <Skeleton label="Consultando cobranças..." />
       ) : !items?.length ? (
         <Empty>

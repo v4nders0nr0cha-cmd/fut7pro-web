@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { installGuide, login } from "./fixtures/guide-continuity";
 
-for (const width of [1280, 390, 320]) {
+for (const width of [1280, 768, 390, 320]) {
   test(`Central completa, histórico e foco em ${width}px`, async ({ page }, testInfo) => {
     test.setTimeout(180000);
     await page.setViewportSize({ width, height: 900 });

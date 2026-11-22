@@ -335,3 +335,24 @@ it("descarta o diálogo e os dados privados ao mudar a conta no mesmo grupo", as
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(await screen.findByText(/histórico detalhado está disponível/)).toBeInTheDocument();
 });
+
+it("distingue falha de consulta de ausência de cobranças e permite tentar novamente", async () => {
+  let failed = true;
+  (historyRequest as jest.Mock).mockImplementation(async (id, area) => {
+    if (area === "overview") return { subscription: { id, tenantId: group }, access };
+    if (failed) throw new Error("timeout");
+    return { items: [], page: { hasMore: false, nextCursor: null, limit: 10 } };
+  });
+  render(
+    <Harness>
+      <PaymentsPanel />
+    </Harness>
+  );
+  expect(
+    await screen.findByText(/Não foi possível carregar estas informações/)
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Nenhuma cobrança encontrada/)).not.toBeInTheDocument();
+  failed = false;
+  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  expect(await screen.findByText(/Nenhuma cobrança encontrada/)).toBeInTheDocument();
+});
