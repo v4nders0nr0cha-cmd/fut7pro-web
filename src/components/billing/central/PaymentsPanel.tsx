@@ -23,13 +23,15 @@ function InvoiceStatus({ invoice }: { invoice: InvoiceRecord }) {
   return (
     <Pill
       tone={
-        refunded
-          ? "warn"
-          : confirmed
-            ? "good"
-            : ["pending", "in_process", "overdue"].includes(invoice.status)
-              ? "warn"
-              : "neutral"
+        invoice.status === "charged_back"
+          ? "danger"
+          : refunded
+            ? "warn"
+            : confirmed
+              ? "good"
+              : ["pending", "in_process", "overdue"].includes(invoice.status)
+                ? "warn"
+                : "neutral"
       }
     >
       {refunded
