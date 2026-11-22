@@ -161,7 +161,8 @@ for (const width of [1280, 390, 320]) {
     await expect(page.getByText("Pendente", { exact: true })).toBeVisible();
     const regularize = page.getByRole("button", { name: "Regularizar pagamento" });
     await expect(regularize).toBeEnabled();
-    await regularize.click();
+    await regularize.focus();
+    await page.keyboard.press("Enter");
     const paymentDialog = page.getByRole("dialog", { name: "Regularizar assinatura" });
     await expect(paymentDialog).toBeVisible();
     await expect(
@@ -175,13 +176,19 @@ for (const width of [1280, 390, 320]) {
     const nav = page.getByRole("navigation", { name: "Central de Assinatura" });
     await page.screenshot({ path: testInfo.outputPath(`overview-${width}.png`), fullPage: true });
     await nav.getByRole("link", { name: "Benefícios" }).click();
+    await expect(page).toHaveURL(/\/admin\/assinatura\/beneficios$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { name: "Benefícios do grupo" })).toBeVisible();
     await expect(page.getByText("Recompensa do Guia Interativo")).toBeVisible();
     await expect(
       page.getByText(/detalhes originais deste período não estão disponíveis/)
     ).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`benefits-${width}.png`), fullPage: true });
-    await nav.getByRole("link", { name: "Pagamentos" }).click();
+    await nav.getByRole("link", { name: "Pagamentos" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/admin\/assinatura\/pagamentos$/, { timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Pagamentos e cobranças" })).toBeVisible({
+      timeout: 15000,
+    });
     await expect(
       page
         .getByRole("button", { name: /Detalhar cobrança/ })
@@ -210,6 +217,7 @@ for (const width of [1280, 390, 320]) {
     await expect(page).toHaveURL(/status=refunds/);
     await page.screenshot({ path: testInfo.outputPath(`payments-${width}.png`), fullPage: true });
     await nav.getByRole("link", { name: "Planos", exact: true }).click();
+    await expect(page).toHaveURL(/\/admin\/assinatura\/planos$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { name: "Planos para o seu grupo" })).toBeVisible();
     await expect(
       page

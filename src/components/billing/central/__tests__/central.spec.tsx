@@ -14,7 +14,7 @@ jest.mock("@/lib/api/subscription-central", () => ({
   historyRequest: jest.fn(),
 }));
 jest.mock("next-auth/react", () => ({
-  useSession: () => ({ data: { user: { email: "admin@fixture.invalid", name: "Admin" } } }),
+  useSession: () => ({ data: { user: { email: principalEmail, name: "Admin" } } }),
 }));
 jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
   __esModule: true,
@@ -26,6 +26,7 @@ jest.mock("@/components/ui/feedback/Fut7DialogBase", () => ({
       </div>
     ) : null,
 }));
+let principalEmail = "admin@fixture.invalid";
 let group = "a",
   search = "";
 const replace = jest.fn();
@@ -118,6 +119,7 @@ function DialogMount() {
   return <FinancialDialogs key={c.scope} />;
 }
 beforeEach(() => {
+  principalEmail = "admin@fixture.invalid";
   jest.clearAllMocks();
   group = "a";
   search = "";
@@ -309,4 +311,27 @@ it("não apresenta cancelamento concluído quando o provedor falha", async () =>
   expect(await screen.findByText(/Não foi possível confirmar a operação/)).toBeInTheDocument();
   expect(screen.getByRole("dialog")).toBeInTheDocument();
   expect(screen.queryByText(/Cancelamento confirmado/)).not.toBeInTheDocument();
+});
+
+it("descarta o diálogo e os dados privados ao mudar a conta no mesmo grupo", async () => {
+  const view = render(
+    <Harness>
+      <OverviewPanel />
+      <BenefitsPanel />
+    </Harness>
+  );
+  const button = await screen.findByRole("button", { name: "Regularizar pagamento" });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
+  principalEmail = "futebol@fixture.invalid";
+  historyAllowed = false;
+  view.rerender(
+    <Harness>
+      <OverviewPanel />
+      <BenefitsPanel />
+    </Harness>
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(await screen.findByText(/histórico detalhado está disponível/)).toBeInTheDocument();
 });

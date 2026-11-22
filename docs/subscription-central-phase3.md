@@ -18,7 +18,7 @@ Ordem futura: backend #199 → #200 → #201 → #202 → #203 → #204. Aplicar
 
 ## Arquitetura e proteção de carregamento
 
-`CentralProvider` usa uma instância do hook de assinatura da Fase 1. Capacidades e consultas históricas têm chave por grupo, assinatura e geração. A troca A → B → A descarta respostas antigas, fecha os detalhes e impede uso de resultados financeiros de uma seleção anterior. Uma operação pendente por grupo impede duplo envio; o resultado atrasado não abre PIX nem redireciona para checkout.
+`CentralProvider` usa uma instância do hook de assinatura da Fase 1. Capacidades e consultas históricas têm chave por grupo, assinatura e geração. A troca de conta ou cargo na sessão também descarta os dados privados, sem calcular permissões na interface. A troca A → B → A descarta respostas antigas, fecha os detalhes e impede uso de resultados financeiros de uma seleção anterior. Uma operação pendente por grupo impede duplo envio; o resultado atrasado não abre PIX nem redireciona para checkout.
 
 O proxy BFF aceita somente GET de overview, benefits, invoices, detalhe e events. Valida a assinatura do grupo ativo e encaminha uma lista fechada de filtros. Respostas são privadas e sem cache. O backend permanece autoridade de permissões, idempotência, acesso e confirmação financeira.
 

@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import useSubscription from "@/hooks/useSubscription";
+import { useSession } from "next-auth/react";
 import { useRacha } from "@/context/RachaContext";
 import { BILLING_CHANGED, notifyBillingChanged } from "@/lib/billing-events";
 import {
@@ -16,9 +17,11 @@ export type CentralDialogKind = "payment" | "cancel" | "plan" | "coupon" | "cont
 function useCentralState() {
   const { rachaId, tenantSlug } = useRacha();
   const subscription = useSubscription(rachaId || undefined);
-  const clock = useRef({ tenant: rachaId, generation: 0 });
-  if (clock.current.tenant !== rachaId)
-    clock.current = { tenant: rachaId, generation: clock.current.generation + 1 };
+  const { data: session } = useSession();
+  const principal = `${session?.user?.id || session?.user?.email || "session"}:${session?.user?.role || ""}:${rachaId || "none"}:${tenantSlug || ""}`;
+  const clock = useRef({ tenant: principal, generation: 0 });
+  if (clock.current.tenant !== principal)
+    clock.current = { tenant: principal, generation: clock.current.generation + 1 };
   const scope = `${rachaId || "none"}:${clock.current.generation}`;
   const alive = useRef(true);
   useEffect(() => {
