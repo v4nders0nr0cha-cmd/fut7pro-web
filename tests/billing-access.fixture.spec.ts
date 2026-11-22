@@ -67,7 +67,20 @@ for (const width of [1280, 390, 320]) {
                 : subscription(),
       });
     });
+    const groupReady = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/admin/access" && response.ok()
+    );
     await login(page);
+    await groupReady;
+    await expect(page.getByTestId("admin-dashboard-card-monetizacao")).toBeVisible({
+      timeout: 30000,
+    });
+    await expect
+      .poll(
+        async () =>
+          (await page.context().cookies()).find((cookie) => cookie.name === "f7_active_slug")?.value
+      )
+      .toBe("grupo-fixture");
     await page.goto("/admin/financeiro/planos-limites");
     const accessField = page.getByText("Status de acesso", { exact: true }).locator("..");
     await expect(accessField.getByText("Acesso bloqueado", { exact: true })).toBeVisible();
