@@ -10,7 +10,7 @@ import {
   FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL,
 } from "@/config/fut7pro-contact";
 import { useCentral } from "./CentralProvider";
-import { money, dateTime } from "./presentation";
+import { money, dateTime, isPixExpired } from "./presentation";
 import { Notice } from "./Common";
 import s from "./central.module.css";
 
@@ -49,6 +49,17 @@ export default function FinancialDialogs() {
   const [email, setEmail] = useState(session?.user?.email || "");
   const [pix, setPix] = useState<PixView | null>(null);
   const [copied, setCopied] = useState(false);
+  const [expiryTick, setExpiryTick] = useState(0);
+  useEffect(() => {
+    const deadline = Date.parse(pix?.expiresAt || "");
+    if (!Number.isFinite(deadline) || deadline <= Date.now()) return;
+    const timer = setTimeout(
+      () => setExpiryTick((n) => n + 1),
+      Math.min(deadline - Date.now() + 25, 2147483647)
+    );
+    return () => clearTimeout(timer);
+  }, [pix?.expiresAt, expiryTick]);
+  const pixExpired = isPixExpired(pix?.expiresAt);
   useEffect(() => {
     setAccepted(false);
     setCoupon("");
@@ -201,11 +212,12 @@ export default function FinancialDialogs() {
         {pix ? (
           <>
             <p className={s.muted}>
-              Pague com o aplicativo do seu banco. A confirmação depende do processamento do
-              pagamento.
+              {pixExpired
+                ? "O prazo informado para este PIX terminou. Atualize a assinatura para conferir a cobrança antes de tentar pagar."
+                : "Pague com o aplicativo do seu banco. A confirmação depende do processamento do pagamento."}
             </p>
             <p className={s.value}>{money(pix.amount)}</p>
-            {pix.image && (
+            {pix.image && !pixExpired && (
               <Image
                 src={
                   pix.image.startsWith("data:image/png;base64,")
@@ -227,6 +239,7 @@ export default function FinancialDialogs() {
                 <textarea
                   id="central-pix"
                   readOnly
+                  disabled={pixExpired}
                   value={pix.code}
                   className={`${s.input} mt-2`}
                   rows={3}
@@ -234,6 +247,7 @@ export default function FinancialDialogs() {
                 <button
                   type="button"
                   className={s.secondary}
+                  disabled={pixExpired}
                   onClick={async () => {
                     const current = c.actionToken();
                     try {
@@ -266,7 +280,7 @@ export default function FinancialDialogs() {
                   Autorizar recorrência no Mercado Pago
                 </a>
               )}
-              {pixUrl && (
+              {pixUrl && !pixExpired && (
                 <a className={s.secondary} href={pixUrl} target="_blank" rel="noopener noreferrer">
                   Abrir pagamento
                 </a>

@@ -20,6 +20,10 @@ export const dateTime = (value?: string | null) => {
     }).format(new Date(value)) + " (horário de Brasília)"
   );
 };
+export const isPixExpired = (value?: string | null, now = Date.now()) => {
+  const deadline = value ? Date.parse(value) : NaN;
+  return Number.isFinite(deadline) && deadline <= now;
+};
 export function historicalMoney(value: number | null | undefined, currency: string | null) {
   if (value === null || value === undefined) return "Não registrado";
   if (currency && /^[A-Z]{3}$/.test(currency)) {

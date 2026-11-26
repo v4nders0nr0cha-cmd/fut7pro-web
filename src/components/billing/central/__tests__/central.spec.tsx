@@ -294,6 +294,33 @@ it("impede cobrança duplicada e descarta PIX atrasado após A → B → A", asy
   expect(screen.queryByDisplayValue("PRIVATE-OLD-PIX")).not.toBeInTheDocument();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
+it("impede uso de PIX com prazo encerrado sem cancelar ou criar outra cobrança", async () => {
+  (BillingAPI.createPixCharge as jest.Mock).mockResolvedValue({
+    pix: {
+      qrCode: "DEMO-EXPIRADO",
+      qrCodeBase64: "AA",
+      ticketUrl: "https://www.mercadopago.com.br/demo",
+      expiresAt: "2000-01-01T12:00:00Z",
+    },
+    invoice: { amount: 15000 },
+  });
+  render(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  const payment = await screen.findByRole("button", { name: "Regularizar pagamento" });
+  await waitFor(() => expect(payment).toBeEnabled());
+  fireEvent.click(payment);
+  fireEvent.click(screen.getByRole("button", { name: "Gerar PIX" }));
+  expect(await screen.findByText(/O prazo informado para este PIX terminou/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Copiar código PIX" })).toBeDisabled();
+  expect(screen.getByLabelText("Código PIX copia e cola")).toBeDisabled();
+  expect(screen.queryByRole("link", { name: "Abrir pagamento" })).not.toBeInTheDocument();
+  expect(screen.queryByAltText("QR Code para pagamento da assinatura")).not.toBeInTheDocument();
+  expect(BillingAPI.createPixCharge).toHaveBeenCalledTimes(1);
+  expect(BillingAPI.cancelSubscription).not.toHaveBeenCalled();
+});
 it("não solicita históricos para o Diretor de Futebol", async () => {
   historyAllowed = false;
   render(
