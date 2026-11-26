@@ -40,6 +40,23 @@ for (const width of [1280, 768, 390, 320]) {
     ).not.toHaveText(/Não registrado|Consultando/);
     const capture = async (name: string) => {
       await page.evaluate(() => document.fonts.ready);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      if (name !== "pix") {
+        const refresh = page.getByRole("button", { name: "Atualizar", exact: true });
+        await expect(refresh).toBeVisible();
+        expect(
+          (await refresh.boundingBox())!.height,
+          "A ação de atualizar deve permanecer em uma linha"
+        ).toBeLessThanOrEqual(48);
+      }
+      if (width === 320 && name !== "pix") {
+        const link = page.getByTestId("admin-bottom-link-admin-comunicacao-notificacoes");
+        const label = link.locator("span").filter({ hasText: "Notificações" }).first();
+        expect(
+          (await label.boundingBox())!.width,
+          "O rótulo da navegação não deve invadir o próximo item"
+        ).toBeLessThanOrEqual((await link.boundingBox())!.width);
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true
       );

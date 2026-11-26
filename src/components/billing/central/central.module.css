@@ -31,6 +31,11 @@
   letter-spacing: -0.025em;
   margin: 0 0 10px;
 }
+.heading > button {
+  flex-shrink: 0;
+  min-width: 140px;
+  white-space: nowrap;
+}
 .muted {
   color: var(--muted);
   font-size: 13px;
@@ -121,6 +126,7 @@
   margin: 10px 0;
 }
 .pill {
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -392,6 +398,10 @@
   display: none;
 }
 @media (min-width: 640px) {
+  .filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)) auto;
+  }
   .nav {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -417,6 +427,15 @@
     display: none;
   }
 }
+@media (max-width: 639px) {
+  .heading {
+    flex-direction: column;
+  }
+  .filters > .field:first-child,
+  .filters > button {
+    flex-basis: 100%;
+  }
+}
 @media (max-width: 359px) {
   .central {
     padding-left: 12px;
@@ -424,9 +443,6 @@
   }
   .card {
     padding: 17px;
-  }
-  .heading {
-    flex-direction: column;
   }
   .button,
   .secondary {

@@ -10,5 +10,5 @@ export default defineConfig({
   workers: 1,
   expect: { timeout: 60000 },
   outputDir: "test-results/central-integrated",
-  use: { ...original.use, trace: "retain-on-failure" },
+  use: { ...original.use, trace: "retain-on-failure", locale: "pt-BR" },
 });
