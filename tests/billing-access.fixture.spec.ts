@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { installGuide, login } from "./fixtures/guide-continuity";
+import { openSubscriptionCentral } from "./fixtures/subscription-central";
 
 for (const width of [1280, 390, 320]) {
   test(`assinatura respeita acesso oficial em ${width}px`, async ({ page }) => {
@@ -83,9 +84,11 @@ for (const width of [1280, 390, 320]) {
           )?.value
       )
       .toBe("grupo-fixture");
+    await openSubscriptionCentral(page);
+    const payment = page.getByRole("button", { name: "Regularizar pagamento", exact: true });
+    await expect(payment).toBeEnabled({ timeout: 30000 });
     await page.goto("/admin/financeiro/planos-limites");
     await expect(page).toHaveURL(/\/admin\/assinatura$/, { timeout: 30000 });
-    const payment = page.getByRole("button", { name: "Regularizar pagamento", exact: true });
     await expect(payment).toBeEnabled({ timeout: 30000 });
     const accessField = page.getByText("Status de acesso", { exact: true }).locator("..");
     await expect(accessField.getByText("Acesso bloqueado", { exact: true })).toBeVisible();

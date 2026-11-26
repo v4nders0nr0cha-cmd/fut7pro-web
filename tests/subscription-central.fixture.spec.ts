@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { installGuide, login } from "./fixtures/guide-continuity";
+import { openSubscriptionCentral } from "./fixtures/subscription-central";
 
 for (const width of [1280, 768, 390, 320]) {
   test(`Central completa, histórico e foco em ${width}px`, async ({ page }, testInfo) => {
@@ -168,7 +169,7 @@ for (const width of [1280, 768, 390, 320]) {
           )?.value
       )
       .toBe("grupo-fixture");
-    await page.goto("/admin/assinatura");
+    await openSubscriptionCentral(page);
     await expect(
       page.getByRole("heading", { name: "Minha assinatura", exact: true })
     ).toBeVisible();
