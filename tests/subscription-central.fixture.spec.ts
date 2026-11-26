@@ -218,7 +218,8 @@ for (const width of [1280, 768, 390, 320]) {
     await page.getByRole("button", { name: "Aplicar filtros" }).click();
     await expect(page).toHaveURL(/status=refunds/);
     await page.screenshot({ path: testInfo.outputPath(`payments-${width}.png`), fullPage: true });
-    await nav.getByRole("link", { name: "Planos", exact: true }).click();
+    await nav.getByRole("link", { name: "Planos", exact: true }).focus();
+    await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/admin\/assinatura\/planos$/, { timeout: 15000 });
     await expect(page.getByRole("heading", { name: "Planos para o seu grupo" })).toBeVisible();
     await expect(

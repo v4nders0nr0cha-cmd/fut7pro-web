@@ -219,7 +219,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
               ref={profileRef}
               className="relative hidden lg:block"
               onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                if (
+                  event.relatedTarget &&
+                  !event.currentTarget.contains(event.relatedTarget as Node)
+                ) {
                   setDropdownOpen(false);
                 }
               }}
