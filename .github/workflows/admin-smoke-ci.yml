@@ -140,6 +140,15 @@ jobs:
           PLAYWRIGHT_BASE_URL: "https://127.0.0.1:3443"
         run: pnpm exec playwright test tests/subscription-central.fixture.spec.ts --project=chromium --project=webkit --workers=1 --reporter=line --output=test-results/subscription-central
 
+      - name: Preserve subscription central screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: subscription-central-fixture-screenshots
+          path: test-results/subscription-central
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Check official billing access in desktop and mobile
         env:
           NODE_OPTIONS: --require ./tests/admin/deny-production-api.cjs

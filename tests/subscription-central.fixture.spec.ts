@@ -175,20 +175,6 @@ for (const width of [1280, 768, 390, 320]) {
     ).toBeVisible();
     await expect(page.getByText("Acesso liberado", { exact: true })).toBeVisible();
     await expect(page.getByText("Pendente", { exact: true })).toBeVisible();
-    const regularize = page.getByRole("button", { name: "Regularizar pagamento" });
-    await expect(regularize).toBeEnabled();
-    await regularize.focus();
-    await page.keyboard.press("Enter");
-    const paymentDialog = page.getByRole("dialog", { name: "Regularizar assinatura" });
-    await expect(paymentDialog).toBeVisible();
-    await expect(
-      paymentDialog.getByRole("button", { name: "Continuar no Mercado Pago" })
-    ).toBeDisabled();
-    await paymentDialog.getByRole("button", { name: "Gerar PIX" }).click();
-    await expect(paymentDialog.getByText(/Não foi possível confirmar a operação/)).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(paymentDialog).not.toBeVisible();
-    await expect(regularize).toBeFocused();
     const nav = page.getByRole("navigation", { name: "Central de Assinatura" });
     await page.screenshot({ path: testInfo.outputPath(`overview-${width}.png`), fullPage: true });
     await nav.getByRole("link", { name: "Benefícios" }).click();
@@ -246,6 +232,25 @@ for (const width of [1280, 768, 390, 320]) {
     );
     await page.goto("/admin/financeiro/planos-limites?faturas=1");
     await expect(page).toHaveURL(/\/admin\/assinatura\/pagamentos/);
+    await page.goto("/admin/assinatura");
+    const regularize = page.getByRole("button", { name: "Regularizar pagamento" });
+    await expect(regularize).toBeEnabled();
+    await regularize.focus();
+    await page.keyboard.press("Enter");
+    const paymentDialog = page.getByRole("dialog", { name: "Regularizar assinatura" });
+    await expect(paymentDialog).toBeVisible();
+    await expect(
+      paymentDialog.getByRole("button", { name: "Continuar no Mercado Pago" })
+    ).toBeDisabled();
+    await paymentDialog.getByRole("button", { name: "Gerar PIX" }).click();
+    await expect(paymentDialog.getByText(/Não foi possível confirmar a operação/)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(paymentDialog).not.toBeVisible();
+    await expect(regularize).toBeFocused();
+    await page.screenshot({
+      path: testInfo.outputPath(`payment-error-${width}.png`),
+      fullPage: true,
+    });
     expect(pixPosts).toBe(1);
   });
 }

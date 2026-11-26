@@ -10,7 +10,7 @@ import {
   FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL,
 } from "@/config/fut7pro-contact";
 import { useCentral } from "./CentralProvider";
-import { money, date } from "./presentation";
+import { money, dateTime } from "./presentation";
 import { Notice } from "./Common";
 import s from "./central.module.css";
 
@@ -37,6 +37,7 @@ type PixView = {
   expiresAt?: string | null;
   amount: number;
   pricing?: ChargePricing;
+  recurringUrl?: string;
 };
 
 export default function FinancialDialogs() {
@@ -151,6 +152,7 @@ export default function FinancialDialogs() {
             image: result.pix.qrCodeBase64,
             url: result.pix.ticketUrl,
             amount: result.upfrontInvoice.amount,
+            recurringUrl: result.preapproval.url,
           });
         }
       } else {
@@ -249,11 +251,21 @@ export default function FinancialDialogs() {
             )}
             {pix.expiresAt && (
               <p className={s.small}>
-                Validade do PIX: {date(pix.expiresAt)}. Essa data não representa o prazo de acesso
-                ao sistema.
+                Validade do PIX: {dateTime(pix.expiresAt)}. Essa data não representa o prazo de
+                acesso ao sistema.
               </p>
             )}
             <div className={s.actions}>
+              {paymentHref(pix.recurringUrl) && (
+                <a
+                  className={s.button}
+                  href={paymentHref(pix.recurringUrl)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Autorizar recorrência no Mercado Pago
+                </a>
+              )}
               {pixUrl && (
                 <a className={s.secondary} href={pixUrl} target="_blank" rel="noopener noreferrer">
                   Abrir pagamento

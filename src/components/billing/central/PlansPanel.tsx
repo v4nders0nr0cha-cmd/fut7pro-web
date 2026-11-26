@@ -7,7 +7,17 @@ import { money } from "./presentation";
 import s from "./central.module.css";
 export default function PlansPanel() {
   const c = useCentral();
-  const [interval, setInterval] = useState<"month" | "year">("month");
+  const [selection, setSelection] = useState<{ scope: string; interval: "month" | "year" } | null>(
+    null
+  );
+  const interval =
+    selection?.scope === c.scope
+      ? selection.interval
+      : c.subscription?.interval === "year"
+        ? "year"
+        : "month";
+  const setInterval = (value: "month" | "year") =>
+    setSelection({ scope: c.scope, interval: value });
   const caps = c.capabilities.data?.capabilities;
   if (c.plansLoading && !c.plans.length)
     return <Skeleton label="Consultando planos disponíveis..." />;

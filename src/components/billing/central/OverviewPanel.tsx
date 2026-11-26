@@ -181,7 +181,13 @@ export default function OverviewPanel() {
           </div>
           <div>
             <dt>Assinatura registrada em</dt>
-            <dd>{date(overview?.subscription.createdAt)}</dd>
+            <dd>
+              {overview
+                ? date(overview.subscription.createdAt)
+                : c.overview.error
+                  ? "Consulta indisponível"
+                  : "Consultando..."}
+            </dd>
           </div>
           <div>
             <dt>Teste gratuito até</dt>

@@ -200,7 +200,31 @@ jobs:
 
       - name: Run informational security audit (moderate/prod)
         continue-on-error: true
-        run: pnpm audit --prod --audit-level=moderate
+        run: |
+          pnpm audit --prod --audit-level=moderate --json > security-audit.json
+
+      - name: Publish dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: subscription-security-audit
+          path: security-audit.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Explain security coverage
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const lines = ['## Security coverage', '', 'The blocking dependency audit uses the critical threshold. A green job does not certify the absence of high or moderate findings.'];
+          if (fs.existsSync('security-audit.json')) {
+            const report = JSON.parse(fs.readFileSync('security-audit.json', 'utf8'));
+            lines.push('', 'Dependency findings: ' + JSON.stringify(report.metadata?.vulnerabilities || report.error || 'See audit artifact.'));
+          }
+          lines.push('', process.env.SNYK_TOKEN ? 'Snyk token is configured; consult the scan step for its result.' : 'Snyk was not executed: SNYK_TOKEN is not configured.');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          NODE
 
       - name: Run Snyk security scan
         uses: snyk/actions/node@master

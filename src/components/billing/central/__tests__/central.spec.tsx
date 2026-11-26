@@ -155,6 +155,80 @@ beforeEach(() => {
         }
   );
 });
+it("abre a comparação na periodicidade do plano anual confirmado após carregar", async () => {
+  let annual = false;
+  (useSubscription as jest.Mock).mockImplementation(() => ({
+    ...hook(),
+    subscription: annual
+      ? { ...hook().subscription, planKey: "yearly_essential", interval: "year" }
+      : null,
+  }));
+  const view = render(
+    <Harness>
+      <PlansPanel />
+    </Harness>
+  );
+  annual = true;
+  view.rerender(
+    <Harness>
+      <PlansPanel />
+    </Harness>
+  );
+  expect(screen.getByRole("button", { name: "Anual", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true"
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Mensal", exact: true }));
+  expect(screen.getByRole("button", { name: "Mensal", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true"
+  );
+  await act(async () => undefined);
+});
+it("preserva o link de autorização devolvido na contratação Enterprise", async () => {
+  (useSubscription as jest.Mock).mockImplementation(() => ({ ...hook(), subscription: null }));
+  (centralRequest as jest.Mock).mockResolvedValue({
+    tenantId: group,
+    subscriptionId: null,
+    capabilities: { ...caps, canCreateSubscription: true, canStartEnterprise: true },
+  });
+  (BillingAPI.startEnterpriseMonthly as jest.Mock).mockResolvedValue({
+    preapproval: { url: "https://www.mercadopago.com.br/checkout-demo" },
+    pix: { qrCode: "demo" },
+    upfrontInvoice: { amount: 15000 },
+  });
+  function Trigger() {
+    const c = useCentral();
+    return (
+      <button
+        disabled={!c.ready}
+        onClick={() =>
+          c.openDialog("create", {
+            key: "monthly_enterprise",
+            label: "Enterprise",
+            interval: "month",
+            amount: 150,
+            requiresUpfront: true,
+          } as any)
+        }
+      >
+        Contratar demonstração
+      </button>
+    );
+  }
+  render(
+    <Harness>
+      <Trigger />
+    </Harness>
+  );
+  const trigger = screen.getByRole("button", { name: "Contratar demonstração" });
+  await waitFor(() => expect(trigger).toBeEnabled());
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar escolha" }));
+  const link = await screen.findByRole("link", { name: "Autorizar recorrência no Mercado Pago" });
+  expect(link).toHaveAttribute("href", "https://www.mercadopago.com.br/checkout-demo");
+  expect(BillingAPI.startEnterpriseMonthly).toHaveBeenCalledTimes(1);
+});
 it("não autoriza acesso por uma data futura e bloqueia ações durante o carregamento", async () => {
   loading = true;
   const view = render(

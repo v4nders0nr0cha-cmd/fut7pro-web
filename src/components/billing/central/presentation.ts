@@ -10,6 +10,16 @@ export const money = (value?: number | null, currency = "BRL") =>
   value === null || value === undefined
     ? "Não registrado"
     : new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value / 100);
+export const dateTime = (value?: string | null) => {
+  if (!value || !Number.isFinite(Date.parse(value))) return "Não registrado";
+  return (
+    new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "America/Sao_Paulo",
+    }).format(new Date(value)) + " (horário de Brasília)"
+  );
+};
 export function historicalMoney(value: number | null | undefined, currency: string | null) {
   if (value === null || value === undefined) return "Não registrado";
   if (currency && /^[A-Z]{3}$/.test(currency)) {
