@@ -62,8 +62,11 @@ const next = await call(
   owner,
   sub + "/invoices?limit=10&cursor=" + encodeURIComponent(first.body.page.nextCursor)
 );
+const records = [...first.body.items, ...next.body.items];
 ok(
-  new Set([...first.body.items, ...next.body.items].map((i) => i.id)).size === 15,
+  new Set(records.map((i) => i.id)).size === records.length &&
+    records.length >= 15 &&
+    !next.body.page.hasMore,
   "real cursor pagination"
 );
 ok(

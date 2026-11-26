@@ -78,7 +78,10 @@ export default function PlansPanel() {
             const current = c.subscription?.planKey === plan.key;
             const commercial = !c.subscription ? caps?.canCreateSubscription : caps?.canChangePlan;
             return (
-              <article key={plan.key} className={`${s.card} ${current ? s.hero : ""}`}>
+              <article
+                key={plan.key}
+                className={`${s.card} flex flex-col ${current ? s.hero : ""}`}
+              >
                 {current ? (
                   <Pill tone="good">Plano atual</Pill>
                 ) : plan.badge ? (
@@ -98,7 +101,7 @@ export default function PlansPanel() {
                   </p>
                 )}
                 {plan.paymentNote && <p className={s.small}>{plan.paymentNote}</p>}
-                <ul className={s.features}>
+                <ul className={`${s.features} flex-1`}>
                   {[...(plan.features || []), ...(plan.limits || [])].map((feature, index) => (
                     <li key={index}>
                       <Check

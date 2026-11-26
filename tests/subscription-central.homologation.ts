@@ -91,5 +91,61 @@ for (const width of [1280, 768, 390, 320]) {
     );
     await page.goto("/admin/financeiro/planos-limites?faturas=1");
     await expect(page).toHaveURL(/\/admin\/assinatura\/pagamentos/);
+    await page.goto("/admin/assinatura");
+    const payment = page.getByRole("button", { name: "Regularizar pagamento" });
+    await expect(payment).toBeEnabled();
+    await payment.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Regularizar assinatura" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Gerar PIX", exact: true }).click();
+    await expect(page.getByLabel("Código PIX copia e cola")).toHaveValue(
+      "DEMONSTRACAO-SEM-VALOR-PARA-PAGAMENTO"
+    );
+    await expect(page.getByText(/Validade do PIX:.*horário de Brasília/)).toBeVisible();
+    await capture("pix");
+    await page.keyboard.press("Escape");
+    await expect(payment).toBeFocused();
   });
 }
+
+test("Diretor de Futebol: resumo permitido e histórico protegido no backend real", async ({
+  page,
+}, info) => {
+  test.setTimeout(180000);
+  await page.setViewportSize({ width: 390, height: 900 });
+  const guide = await installGuide(page);
+  Object.assign(guide.state, {
+    dashboardInviteDismissedAt: "2026-11-21T12:00:00Z",
+    preparationCelebratedAt: "2026-11-21T12:00:00Z",
+    footballInvitePresentedAt: "2026-11-21T12:00:00Z",
+    footballStartedAt: "2026-11-21T12:00:00Z",
+  });
+  await page.goto("/admin/login");
+  await page.getByRole("button", { name: "Entrar com senha", exact: true }).click();
+  await page.getByTestId("admin-login-email").fill("futebol@fixture.invalid");
+  await page.getByTestId("admin-login-password").fill("fixture-only-password");
+  await page.getByTestId("admin-login-submit").click();
+  await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 90000 });
+  await expect
+    .poll(
+      async () =>
+        (await page.context().cookies()).find((c) => c.name === "fut7pro_admin_active_tenant")
+          ?.value
+    )
+    .toBe("grupo-fixture");
+  await openSubscriptionCentral(page);
+  await expect(page.getByRole("button", { name: "Regularizar pagamento" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Solicitar cancelamento" })).toHaveCount(0);
+  await page
+    .getByRole("navigation", { name: "Central de Assinatura" })
+    .getByRole("link", { name: "Pagamentos" })
+    .click();
+  await expect(
+    page.getByText(/O histórico detalhado está disponível aos responsáveis financeiros/)
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Detalhar cobrança/ })).toHaveCount(0);
+  const path = info.outputPath("football-director-390.png");
+  await page.screenshot({ path, fullPage: true });
+  await info.attach("football-director-390", { path, contentType: "image/png" });
+});

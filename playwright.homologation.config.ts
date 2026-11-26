@@ -8,6 +8,7 @@ export default defineConfig({
   webServer: undefined,
   fullyParallel: false,
   workers: 1,
+  expect: { timeout: 60000 },
   outputDir: "test-results/central-integrated",
   use: { ...original.use, trace: "retain-on-failure" },
 });

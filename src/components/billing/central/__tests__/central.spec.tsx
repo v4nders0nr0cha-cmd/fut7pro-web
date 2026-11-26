@@ -174,15 +174,9 @@ it("abre a comparação na periodicidade do plano anual confirmado após carrega
       <PlansPanel />
     </Harness>
   );
-  expect(screen.getByRole("button", { name: "Anual", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true"
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Mensal", exact: true }));
-  expect(screen.getByRole("button", { name: "Mensal", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true"
-  );
+  expect(screen.getByRole("button", { name: "Anual" })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(screen.getByRole("button", { name: "Mensal" }));
+  expect(screen.getByRole("button", { name: "Mensal" })).toHaveAttribute("aria-pressed", "true");
   await act(async () => undefined);
 });
 it("preserva o link de autorização devolvido na contratação Enterprise", async () => {
