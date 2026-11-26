@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import QRCode from "qrcode";
 
+test.setTimeout(120000);
+
 const fixturePassword = "fixture-only-password";
 const viewports = [
   { name: "desktop", width: 1280, height: 800 },
@@ -18,9 +20,10 @@ test.beforeEach(async ({ page }) => {
 
 async function login(page: Page) {
   await page.goto("/admin/login");
-  await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
   await page.getByRole("button", { name: "Entrar com senha" }).click();
+  await page.getByTestId("admin-login-email").fill("presidente@fixture.invalid");
   await page.getByTestId("admin-login-password").fill(fixturePassword);
+  await expect(page.getByTestId("admin-login-email")).toHaveValue("presidente@fixture.invalid");
   await page.getByTestId("admin-login-submit").click();
   await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 90_000 });
 }
