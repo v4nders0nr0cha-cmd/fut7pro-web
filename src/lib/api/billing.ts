@@ -426,7 +426,7 @@ export class BillingAPI {
       priceWithCouponCents?: number | null;
       recurringAmountCents?: number | null;
       couponAppliesToRecurring?: boolean;
-    }>(`/coupon/${code}${query}`);
+    }>(`/coupon/${encodeURIComponent(code)}${query}`);
   }
 }
 

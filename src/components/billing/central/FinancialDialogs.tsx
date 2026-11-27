@@ -12,6 +12,8 @@ import {
 import { useCentral } from "./CentralProvider";
 import { money, dateTime, isPixExpired } from "./presentation";
 import { Notice } from "./Common";
+import PaymentOptions from "./PaymentOptions";
+import { formatBillingPlanLabel } from "@/utils/billing-plan-label";
 import s from "./central.module.css";
 
 export function paymentHref(value?: string | null) {
@@ -45,6 +47,20 @@ export default function FinancialDialogs() {
   const caps = c.capabilities.data?.capabilities;
   const { data: session } = useSession();
   const [accepted, setAccepted] = useState(false);
+  const [cardSelected, setCardSelected] = useState(false);
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
+  useEffect(() => {
+    setAccepted(false);
+  }, [
+    c.subscription?.pricingPreview?.totalCents,
+    c.subscription?.pricingPreview?.recurringAmountCents,
+    c.subscription?.planKey,
+    c.subscription?.interval,
+  ]);
+  useEffect(() => {
+    if (c.ready && appliedCode && c.subscription?.couponCode === appliedCode) setAppliedCode(null);
+  }, [c.ready, c.subscription?.couponCode, appliedCode]);
   const [coupon, setCoupon] = useState("");
   const [email, setEmail] = useState(session?.user?.email || "");
   const [pix, setPix] = useState<PixView | null>(null);
@@ -62,6 +78,9 @@ export default function FinancialDialogs() {
   const pixExpired = isPixExpired(pix?.expiresAt);
   useEffect(() => {
     setAccepted(false);
+    setCardSelected(false);
+    setAppliedCode(null);
+    setCouponMessage(null);
     setCoupon("");
     setPix(null);
     setCopied(false);
@@ -74,7 +93,7 @@ export default function FinancialDialogs() {
     dialog?.type === "payment"
       ? pix
         ? "PIX da assinatura"
-        : "Regularizar assinatura"
+        : "Escolha como deseja pagar"
       : dialog?.type === "cancel"
         ? "Cancelar assinatura"
         : dialog?.type === "coupon"
@@ -85,12 +104,32 @@ export default function FinancialDialogs() {
               ? "Escolher plano"
               : "Alterar plano";
   async function recurring() {
-    if (!caps?.canUseRecurring || !accepted || !c.subscription) return;
+    if (
+      !enabled ||
+      appliedCode ||
+      !pricing ||
+      !caps?.canUseRecurring ||
+      !cardSelected ||
+      !accepted ||
+      !c.subscription
+    )
+      return;
     const result = await c.runAction(async () => {
       const reply = await BillingAPI.activateSubscription(
         c.subscription!.id,
         `${window.location.origin}/admin/assinatura?retorno=pagamento`
       );
+      if (
+        !reply.pricing ||
+        reply.pricing.totalCents !== pricing.totalCents ||
+        reply.pricing.recurringAmountCents !== pricing.recurringAmountCents
+      ) {
+        throw new BillingApiError(
+          "As condições do checkout mudaram. Atualize os valores antes de continuar no Mercado Pago.",
+          409,
+          null
+        );
+      }
       const url = paymentHref(reply.checkoutUrl);
       if (!url)
         throw new BillingApiError(
@@ -103,10 +142,20 @@ export default function FinancialDialogs() {
     if (result) window.location.assign(result);
   }
   async function createPix() {
-    if (!caps?.canUsePix || !c.subscription) return;
-    const result = await c.runAction(() =>
-      BillingAPI.createPixCharge(c.subscription!.id, session?.user?.name || email)
-    );
+    if (!enabled || appliedCode || !pricing || !caps?.canUsePix || !c.subscription) return;
+    const result = await c.runAction(async () => {
+      const reply = await BillingAPI.createPixCharge(
+        c.subscription!.id,
+        session?.user?.name || email
+      );
+      if (reply.invoice.amount !== pricing.totalCents)
+        throw new BillingApiError(
+          "O valor da cobrança PIX difere do resumo consultado. Atualize a assinatura e confira as cobranças existentes antes de pagar. Se a diferença continuar, entre em contato com o suporte.",
+          409,
+          null
+        );
+      return reply;
+    });
     if (result)
       setPix({
         code: result.pix.qrCode,
@@ -118,15 +167,35 @@ export default function FinancialDialogs() {
       });
   }
   async function applyCoupon() {
-    if (!caps?.canApplyCoupon || !c.subscription || !coupon.trim()) return;
-    const result = await c.runAction(() =>
-      BillingAPI.applyCouponToSubscription(c.subscription!.id, coupon.trim())
-    );
-    if (result) {
-      c.success(
-        "Cupom aplicado à assinatura. Consulte os benefícios para conferir as condições e as concessões registradas."
+    if (!enabled || appliedCode || !caps?.canApplyCoupon || !c.subscription || !coupon.trim())
+      return;
+    const current = c.actionToken();
+    const code = coupon.trim();
+    const subscription = c.subscription;
+    const result = await c.runAction(async () => {
+      const validation = await BillingAPI.validateCoupon(code, subscription.planKey);
+      if (!current()) return;
+      if (!validation.valid)
+        throw new BillingApiError(
+          "Este cupom não está disponível para este plano. Confira o código e as condições.",
+          400,
+          null
+        );
+      return BillingAPI.applyCouponToSubscription(subscription.id, code);
+    });
+    if (result && current()) {
+      setAccepted(false);
+      setAppliedCode(result.couponCode || code);
+      setCouponMessage(
+        "Cupom aplicado à assinatura. O resumo será atualizado com as condições confirmadas pelo sistema. Dias extras, quando concedidos, ficam registrados em Benefícios."
       );
-      c.closeDialog();
+      if (dialog?.type === "payment") await c.refresh();
+      else {
+        c.success(
+          "Cupom aplicado à assinatura. Consulte os benefícios para conferir as condições e as concessões registradas."
+        );
+        c.closeDialog();
+      }
     }
   }
   async function cancel() {
@@ -198,6 +267,7 @@ export default function FinancialDialogs() {
       open={Boolean(dialog)}
       title={label}
       eyebrow="Assinatura Fut7Pro"
+      bodyClassName={dialog?.type === "payment" ? s.paymentScroll : undefined}
       tone={dialog?.type === "cancel" ? "destructive" : "default"}
       onClose={c.closeDialog}
       size={dialog?.type === "payment" ? "lg" : "md"}
@@ -297,69 +367,30 @@ export default function FinancialDialogs() {
             <p className={s.small}>O link de pagamento não é um comprovante.</p>
           </>
         ) : dialog?.type === "payment" ? (
-          <>
-            <p className={s.muted}>
-              Escolha como deseja pagar. O acesso será atualizado conforme a confirmação oficial do
-              sistema.
-            </p>
-            {pricing && (
-              <dl className={s.details}>
-                <div>
-                  <dt>Valor base desta cobrança</dt>
-                  <dd>{money(pricing.baseAmountCents)}</dd>
-                </div>
-                <div>
-                  <dt>Total previsto</dt>
-                  <dd>{money(pricing.totalCents)}</dd>
-                </div>
-                {pricing.discountCents > 0 && (
-                  <div>
-                    <dt>Desconto previsto</dt>
-                    <dd>
-                      {money(pricing.discountCents)} ·{" "}
-                      {pricing.recurringDiscountApplied ? "recorrente" : "nesta cobrança"}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            )}
-            {caps?.canUseRecurring && (
-              <section className={s.card}>
-                <h3>Pagamento recorrente</h3>
-                <p className={s.muted}>Conclua a autorização no ambiente do Mercado Pago.</p>
-                <label className="mt-4 flex gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={accepted}
-                    onChange={(event) => setAccepted(event.target.checked)}
-                  />
-                  Autorizo as cobranças recorrentes conforme as condições apresentadas no checkout.
-                </label>
-                <button
-                  type="button"
-                  className={`${s.button} mt-4`}
-                  disabled={!enabled || !accepted}
-                  onClick={() => void recurring()}
-                >
-                  Continuar no Mercado Pago
-                </button>
-              </section>
-            )}
-            {caps?.canUsePix && (
-              <section className={`${s.card} mt-4`}>
-                <h3>PIX</h3>
-                <p className={s.muted}>Gere o código de pagamento desta cobrança.</p>
-                <button
-                  type="button"
-                  className={`${s.secondary} mt-4`}
-                  disabled={!enabled}
-                  onClick={() => void createPix()}
-                >
-                  Gerar PIX
-                </button>
-              </section>
-            )}
-          </>
+          <PaymentOptions
+            label={
+              c.plans.find((item) => item.key === c.subscription?.planKey)?.label ||
+              formatBillingPlanLabel(c.subscription?.planKey || "")
+            }
+            interval={c.subscription?.interval === "year" ? "year" : "month"}
+            pricing={pricing}
+            enabled={enabled}
+            recurring={caps?.canUseRecurring === true}
+            pix={caps?.canUsePix === true}
+            canApplyCoupon={caps?.canApplyCoupon === true}
+            cardSelected={cardSelected}
+            selectCard={() => setCardSelected(true)}
+            accepted={accepted}
+            accept={setAccepted}
+            payCard={() => void recurring()}
+            payPix={() => void createPix()}
+            coupon={coupon}
+            setCoupon={setCoupon}
+            applyCoupon={() => void applyCoupon()}
+            couponMessage={couponMessage}
+            quotePending={Boolean(appliedCode)}
+            retry={() => void c.refresh()}
+          />
         ) : dialog?.type === "coupon" ? (
           <form
             onSubmit={(event) => {

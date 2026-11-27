@@ -43,6 +43,7 @@ export type Fut7DialogBaseProps = {
   size?: "md" | "lg" | "xl";
   icon?: ReactNode;
   children?: ReactNode;
+  bodyClassName?: string;
   footer?: ReactNode;
   initialFocusRef?: RefObject<HTMLElement>;
   onClose: () => void;
@@ -98,6 +99,7 @@ export default function Fut7DialogBase({
   size = "md",
   icon,
   children,
+  bodyClassName = "",
   footer,
   initialFocusRef,
   onClose,
@@ -216,7 +218,9 @@ export default function Fut7DialogBase({
         </header>
 
         {(description || children) && (
-          <div className="relative min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 text-sm leading-6 sm:px-7 sm:py-6">
+          <div
+            className={`relative min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 text-sm leading-6 sm:px-7 sm:py-6 ${bodyClassName}`}
+          >
             {description ? <div className="text-zinc-300">{description}</div> : null}
             {children}
           </div>

@@ -42,6 +42,7 @@ jest.mock("@/lib/api/billing", () => ({
   __esModule: true,
   ...jest.requireActual("@/lib/api/billing"),
   default: {
+    validateCoupon: jest.fn(),
     activateSubscription: jest.fn(),
     createPixCharge: jest.fn(),
     applyCouponToSubscription: jest.fn(),
@@ -85,6 +86,14 @@ function hook() {
           status: "active",
           interval: "month",
           amount: 15000,
+          pricingPreview: {
+            totalCents: 15000,
+            baseAmountCents: 15000,
+            discountCents: 0,
+            discountPct: 0,
+            isFirstPayment: true,
+            firstPaymentDiscountApplied: false,
+          },
         },
     subscriptionLoading: loading,
     subscriptionResolved: !loading,
@@ -154,6 +163,72 @@ beforeEach(() => {
           currentCouponTerms: null,
         }
   );
+});
+it("não sugere dívida no teste gratuito e remove atalhos redundantes", async () => {
+  (useSubscription as jest.Mock).mockImplementation(() => ({
+    ...hook(),
+    subscriptionStatus: { access, financialStatus: { code: "TESTE", label: "Em teste" } },
+  }));
+  render(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Configurar pagamento" })).toBeEnabled()
+  );
+  expect(screen.queryByRole("link", { name: "Consultar benefícios" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Ver planos disponíveis" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Consultar cobranças" })).not.toBeInTheDocument();
+});
+it("valida cupom inválido sem conceder benefício nem fechar o pagamento", async () => {
+  (BillingAPI.validateCoupon as jest.Mock).mockResolvedValue({ valid: false });
+  render(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  const payment = await screen.findByRole("button", { name: "Pagar cobrança" });
+  await waitFor(() => expect(payment).toBeEnabled());
+  fireEvent.click(payment);
+  fireEvent.click(screen.getByText("Tem um cupom de desconto?"));
+  fireEvent.change(screen.getByLabelText("Código do cupom"), { target: { value: "INVALIDO" } });
+  fireEvent.click(screen.getByRole("button", { name: "Aplicar cupom" }));
+  expect(await screen.findByText(/Este cupom não está disponível/)).toBeInTheDocument();
+  expect(BillingAPI.validateCoupon).toHaveBeenCalledWith("INVALIDO", "monthly_essential");
+  expect(BillingAPI.applyCouponToSubscription).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
+});
+it("não aplica o cupom se o grupo mudar durante sua validação", async () => {
+  let finish!: (value: unknown) => void;
+  (BillingAPI.validateCoupon as jest.Mock).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+  );
+  const view = render(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  const payment = await screen.findByRole("button", { name: "Pagar cobrança" });
+  await waitFor(() => expect(payment).toBeEnabled());
+  fireEvent.click(payment);
+  fireEvent.click(screen.getByText("Tem um cupom de desconto?"));
+  fireEvent.change(screen.getByLabelText("Código do cupom"), { target: { value: "VALIDO" } });
+  fireEvent.click(screen.getByRole("button", { name: "Aplicar cupom" }));
+  group = "b";
+  view.rerender(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  await act(async () => {
+    finish({ valid: true });
+  });
+  expect(BillingAPI.applyCouponToSubscription).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 it("abre a comparação na periodicidade do plano anual confirmado após carregar", async () => {
   let annual = false;
@@ -251,7 +326,7 @@ it("preserva o plano quando a confirmação falha e não permite pagar", async (
     </Harness>
   );
   expect(await screen.findByText("Essencial")).toBeInTheDocument();
-  const button = await screen.findByRole("button", { name: "Regularizar pagamento" });
+  const button = await screen.findByRole("button", { name: "Pagar cobrança" });
   expect(button).toBeDisabled();
   fireEvent.click(button);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -268,10 +343,10 @@ it("impede cobrança duplicada e descarta PIX atrasado após A → B → A", asy
       <OverviewPanel />
     </Harness>
   );
-  const button = await screen.findByRole("button", { name: "Regularizar pagamento" });
+  const button = await screen.findByRole("button", { name: "Pagar cobrança" });
   await waitFor(() => expect(button).toBeEnabled());
   fireEvent.click(button);
-  const pix = screen.getByRole("button", { name: "Gerar PIX" });
+  const pix = screen.getByRole("button", { name: "Pagar com PIX" });
   fireEvent.click(pix);
   fireEvent.click(pix);
   expect(BillingAPI.createPixCharge).toHaveBeenCalledTimes(1);
@@ -309,10 +384,10 @@ it("impede uso de PIX com prazo encerrado sem cancelar ou criar outra cobrança"
       <OverviewPanel />
     </Harness>
   );
-  const payment = await screen.findByRole("button", { name: "Regularizar pagamento" });
+  const payment = await screen.findByRole("button", { name: "Pagar cobrança" });
   await waitFor(() => expect(payment).toBeEnabled());
   fireEvent.click(payment);
-  fireEvent.click(screen.getByRole("button", { name: "Gerar PIX" }));
+  fireEvent.click(screen.getByRole("button", { name: "Pagar com PIX" }));
   expect(await screen.findByText(/O prazo informado para este PIX terminou/)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Copiar código PIX" })).toBeDisabled();
   expect(screen.getByLabelText("Código PIX copia e cola")).toBeDisabled();
@@ -415,7 +490,7 @@ it("descarta o diálogo e os dados privados ao mudar a conta no mesmo grupo", as
       <BenefitsPanel />
     </Harness>
   );
-  const button = await screen.findByRole("button", { name: "Regularizar pagamento" });
+  const button = await screen.findByRole("button", { name: "Pagar cobrança" });
   await waitFor(() => expect(button).toBeEnabled());
   fireEvent.click(button);
   expect(screen.getByRole("dialog")).toBeInTheDocument();

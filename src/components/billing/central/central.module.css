@@ -9,6 +9,170 @@
   padding: 32px 16px 92px;
   overflow-wrap: anywhere;
 }
+.paymentFlow {
+  display: grid;
+  gap: 16px;
+}
+.paymentScroll {
+  scrollbar-width: thin;
+  scrollbar-color: #454b55 transparent;
+}
+.paymentScroll::-webkit-scrollbar {
+  width: 6px;
+}
+.paymentScroll::-webkit-scrollbar-thumb {
+  background: #454b55;
+  border-radius: 6px;
+}
+.paymentSummary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.paymentSummary strong {
+  font-size: 16px;
+}
+.paymentSummary p,
+.paymentSummary > span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+.paymentSummary > span {
+  max-width: 190px;
+}
+.paymentOptions {
+  display: grid;
+  gap: 12px;
+}
+.paymentOption {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #161a21;
+}
+.paymentOption > svg {
+  color: #e9bd35;
+}
+.paymentOption h3,
+.paymentConsent h3 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.paymentOption h3 span {
+  display: block;
+  color: #b9c2ce;
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: 2px;
+}
+.paymentOption > p {
+  margin: 0;
+  color: #b9c2ce;
+  line-height: 1.6;
+  font-size: 13px;
+}
+.paymentPrice {
+  font-size: 25px;
+  letter-spacing: -0.025em;
+  line-height: 1.4;
+}
+.paymentPrice small {
+  color: #b9c2ce;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.paymentOption > button {
+  margin-top: auto;
+  width: 100%;
+}
+.paymentCoupon {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+}
+.paymentCoupon summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  color: #e5e7eb;
+  font-size: 13px;
+}
+.paymentCoupon form {
+  margin-top: 12px;
+}
+.paymentCoupon label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #b9c2ce;
+}
+.couponFields {
+  display: flex;
+  gap: 8px;
+}
+.couponFields input {
+  min-width: 0;
+  flex: 1;
+}
+.paymentConsent {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.paymentConsent p,
+.paymentConsent label {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.paymentConsent label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.paymentConsent input {
+  margin-top: 4px;
+  flex-shrink: 0;
+  accent-color: #facc15;
+}
+.textButton {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: #ffda72;
+}
+.paymentFlow :is(button, input, summary):focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 3px;
+}
+@media (min-width: 640px) {
+  .paymentOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 359px) {
+  .paymentSummary {
+    flex-direction: column;
+  }
+  .paymentSummary > span {
+    max-width: none;
+  }
+  .couponFields {
+    flex-direction: column;
+  }
+}
 .heading {
   display: flex;
   justify-content: space-between;
