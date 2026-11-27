@@ -199,6 +199,49 @@ it("valida cupom inválido sem conceder benefício nem fechar o pagamento", asyn
   expect(BillingAPI.applyCouponToSubscription).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog")).toBeInTheDocument();
 });
+it("bloqueia preços anteriores depois de aplicar cupom e renova o consentimento", async () => {
+  (BillingAPI.validateCoupon as jest.Mock).mockResolvedValue({ valid: true, extraTrialDays: 5 });
+  (BillingAPI.applyCouponToSubscription as jest.Mock).mockResolvedValue({
+    ...hook().subscription,
+    couponCode: "VALIDO",
+  });
+  render(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  const payment = await screen.findByRole("button", { name: "Pagar cobrança" });
+  await waitFor(() => expect(payment).toBeEnabled());
+  fireEvent.click(payment);
+  fireEvent.click(screen.getByRole("button", { name: /Continuar com cartão/ }));
+  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(screen.getByText("Tem um cupom de desconto?"));
+  fireEvent.change(screen.getByLabelText("Código do cupom"), { target: { value: "VALIDO" } });
+  fireEvent.click(screen.getByRole("button", { name: "Aplicar cupom" }));
+  expect(await screen.findByText(/Cupom aplicado à assinatura. O resumo/)).toBeInTheDocument();
+  expect(screen.getByRole("checkbox")).not.toBeChecked();
+  expect(screen.getByRole("button", { name: /Pagar com PIX/ })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" })).toBeDisabled();
+  expect(BillingAPI.applyCouponToSubscription).toHaveBeenCalledWith("sub-a", "VALIDO");
+});
+it("não mostra código PIX quando a cobrança diverge do resumo", async () => {
+  (BillingAPI.createPixCharge as jest.Mock).mockResolvedValue({
+    invoice: { amount: 9900 },
+    pix: { qrCode: "PRIVATE-PRICE-MISMATCH" },
+  });
+  render(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  const payment = await screen.findByRole("button", { name: "Pagar cobrança" });
+  await waitFor(() => expect(payment).toBeEnabled());
+  fireEvent.click(payment);
+  fireEvent.click(screen.getByRole("button", { name: /Pagar com PIX/ }));
+  expect(await screen.findByText(/O valor da cobrança PIX difere/)).toBeInTheDocument();
+  expect(screen.queryByDisplayValue("PRIVATE-PRICE-MISMATCH")).not.toBeInTheDocument();
+  expect(BillingAPI.createPixCharge).toHaveBeenCalledTimes(1);
+});
 it("não aplica o cupom se o grupo mudar durante sua validação", async () => {
   let finish!: (value: unknown) => void;
   (BillingAPI.validateCoupon as jest.Mock).mockImplementation(
