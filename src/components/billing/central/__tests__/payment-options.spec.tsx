@@ -52,6 +52,10 @@ it("mostra as duas modalidades sem pedir consentimento antes da escolha", () => 
     screen.getByText(/cartão de crédito ou outros meios disponíveis para sua assinatura/)
   ).toBeInTheDocument();
   expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Ver formas de pagamento" })).toHaveAttribute(
+    "aria-expanded",
+    "false"
+  );
   expect(screen.getAllByText(/120,00/)).toHaveLength(2);
   expect(screen.getByText(/Depois:.*150,00/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /Ver formas de pagamento/ }));
@@ -70,6 +74,10 @@ it("exige autorização depois da opção Mercado Pago e informa a confirmação
   const view = render(<PaymentOptions {...p} />);
   expect(screen.getByText(/conferir o meio de pagamento, o valor/)).toBeInTheDocument();
   expect(screen.getByRole("checkbox")).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Ver formas de pagamento" })).toHaveAttribute(
+    "aria-expanded",
+    "true"
+  );
   expect(screen.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" })).toBeDisabled();
   view.rerender(<PaymentOptions {...p} accepted />);
   fireEvent.click(screen.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" }));
