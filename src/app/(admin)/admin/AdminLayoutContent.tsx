@@ -140,7 +140,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
 
   const isStatusRoute = useMemo(() => pathname.startsWith("/admin/status-assinatura"), [pathname]);
   const isBillingRoute = useMemo(
-    () => pathname.startsWith("/admin/financeiro/planos-limites"),
+    () =>
+      pathname.startsWith("/admin/financeiro/planos-limites") ||
+      pathname === "/admin/assinatura" ||
+      pathname.startsWith("/admin/assinatura/"),
     [pathname]
   );
   const isHubRoute = useMemo(() => pathname.startsWith("/admin/selecionar-racha"), [pathname]);

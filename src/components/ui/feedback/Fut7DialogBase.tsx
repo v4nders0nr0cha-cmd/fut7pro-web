@@ -5,6 +5,35 @@ import { AlertTriangle, CheckCircle2, Info, ShieldAlert, X } from "lucide-react"
 
 export type Fut7DialogTone = "default" | "warning" | "destructive" | "success";
 
+function restoreOpenerFocus(opener: HTMLElement | null) {
+  if (!opener?.isConnected) return;
+  if (!opener.matches(":disabled")) {
+    opener.focus();
+    return;
+  }
+  // A financial refresh may temporarily disable the opener while the dialog closes.
+  // Wait for that control only; never take focus back after another user interaction.
+  const stop = () => {
+    observer.disconnect();
+    window.clearTimeout(timeout);
+    document.removeEventListener("pointerdown", stop, true);
+    document.removeEventListener("keydown", stop, true);
+    document.removeEventListener("focusin", stop, true);
+  };
+  const observer = new MutationObserver(() => {
+    if (!opener.isConnected) return stop();
+    if (!opener.matches(":disabled")) {
+      stop();
+      opener.focus();
+    }
+  });
+  const timeout = window.setTimeout(stop, 10000);
+  observer.observe(opener, { attributes: true, attributeFilter: ["disabled"] });
+  document.addEventListener("pointerdown", stop, true);
+  document.addEventListener("keydown", stop, true);
+  document.addEventListener("focusin", stop, true);
+}
+
 export type Fut7DialogBaseProps = {
   open: boolean;
   title: string;
@@ -94,7 +123,7 @@ export default function Fut7DialogBase({
     }, 0);
     return () => {
       window.clearTimeout(timer);
-      if (opener?.isConnected) opener.focus();
+      restoreOpenerFocus(opener);
     };
   }, [open, initialFocusRef]);
 

@@ -132,9 +132,9 @@ describe("Admin Header", () => {
     for (const category of ["Minha conta", "Assinatura Fut7Pro", "Ajuda e orientação"]) {
       expect(screen.getByText(category)).toBeInTheDocument();
     }
-    expect(screen.getByRole("link", { name: "Plano e cobrança" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Gerenciar assinatura" })).toHaveAttribute(
       "href",
-      "/admin/financeiro/planos-limites"
+      "/admin/assinatura"
     );
     expect(screen.getByRole("link", { name: "Central de Ajuda" })).toHaveAttribute(
       "href",
@@ -182,6 +182,17 @@ describe("Admin Header", () => {
     fireEvent.blur(firstLink, { relatedTarget: outsideLink });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
+  it("mantém o destino clicável quando o WebKit emite blur sem próximo foco", () => {
+    render(<Header />);
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu do perfil de Felipe" }));
+    fireEvent.blur(screen.getByRole("link", { name: "Perfil Global Fut7Pro" }), {
+      relatedTarget: null,
+    });
+    const subscription = screen.getByRole("link", { name: "Gerenciar assinatura" });
+    expect(subscription).toHaveAttribute("href", "/admin/assinatura");
+    fireEvent.click(subscription);
+    expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
+  });
 
   it("fecha ao clicar fora ou selecionar um item", () => {
     render(<Header />);
@@ -191,7 +202,7 @@ describe("Admin Header", () => {
     expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
 
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole("link", { name: "Plano e cobrança" }));
+    fireEvent.click(screen.getByRole("link", { name: "Gerenciar assinatura" }));
     expect(screen.queryByRole("navigation", { name: "Menu do perfil" })).not.toBeInTheDocument();
   });
 

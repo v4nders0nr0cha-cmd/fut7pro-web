@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { installGuide, login } from "./fixtures/guide-continuity";
+import { openSubscriptionCentral } from "./fixtures/subscription-central";
 
 for (const width of [1280, 390, 320]) {
   test(`assinatura respeita acesso oficial em ${width}px`, async ({ page }) => {
@@ -41,22 +42,60 @@ for (const width of [1280, 390, 320]) {
       await route.fulfill({
         json: path.endsWith("/plans")
           ? { plans: [], meta: {} }
-          : path.endsWith("/status")
+          : path.endsWith("/capabilities")
             ? {
-                access: access(),
-                active: false,
-                financialStatus: { code: "PENDENTE", label: "Pendente" },
+                tenantId: "fixture-tenant",
+                subscriptionId: "fixture-sub",
+                capabilities: {
+                  canViewHistory: true,
+                  canPay: true,
+                  canUsePix: true,
+                  canUseRecurring: true,
+                },
               }
-            : subscription(),
+            : path.endsWith("/overview")
+              ? {
+                  subscription: { ...subscription(), amountCents: 15000 },
+                  access: access(),
+                  financialStatus: { code: "PENDENTE", label: "Pendente" },
+                }
+              : path.endsWith("/status")
+                ? {
+                    access: access(),
+                    active: false,
+                    financialStatus: { code: "PENDENTE", label: "Pendente" },
+                  }
+                : subscription(),
       });
     });
-    await login(page);
+    const groupReady = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/admin/access" && response.ok(),
+      { timeout: 90000 }
+    );
+    await Promise.all([login(page), groupReady]);
+    await expect(page.getByTestId("admin-dashboard-card-monetizacao")).toBeVisible({
+      timeout: 30000,
+    });
+    await expect
+      .poll(
+        async () =>
+          (await page.context().cookies()).find(
+            (cookie) => cookie.name === "fut7pro_admin_active_tenant"
+          )?.value
+      )
+      .toBe("grupo-fixture");
+    await openSubscriptionCentral(page);
+    const payment = page.getByRole("button", { name: "Regularizar pagamento", exact: true });
+    await expect(payment).toBeEnabled({ timeout: 30000 });
     await page.goto("/admin/financeiro/planos-limites");
+    await expect(page).toHaveURL(/\/admin\/assinatura$/, { timeout: 30000 });
+    await expect(payment).toBeEnabled({ timeout: 30000 });
     const accessField = page.getByText("Status de acesso", { exact: true }).locator("..");
     await expect(accessField.getByText("Acesso bloqueado", { exact: true })).toBeVisible();
     await expect(page.getByText("Ativo", { exact: true })).toHaveCount(0);
     canAccess = true;
     await page.reload();
+    await expect(payment).toBeEnabled({ timeout: 30000 });
     await expect(accessField.getByText("Acesso liberado", { exact: true })).toBeVisible();
     await expect(
       page
@@ -64,7 +103,6 @@ for (const width of [1280, 390, 320]) {
         .locator("..")
         .getByText("Pendente", { exact: true })
     ).toBeVisible();
-    const payment = page.getByRole("button", { name: "Atualizar pagamento", exact: true });
     await payment.focus();
     await expect(payment).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

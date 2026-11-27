@@ -1,4 +1,5 @@
 import http from "node:http";
+import { createHmac } from "node:crypto";
 
 const host = "127.0.0.1";
 const port = 4317;
@@ -11,6 +12,17 @@ const accounts = {
   "bloqueado@fixture.invalid": { role: "PRESIDENTE", blocked: true, group: true },
   "sem-grupo@fixture.invalid": { role: "ADMIN", blocked: false, group: false },
 };
+const integratedBilling = process.env.CENTRAL_HOMOLOGATION === "1";
+if (integratedBilling) {
+  accounts["vice@fixture.invalid"] = { role: "VICE_PRESIDENTE", blocked: false, group: true };
+  accounts["financeiro@fixture.invalid"] = {
+    role: "DIRETOR_FINANCEIRO",
+    blocked: false,
+    group: true,
+  };
+  accounts["superadmin@fixture.invalid"] = { role: "SUPERADMIN", blocked: false, group: true };
+  tenant.name = "Demonstração — Futebol entre Amigos";
+}
 
 function send(res, status, data) {
   res.writeHead(status, {
@@ -21,6 +33,19 @@ function send(res, status, data) {
 }
 
 function token(email) {
+  if (integratedBilling) {
+    const head = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+    const body = Buffer.from(
+      JSON.stringify({
+        sub: `fixture-${accounts[email].role.toLowerCase()}`,
+        email,
+        role: "ADMIN",
+        tenantId: tenant.id,
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      })
+    ).toString("base64url");
+    return `${head}.${body}.${createHmac("sha256", "central-homologation-local-only").update(`${head}.${body}`).digest("base64url")}`;
+  }
   const payload = Buffer.from(
     JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })
   ).toString("base64url");
@@ -51,6 +76,30 @@ const server = http.createServer(async (req, res) => {
   const email = tokenToEmail.get(accessToken);
   const account = email && accounts[email];
   if (!account) return send(res, 401, { message: "Fixture sem sessão" });
+
+  // In integrated homologation only, every billing request reaches the real Nest API.
+  if (integratedBilling && url.pathname.startsWith("/billing/")) {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const upstream = await fetch(`http://127.0.0.1:4318${url.pathname}${url.search}`, {
+        method: req.method,
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          "content-type": "application/json",
+          "x-tenant-slug": String(req.headers["x-tenant-slug"] || ""),
+        },
+        body: ["GET", "HEAD"].includes(req.method) ? undefined : body,
+      });
+      res.writeHead(upstream.status, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      });
+      return res.end(await upstream.text());
+    } catch {
+      return send(res, 503, { message: "Backend de homologação indisponível" });
+    }
+  }
 
   if (url.pathname === "/auth/me") {
     return send(res, 200, {
