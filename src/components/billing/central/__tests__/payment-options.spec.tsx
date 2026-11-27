@@ -98,3 +98,18 @@ it("mostra somente as modalidades permitidas e distingue condição recorrente",
   expect(screen.queryByRole("button", { name: /Continuar com cartão/ })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Pagar com PIX/ })).toBeEnabled();
 });
+it("explica a condição recorrente em cartão e PIX sem prometer nova promoção", () => {
+  const p = props();
+  render(
+    <PaymentOptions
+      {...p}
+      pricing={{ ...p.pricing, firstPaymentDiscountApplied: false, recurringDiscountApplied: true }}
+      couponCode="CREATOR"
+      trialEnd="2027-01-15T12:00:00Z"
+    />
+  );
+  expect(screen.getAllByText("Condição recorrente considerada neste valor.")).toHaveLength(2);
+  expect(screen.getByText(/Teste gratuito registrado até/)).toBeInTheDocument();
+  expect(screen.getByText("CREATOR")).toBeInTheDocument();
+  expect(screen.queryByText(/Desconto somente nesta cobrança/)).not.toBeInTheDocument();
+});

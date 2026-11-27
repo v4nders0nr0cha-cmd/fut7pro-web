@@ -126,17 +126,29 @@ for (const width of [1280, 768, 390, 320]) {
           invoices: { pending: mode === "TESTE" ? 0 : 1, confirmed: 0 },
           historyAvailable: true,
         };
-      else if (path.endsWith("/subscription")) body = subscription();
+      else if (path.includes("/subscription/tenant")) body = subscription();
       else body = { items: [], page: { limit: 10, hasMore: false, nextCursor: null } };
       return route.fulfill({ json: body });
     });
-    await login(page);
+    const groupReady = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/admin/access" && response.ok(),
+      { timeout: 90000 }
+    );
+    await Promise.all([login(page), groupReady]);
+    await expect
+      .poll(
+        async () =>
+          (await page.context().cookies()).find(
+            (cookie) => cookie.name === "fut7pro_admin_active_tenant"
+          )?.value
+      )
+      .toBe("grupo-fixture");
     await openSubscriptionCentral(page);
     const payment = page.getByRole("button", {
       name: before ? "Regularizar pagamento" : "Configurar pagamento",
       exact: true,
     });
-    await expect(payment).toBeEnabled();
+    await expect(payment).toBeEnabled({ timeout: 30000 });
     await page.screenshot({
       path: info.outputPath(`${before ? "before" : "after"}-overview-${width}.png`),
       fullPage: true,

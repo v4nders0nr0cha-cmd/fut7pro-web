@@ -2,11 +2,13 @@
 import { useEffect, useRef } from "react";
 import { CreditCard, QrCode, ChevronDown, ArrowRight } from "lucide-react";
 import type { ChargePricing } from "@/lib/api/billing";
-import { money } from "./presentation";
+import { money, date } from "./presentation";
 import s from "./central.module.css";
 
 type Props = {
   label: string;
+  trialEnd?: string | null;
+  couponCode?: string;
   interval: "month" | "year";
   pricing?: ChargePricing;
   enabled: boolean;
@@ -44,6 +46,12 @@ export default function PaymentOptions(p: Props) {
         </div>
         <span>Pagamento confirmado somente após processamento.</span>
       </div>
+      {p.trialEnd && (
+        <p className={s.small}>
+          Teste gratuito registrado até {date(p.trialEnd)}. Confira a data da primeira cobrança no
+          Mercado Pago antes de confirmar o cartão.
+        </p>
+      )}
       <div className={s.paymentOptions}>
         {p.recurring && (
           <section
@@ -98,6 +106,15 @@ export default function PaymentOptions(p: Props) {
               Este PIX paga um período. Para renovar por PIX, será necessário um novo pagamento. Uma
               assinatura automática já existente não será cancelada por esta escolha.
             </p>
+            {price?.firstPaymentDiscountApplied && (
+              <p className={s.small}>
+                Desconto somente nesta cobrança. Valor atual dos próximos períodos:{" "}
+                {money(price.recurringAmountCents ?? price.baseAmountCents)}/{period}.
+              </p>
+            )}
+            {price?.recurringDiscountApplied && (
+              <p className={s.small}>Condição recorrente considerada neste valor.</p>
+            )}
             <button className={s.button} type="button" disabled={!available} onClick={p.payPix}>
               Pagar com PIX <ArrowRight size={15} aria-hidden="true" />
             </button>
@@ -148,6 +165,12 @@ export default function PaymentOptions(p: Props) {
             </p>
           </form>
         </details>
+      )}
+      {p.couponCode && (
+        <p className={s.small}>
+          Cupom confirmado na assinatura: <strong>{p.couponCode}</strong>. Confira as condições nos
+          valores acima e no histórico de Benefícios.
+        </p>
       )}
       {p.couponMessage && (
         <p role="status" className={s.small}>

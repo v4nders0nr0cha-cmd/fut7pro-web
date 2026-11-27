@@ -368,6 +368,8 @@ export default function FinancialDialogs() {
           </>
         ) : dialog?.type === "payment" ? (
           <PaymentOptions
+            trialEnd={c.subscription?.status === "trialing" ? c.subscription.trialEnd : undefined}
+            couponCode={c.subscription?.couponCode}
             label={
               c.plans.find((item) => item.key === c.subscription?.planKey)?.label ||
               formatBillingPlanLabel(c.subscription?.planKey || "")
