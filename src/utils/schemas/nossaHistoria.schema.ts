@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { boundedArray } from "@/lib/bounded-array";
 import type { NossaHistoriaData, NossaHistoriaGaleriaFoto } from "@/types/paginasInstitucionais";
 
 const stringOptional = z.string().trim().optional();
@@ -84,17 +85,16 @@ export const nossaHistoriaSchema = z.object({
       })
     )
     .optional(),
-  categoriasFotos: z
-    .array(
-      z.object({
-        id: stringOptional,
-        src: imageUrlSchema,
-        titulo: z.string().trim().min(1, "Titulo obrigatorio"),
-        descricao: z.string().trim().min(1, "Descricao obrigatoria"),
-      })
-    )
-    .max(MAX_GALERIA_FOTOS, "Limite maximo de 6 fotos na galeria.")
-    .optional(),
+  categoriasFotos: boundedArray(
+    z.object({
+      id: stringOptional,
+      src: imageUrlSchema,
+      titulo: z.string().trim().min(1, "Titulo obrigatorio"),
+      descricao: z.string().trim().min(1, "Descricao obrigatoria"),
+    }),
+    MAX_GALERIA_FOTOS,
+    "Limite maximo de 6 fotos na galeria."
+  ).optional(),
   videos: z
     .array(
       z.object({

@@ -4,7 +4,8 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main, develop, "fix/billing-phase1-scope-20261122"]
+    branches:
+      [main, develop, "fix/billing-phase1-scope-20261122", "feat/subscription-central-web-20261122"]
 
 env:
   NODE_VERSION: "20"
@@ -195,20 +196,34 @@ jobs:
       - name: Validate SCA allowlist policy
         run: pnpm run security:sca:allowlist
 
-      - name: Run blocking security audit (critical/prod)
-        run: pnpm audit --prod --audit-level=critical
+      - name: Verify consumers covered by temporary exceptions
+        run: node scripts/security/check-reviewed-usage.js
 
-      - name: Run informational security audit (moderate/prod)
+      - name: Collect production dependency audit
+        run: |
+          audit_status=0
+          pnpm audit --prod --json > security-audit.json || audit_status=$?
+          if [ "$audit_status" -gt 1 ]; then exit "$audit_status"; fi
+
+      - name: Enforce reviewed high and critical risks
+        run: node scripts/security/evaluate-audit.js security-audit.json security-triage.json
+
+      - name: Additional free OSV analysis
         continue-on-error: true
         run: |
-          pnpm audit --prod --audit-level=moderate --json > security-audit.json
+          pnpm list --prod --depth Infinity --json > dependency-tree.json
+          node scripts/security/osv-scan.js dependency-tree.json security-osv.json
 
       - name: Publish dependency audit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: subscription-security-audit
-          path: security-audit.json
+          path: |
+            security-audit.json
+            security-triage.json
+            security-osv.json
+            security-usage.json
           if-no-files-found: warn
           retention-days: 30
 
@@ -217,17 +232,21 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-          const lines = ['## Security coverage', '', 'The blocking dependency audit uses the critical threshold. A green job does not certify the absence of high or moderate findings.'];
+          const lines = ['## Security coverage', '', 'Critical risks always block. High risks block unless the exact advisory, installed version and dependency path have a reviewed, evidenced and unexpired exception. Low and moderate findings remain visible. A green job does not mean there are no vulnerabilities.'];
           if (fs.existsSync('security-audit.json')) {
             const report = JSON.parse(fs.readFileSync('security-audit.json', 'utf8'));
             lines.push('', 'Dependency findings: ' + JSON.stringify(report.metadata?.vulnerabilities || report.error || 'See audit artifact.'));
           }
           lines.push('', process.env.SNYK_TOKEN ? 'Snyk token is configured; consult the scan step for its result.' : 'Snyk was not executed: SNYK_TOKEN is not configured.');
+          if (fs.existsSync('security-osv.json')) {
+            const osv = JSON.parse(fs.readFileSync('security-osv.json', 'utf8'));
+            lines.push('', 'Additional free OSV analysis: ' + osv.status + (osv.error ? ' — ' + osv.error : ' (' + osv.queriedPackages + ' package versions).'));
+          } else lines.push('', 'Additional OSV analysis was not executed.');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
           NODE
 
       - name: Run Snyk security scan
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@11b673cfb4b0dc0d860a1323caa199d54950dcce
         if: env.SNYK_TOKEN != ''
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
@@ -237,6 +256,18 @@ jobs:
       - name: Skip Snyk scan (token not configured)
         if: env.SNYK_TOKEN == ''
         run: echo "SNYK_TOKEN não configurado. Etapa Snyk ignorada."
+
+  docker-lock:
+    name: Docker canonical lock compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build an isolated validation image
+        run: docker build --build-arg NEXT_PUBLIC_API_URL=http://127.0.0.1:4317 -t fut7pro-security-validation .
+      - name: Verify the production image runtime
+        run: |
+          docker run --rm fut7pro-security-validation node -e "if (process.getuid() === 0) process.exit(1); if (typeof require('@prisma/client').PrismaClient !== 'function') process.exit(1); console.log('Production modules and non-root runtime verified');"
 
   # Job de deploy preview (apenas para PRs)
   preview:

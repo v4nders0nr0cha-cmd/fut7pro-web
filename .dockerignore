@@ -1,0 +1,17 @@
+.git
+.npmrc
+.pnpm-store
+.vercel
+.codex
+.agents
+*.log
+node_modules
+.next
+.next-*
+.env
+.env.*
+.tmp
+test-results
+playwright-report
+coverage
+security/evidence

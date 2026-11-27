@@ -1,7 +1,7 @@
 name: Guide Context Layout
 on:
   pull_request:
-    branches: [main]
+    branches: [main, "feat/subscription-central-web-20261122"]
   workflow_dispatch:
 concurrency:
   group: guide-layout-${{ github.ref }}

@@ -2,7 +2,7 @@ name: Mobile Smoke CI
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, "feat/subscription-central-web-20261122"]
   workflow_dispatch:
 
 concurrency:
