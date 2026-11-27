@@ -61,6 +61,9 @@
 .paymentOption > svg {
   color: #e9bd35;
 }
+.paymentOption:only-child {
+  grid-column: 1 / -1;
+}
 .paymentOption h3,
 .paymentConsent h3 {
   margin: 0;
