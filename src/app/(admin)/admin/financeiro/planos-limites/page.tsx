@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { FaCheckCircle, FaGift, FaSpinner, FaStar, FaTimes } from "react-icons/fa";
@@ -129,13 +129,6 @@ function calcDaysRemaining(target?: string | null) {
   if (!target) return null;
   const diff = new Date(target).getTime() - Date.now();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
-
-function isFutureDate(value?: string | null) {
-  if (!value) return false;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
-  return date.getTime() > Date.now();
 }
 
 function extractApiError(error: unknown, fallback: string) {
@@ -283,28 +276,33 @@ function buildPixPricingFromInvoice(
 
 function BillingSkeleton() {
   return (
-    <div data-testid="billing-planos-skeleton" className="mb-10 animate-pulse">
+    <div data-testid="billing-planos-skeleton" className="mb-10" aria-busy="true">
+      <p className="mb-4 text-sm text-gray-400" role="status">
+        Consultando sua assinatura...
+      </p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
         <div className="rounded-2xl border border-[#2b2b2b] bg-[#23272F] p-6 shadow-lg">
-          <div className="h-5 w-40 rounded bg-zinc-700/70 mb-3" />
-          <div className="h-4 w-64 rounded bg-zinc-700/50 mb-6" />
+          <h2 className="text-lg font-bold text-white mb-1">Plano e acesso</h2>
+          <p className="text-sm text-gray-400 mb-6">
+            Status financeiro e liberação do painel são tratados separadamente.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="h-14 rounded bg-zinc-700/40" />
-            <div className="h-14 rounded bg-zinc-700/40" />
-            <div className="h-14 rounded bg-zinc-700/40" />
-            <div className="h-14 rounded bg-zinc-700/40" />
+            <div className="h-14 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
+            <div className="h-14 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
+            <div className="h-14 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
+            <div className="h-14 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
           </div>
         </div>
         <div className="rounded-2xl border border-[#2b2b2b] bg-[#23272F] p-6 shadow-lg">
-          <div className="h-5 w-32 rounded bg-zinc-700/70 mb-3" />
-          <div className="h-4 w-56 rounded bg-zinc-700/50 mb-6" />
+          <h2 className="text-lg font-bold text-white mb-1">Ciclo do plano</h2>
+          <p className="text-sm text-gray-400 mb-6">Consultando o período de acesso</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="h-14 rounded bg-zinc-700/40" />
-            <div className="h-14 rounded bg-zinc-700/40" />
+            <div className="h-14 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
+            <div className="h-14 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
           </div>
         </div>
       </div>
-      <div className="h-10 w-72 mx-auto rounded-xl bg-zinc-700/50 mb-8" />
+      <div className="h-10 w-72 mx-auto rounded-xl bg-zinc-700/50 mb-8 motion-safe:animate-pulse" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <div className="h-72 rounded-2xl bg-zinc-800/70 border border-zinc-700" />
         <div className="h-72 rounded-2xl bg-zinc-800/70 border border-zinc-700" />
@@ -328,6 +326,11 @@ export default function PlanosLimitesPage() {
     planMeta,
     subscriptionStatus,
     loading,
+    subscriptionLoading,
+    plansLoading,
+    subscriptionResolved,
+    subscriptionError,
+    plansError,
     error,
     errorTitle,
     errorStatus,
@@ -340,6 +343,11 @@ export default function PlanosLimitesPage() {
   const [actionLoading, setActionLoading] = useState<
     "switch" | "payment" | "pix" | "coupon" | null
   >(null);
+  const actionInFlight = useRef(false);
+  const activeTenant = useRef(rachaId);
+  const actionGeneration = useRef(0);
+  if (activeTenant.current !== rachaId) actionGeneration.current += 1;
+  activeTenant.current = rachaId;
   const [couponInput, setCouponInput] = useState("");
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
   const [couponBenefitModal, setCouponBenefitModal] = useState<CouponBenefitModalState | null>(
@@ -356,6 +364,20 @@ export default function PlanosLimitesPage() {
   const [checkoutPricing, setCheckoutPricing] = useState<ChargePricing | null>(null);
   const [recurringAccepted, setRecurringAccepted] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
+  useEffect(() => {
+    setShowPaymentModal(false);
+    setShowPixModal(false);
+    setShowSwitchModal(false);
+    setShowEnterpriseModal(false);
+    setShowInvoicesModal(false);
+    setPixCharge(null);
+    setCheckoutPricing(null);
+    setSelectedPlan(null);
+    setCouponInput("");
+    setCouponSuccess(null);
+    setCouponBenefitModal(null);
+    setActionError(null);
+  }, [rachaId]);
   const selectedPlanContactEmail = selectedPlan?.contactEmail || FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL;
   const enterpriseWhatsAppUrl = buildFut7ProOfficialWhatsAppUrl(
     `Olá! Quero conversar sobre o plano ${selectedPlan?.label || "Enterprise"} do Fut7Pro para ${payerName || "meu racha"}.`
@@ -408,15 +430,8 @@ export default function PlanosLimitesPage() {
   const hasHardAccessBlock = Boolean(
     effectiveAccess?.manualBlocked || effectiveAccess?.lifecycleBlocked
   );
-  const hasFutureEffectiveAccess = isFutureDate(effectiveAccess?.effectiveAccessUntil);
   const hasEffectiveAccess =
-    !hasHardAccessBlock &&
-    Boolean(
-      effectiveAccess?.canAccess ||
-        effectiveAccess?.accessStatus === "ATIVO" ||
-        effectiveAccess?.accessStatus === "LIBERADO_POR_COMPENSACAO" ||
-        hasFutureEffectiveAccess
-    );
+    !hasHardAccessBlock && effectiveAccess?.canAccess === true && effectiveAccess?.blocked !== true;
   const isCompensated =
     hasEffectiveAccess &&
     Boolean(
@@ -447,17 +462,22 @@ export default function PlanosLimitesPage() {
         className: "bg-green-500/15 text-green-200 border-green-500/30",
       };
     }
+    if (effectiveAccess?.canAccess === false || effectiveAccess?.blocked === true) {
+      return {
+        label: "Acesso bloqueado",
+        className: "bg-red-500/15 text-red-200 border-red-500/30",
+      };
+    }
+    if (!effectiveAccess) {
+      return {
+        label: "Não informado",
+        className: "bg-zinc-500/20 text-zinc-200 border-zinc-500/30",
+      };
+    }
     const accessMeta = resolveAccessMeta(effectiveAccess?.accessStatus);
     if (accessMeta) return accessMeta;
     return resolveStatusMeta(subscription?.status);
-  }, [
-    subscription,
-    loading,
-    error,
-    effectiveAccess?.accessStatus,
-    hasEffectiveAccess,
-    isCompensated,
-  ]);
+  }, [subscription, loading, error, effectiveAccess, hasEffectiveAccess, isCompensated]);
   const isTrial = subscription?.status === "trialing";
   const now = new Date();
   const trialExpired =
@@ -542,10 +562,13 @@ export default function PlanosLimitesPage() {
   const hasCouponBenefits = Boolean(
     subscription?.couponCode && (hasFirstPaymentDiscount || hasRecurringCoupon)
   );
-  const canApplyCoupon = Boolean(subscription?.id && !subscription?.couponCode);
-  const showSkeleton = loading && !subscription && plans.length === 0;
+  const subscriptionReady =
+    subscriptionResolved && !subscriptionLoading && !subscriptionError && Boolean(subscription?.id);
+  const canApplyCoupon = subscriptionReady && !subscription?.couponCode;
+  const showSkeleton = subscriptionLoading && !subscription;
 
   const handleApplyCoupon = async () => {
+    if (actionInFlight.current || !subscriptionReady) return;
     if (!subscription?.id) {
       setActionError("Assinatura não encontrada para este grupo.");
       return;
@@ -557,12 +580,15 @@ export default function PlanosLimitesPage() {
       return;
     }
 
+    actionInFlight.current = true;
+    const actionTenant = actionGeneration.current;
     setActionLoading("coupon");
     setActionError(null);
     setCouponSuccess(null);
 
     try {
       const updated = await BillingAPI.applyCouponToSubscription(subscription.id, normalizedCoupon);
+      if (actionGeneration.current !== actionTenant) return;
       const pricing = updated.pricingPreview;
       setCheckoutPricing(pricing || null);
       setCouponInput("");
@@ -592,14 +618,17 @@ export default function PlanosLimitesPage() {
       });
       await refreshSubscription();
     } catch (err) {
+      if (actionGeneration.current !== actionTenant) return;
       console.error(err);
       setActionError(extractApiError(err, "Não foi possível aplicar o cupom. Tente novamente."));
     } finally {
+      actionInFlight.current = false;
       setActionLoading(null);
     }
   };
 
   const openPaymentModal = () => {
+    if (!subscriptionReady || actionInFlight.current) return;
     if (!subscription?.id) {
       setActionError("Assinatura não encontrada para este grupo.");
       return;
@@ -615,17 +644,21 @@ export default function PlanosLimitesPage() {
   };
 
   const handleRecurringPayment = async () => {
+    if (actionInFlight.current || !subscriptionReady) return;
     if (!subscription?.id) {
       setActionError("Assinatura não encontrada para este grupo.");
       return;
     }
 
+    actionInFlight.current = true;
+    const actionTenant = actionGeneration.current;
     setActionLoading("payment");
     setActionError(null);
 
     try {
       const backUrl = window.location.href;
       const result = await BillingAPI.activateSubscription(subscription.id, backUrl);
+      if (actionGeneration.current !== actionTenant) return;
       if (result.pricing) {
         setCheckoutPricing(result.pricing);
       }
@@ -635,25 +668,31 @@ export default function PlanosLimitesPage() {
       }
       setActionError("Não foi possível gerar o link de pagamento. Tente novamente.");
     } catch (err) {
+      if (actionGeneration.current !== actionTenant) return;
       console.error(err);
       setActionError(extractApiError(err, "Erro ao atualizar pagamento. Tente novamente."));
     } finally {
+      actionInFlight.current = false;
       setActionLoading(null);
     }
   };
 
   const handleCreatePixCharge = async () => {
+    if (actionInFlight.current || !subscriptionReady) return;
     if (!subscription?.id) {
       setActionError("Assinatura não encontrada para este grupo.");
       return;
     }
 
+    actionInFlight.current = true;
+    const actionTenant = actionGeneration.current;
     setActionLoading("pix");
     setActionError(null);
     setPixCopied(false);
 
     try {
       const result = await BillingAPI.createPixCharge(subscription.id, payerName);
+      if (actionGeneration.current !== actionTenant) return;
       setPixCharge(result);
       if (result.pricing) {
         setCheckoutPricing(result.pricing);
@@ -661,9 +700,11 @@ export default function PlanosLimitesPage() {
       setShowPaymentModal(false);
       setShowPixModal(true);
     } catch (err) {
+      if (actionGeneration.current !== actionTenant) return;
       console.error(err);
       setActionError(extractApiError(err, "Erro ao gerar PIX. Tente novamente."));
     } finally {
+      actionInFlight.current = false;
       setActionLoading(null);
     }
   };
@@ -690,6 +731,7 @@ export default function PlanosLimitesPage() {
   };
 
   const handleConfirmSwitch = async () => {
+    if (actionInFlight.current || !subscriptionReady) return;
     if (!subscription?.id || !selectedPlan) {
       setActionError("Assinatura não encontrada para esta troca.");
       return;
@@ -700,18 +742,23 @@ export default function PlanosLimitesPage() {
       return;
     }
 
+    actionInFlight.current = true;
+    const actionTenant = actionGeneration.current;
     setActionLoading("switch");
     setActionError(null);
 
     try {
       await BillingAPI.changeSubscriptionPlan(subscription.id, selectedPlan.key);
+      if (actionGeneration.current !== actionTenant) return;
       await refreshSubscription();
       setShowSwitchModal(false);
       setSelectedPlan(null);
     } catch (err) {
+      if (actionGeneration.current !== actionTenant) return;
       console.error(err);
       setActionError(extractApiError(err, "Não foi possível trocar o plano. Tente novamente."));
     } finally {
+      actionInFlight.current = false;
       setActionLoading(null);
     }
   };
@@ -796,14 +843,15 @@ export default function PlanosLimitesPage() {
             <button
               type="button"
               onClick={openPaymentModal}
-              className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300"
+              disabled={!subscriptionReady || actionLoading !== null}
+              className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Regularizar pagamento
             </button>
           </div>
         )}
 
-        {!showSkeleton && (
+        {subscriptionReady && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
               <div className="flex items-start justify-between gap-4">
@@ -847,7 +895,7 @@ export default function PlanosLimitesPage() {
                 <div>
                   <span className="text-xs text-gray-500">Status financeiro</span>
                   <p className="text-base font-semibold text-white">
-                    {financialStatus?.label ?? (pendingPayment ? "Pendente" : "Em dia")}
+                    {financialStatus?.label ?? (pendingPayment ? "Pendente" : "Não informado")}
                   </p>
                 </div>
                 <div>
@@ -860,7 +908,7 @@ export default function PlanosLimitesPage() {
                 <button
                   type="button"
                   onClick={openPaymentModal}
-                  disabled={actionLoading !== null}
+                  disabled={!subscriptionReady || actionLoading !== null}
                   className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {actionLoading === "payment" ? "Atualizando..." : "Atualizar pagamento"}
@@ -965,7 +1013,7 @@ export default function PlanosLimitesPage() {
 
         {showSkeleton && <BillingSkeleton />}
 
-        {error && (
+        {error && !loading && (
           <div
             data-testid="billing-planos-friendly-error"
             className="mb-8 rounded-2xl border border-red-500/40 bg-red-500/10 px-5 py-4 text-red-100"
@@ -993,7 +1041,7 @@ export default function PlanosLimitesPage() {
           </div>
         )}
 
-        {!loading && !error && !subscription && (
+        {subscriptionResolved && !subscriptionError && !subscription && (
           <div
             data-testid="billing-planos-sync-state"
             className="mb-6 rounded-2xl border border-blue-400/30 bg-blue-500/10 px-5 py-4 text-blue-100"
@@ -1006,7 +1054,7 @@ export default function PlanosLimitesPage() {
           </div>
         )}
 
-        {!loading && !error && planosDisponiveis.length === 0 && (
+        {!showSkeleton && !plansLoading && !plansError && planosDisponiveis.length === 0 && (
           <div className="mb-10 flex justify-center">
             <div className="bg-yellow-500/10 text-yellow-200 border border-yellow-500 px-6 py-4 rounded-xl text-center max-w-lg">
               Nenhum plano retornado pela API de billing. Tente novamente ou contate o suporte.
@@ -1048,7 +1096,26 @@ export default function PlanosLimitesPage() {
               </div>
             </div>
 
-            {!loading && !error && planosDisponiveis.length > 0 && (
+            {plansLoading && (
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                aria-busy="true"
+              >
+                {[0, 1, 2].map((index) => (
+                  <div
+                    key={index}
+                    className="h-72 rounded-2xl border border-zinc-700 bg-[#23272F] p-6"
+                  >
+                    <div className="h-5 w-32 rounded bg-zinc-700/70 motion-safe:animate-pulse" />
+                    <div className="mt-6 h-10 w-44 rounded bg-zinc-700/50 motion-safe:animate-pulse" />
+                    <div className="mt-8 h-4 w-full rounded bg-zinc-700/40 motion-safe:animate-pulse" />
+                    <div className="mt-3 h-4 w-4/5 rounded bg-zinc-700/40 motion-safe:animate-pulse" />
+                  </div>
+                ))}
+                <span className="sr-only">Carregando planos disponíveis</span>
+              </div>
+            )}
+            {!plansLoading && !plansError && !subscriptionError && planosDisponiveis.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {planosDisponiveis
                   .filter((plan) =>
@@ -1183,7 +1250,7 @@ export default function PlanosLimitesPage() {
               </div>
             )}
 
-            {!loading && !error && planosDisponiveis.length > 0 && (
+            {!plansLoading && !plansError && !subscriptionError && planosDisponiveis.length > 0 && (
               <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-5 text-center">
                 <p className="text-sm text-neutral-300">
                   Quer conhecer todos os recursos e comparar os planos?
@@ -1202,7 +1269,7 @@ export default function PlanosLimitesPage() {
         )}
       </main>
 
-      {showPaymentModal && subscription && (
+      {showPaymentModal && subscriptionReady && subscription && (
         <Modal onClose={() => setShowPaymentModal(false)}>
           <div className="w-full max-w-2xl bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-[#1b1f27] px-6 py-4">
@@ -1268,7 +1335,7 @@ export default function PlanosLimitesPage() {
                 <button
                   type="button"
                   onClick={handleRecurringPayment}
-                  disabled={!recurringAccepted || actionLoading === "payment"}
+                  disabled={!subscriptionReady || !recurringAccepted || actionLoading !== null}
                   className="w-full px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:opacity-60"
                 >
                   {actionLoading === "payment"
@@ -1286,7 +1353,7 @@ export default function PlanosLimitesPage() {
                 <button
                   type="button"
                   onClick={handleCreatePixCharge}
-                  disabled={!canUsePix || actionLoading === "pix"}
+                  disabled={!subscriptionReady || !canUsePix || actionLoading !== null}
                   className="w-full px-4 py-2 rounded-lg bg-[#2b2b2b] text-white border border-[#384152] hover:border-yellow-400 disabled:opacity-60"
                 >
                   {actionLoading === "pix" ? "Gerando PIX..." : "Gerar PIX"}
@@ -1352,7 +1419,7 @@ export default function PlanosLimitesPage() {
         </Modal>
       )}
 
-      {showPixModal && pixCharge && (
+      {showPixModal && subscriptionReady && pixCharge && (
         <Modal onClose={() => setShowPixModal(false)} contained>
           <section
             role="dialog"
@@ -1629,7 +1696,7 @@ export default function PlanosLimitesPage() {
         </Modal>
       )}
 
-      {showSwitchModal && selectedPlan && (
+      {showSwitchModal && subscriptionReady && selectedPlan && (
         <Modal onClose={() => setShowSwitchModal(false)}>
           <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-[#1b1f27] px-6 py-4">
@@ -1670,7 +1737,7 @@ export default function PlanosLimitesPage() {
               <button
                 type="button"
                 onClick={handleConfirmSwitch}
-                disabled={!canSwitchPlan || actionLoading === "switch"}
+                disabled={!subscriptionReady || !canSwitchPlan || actionLoading !== null}
                 className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-bold hover:bg-yellow-300 disabled:opacity-60"
               >
                 {actionLoading === "switch"
