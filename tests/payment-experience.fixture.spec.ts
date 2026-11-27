@@ -244,15 +244,20 @@ for (const { interval, width } of scenarios) {
       .filter({ has: page.locator("summary", { hasText: "Qual a diferença entre as opções?" }) });
     await expect(help).not.toHaveAttribute("open", "");
     const helpToggle = help.locator("summary");
-    await helpToggle.focus();
+    await dialog.getByRole("button", { name: "Pagar com PIX" }).focus();
+    await page.keyboard.press("Tab");
+    await expect(helpToggle).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(help).toHaveAttribute("open", "");
     await expect(
       help.getByText(interval === "month" ? /uma vez por mês/ : /uma vez por ano/)
     ).toBeVisible();
+    await help.scrollIntoViewIfNeeded();
     await page.screenshot({ path: info.outputPath(`after-help-${width}.png`), fullPage: false });
     await page.keyboard.press("Enter");
     await expect(help).not.toHaveAttribute("open", "");
+    await page.keyboard.press("Tab");
+    await expect(dialog.getByRole("button", { name: "Fechar modal" })).toBeFocused();
     expect(pixPosts + cardPosts + applyPosts).toBe(0);
     await expect(dialog.getByRole("heading", { name: /Cartão de crédito/ })).toHaveCount(0);
     await expect(dialog.getByRole("button", { name: /Pagar com PIX/ })).toBeEnabled();

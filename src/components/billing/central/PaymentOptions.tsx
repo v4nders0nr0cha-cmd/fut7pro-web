@@ -190,7 +190,7 @@ export default function PaymentOptions(p: Props) {
         )}
       </div>
       <details className={s.paymentHelp}>
-        <summary>
+        <summary tabIndex={0}>
           <Info size={14} aria-hidden="true" /> Qual a diferença entre as opções?
           <ChevronDown size={14} aria-hidden="true" />
         </summary>

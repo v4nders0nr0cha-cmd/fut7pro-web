@@ -84,6 +84,7 @@ it.each([
   expect(screen.getByText(new RegExp(description))).toBeInTheDocument();
   expect(screen.queryByText("Este PIX paga um período da assinatura.")).not.toBeInTheDocument();
   const summary = screen.getByText("Qual a diferença entre as opções?");
+  expect(summary).toHaveAttribute("tabindex", "0");
   const details = summary.closest("details")!;
   expect(details).not.toHaveAttribute("open");
   expect(screen.getByText(new RegExp(help))).not.toBeVisible();
