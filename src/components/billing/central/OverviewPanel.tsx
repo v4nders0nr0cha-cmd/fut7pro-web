@@ -141,7 +141,7 @@ export default function OverviewPanel() {
             disabled={!c.ready || c.busy || (!caps.canUsePix && !caps.canUseRecurring)}
             onClick={() => c.openDialog("payment")}
           >
-            {paymentActionLabel(financial?.code, overview?.invoices.pending)}
+            {paymentActionLabel(financial?.code, overview?.invoices?.pending)}
           </button>
         )}
       </div>

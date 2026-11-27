@@ -181,6 +181,23 @@ it("não sugere dívida no teste gratuito e remove atalhos redundantes", async (
   expect(screen.queryByRole("link", { name: "Ver planos disponíveis" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Consultar cobranças" })).not.toBeInTheDocument();
 });
+it("mantém o resumo parcial quando a contagem de cobranças não está disponível", async () => {
+  (historyRequest as jest.Mock).mockImplementation(async (id: string) => ({
+    subscription: { id, tenantId: group, status: "active" },
+    access,
+    financialStatus: { code: "PENDENTE", label: "Pendente" },
+  }));
+  render(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Opções de pagamento" })).toBeEnabled()
+  );
+  expect(screen.getByText("Situação dos pagamentos")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Regularizar pagamento" })).not.toBeInTheDocument();
+});
 it("valida cupom inválido sem conceder benefício nem fechar o pagamento", async () => {
   (BillingAPI.validateCoupon as jest.Mock).mockResolvedValue({ valid: false });
   render(
