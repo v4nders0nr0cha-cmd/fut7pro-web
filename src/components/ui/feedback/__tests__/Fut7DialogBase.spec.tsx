@@ -3,6 +3,47 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import Fut7DialogBase from "../Fut7DialogBase";
 
 describe("Fut7DialogBase", () => {
+  it.each([false, true])(
+    "aguarda o controle de origem reativar sem roubar foco de outra escolha (%s)",
+    async (moveFocus) => {
+      function Harness() {
+        const [open, setOpen] = useState(false);
+        const [loading, setLoading] = useState(false);
+        return (
+          <>
+            <button disabled={loading} onClick={() => setOpen(true)}>
+              Origem
+            </button>
+            <button onClick={() => setLoading(false)}>Concluir consulta</button>
+            <button>Outro destino</button>
+            <Fut7DialogBase
+              open={open}
+              title="Pagamento"
+              onClose={() => {
+                setLoading(true);
+                setOpen(false);
+              }}
+            />
+          </>
+        );
+      }
+      render(<Harness />);
+      const opener = screen.getByRole("button", { name: "Origem" });
+      opener.focus();
+      fireEvent.click(opener);
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Fechar modal" })).toHaveFocus()
+      );
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(opener).toBeDisabled();
+      const other = screen.getByRole("button", { name: "Outro destino" });
+      if (moveFocus) other.focus();
+      fireEvent.click(screen.getByRole("button", { name: "Concluir consulta" }));
+      await waitFor(() => expect(opener).not.toBeDisabled());
+      await waitFor(() => expect(moveFocus ? other : opener).toHaveFocus());
+    }
+  );
+
   it("mantém título, fechamento e ações fora da região rolável", () => {
     const onClose = jest.fn();
     render(
