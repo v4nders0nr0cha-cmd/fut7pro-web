@@ -382,11 +382,19 @@ export default function FinancialDialogs() {
                 }
                 couponCode={c.subscription?.couponCode}
                 existingRecurring={Boolean(c.subscription?.mpPreapprovalId)}
+                recurringStatus={
+                  c.subscriptionStatus?.preapproval ??
+                  c.subscription?.financialStatus?.providerStatus?.preapproval ??
+                  c.subscription?.financial?.providerStatus?.preapproval
+                }
                 label={
                   c.plans.find((item) => item.key === c.subscription?.planKey)?.label ||
                   formatBillingPlanLabel(c.subscription?.planKey || "")
                 }
-                interval={c.subscription?.interval === "year" ? "year" : "month"}
+                interval={
+                  c.subscription?.interval ??
+                  c.plans.find((item) => item.key === c.subscription?.planKey)?.interval
+                }
                 pricing={pricing}
                 enabled={enabled}
                 recurring={caps?.canUseRecurring === true}

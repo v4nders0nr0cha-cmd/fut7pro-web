@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { CreditCard, QrCode, ChevronDown, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { Info, QrCode, ChevronDown, ArrowRight } from "lucide-react";
 import type { ChargePricing } from "@/lib/api/billing";
 import { money, date } from "./presentation";
 import s from "./central.module.css";
@@ -10,7 +11,8 @@ type Props = {
   trialEnd?: string | null;
   couponCode?: string;
   existingRecurring?: boolean;
-  interval: "month" | "year";
+  recurringStatus?: string | null;
+  interval?: string | null;
   pricing?: ChargePricing;
   enabled: boolean;
   recurring: boolean;
@@ -35,7 +37,17 @@ export default function PaymentOptions(p: Props) {
   useEffect(() => {
     if (p.cardSelected) consent.current?.focus();
   }, [p.cardSelected]);
-  const period = p.interval === "year" ? "ano" : "mês";
+  const period = p.interval === "year" ? "ano" : p.interval === "month" ? "mês" : "período";
+  const pixDescription =
+    p.interval === "month" || p.interval === "year"
+      ? `Com PIX, você paga um ${period} de cada vez. No ${period} seguinte, precisa voltar aqui e pagar novamente.`
+      : "Com PIX, você paga um período de cada vez. Para renovar, precisa voltar aqui e pagar novamente.";
+  const recurringNotice =
+    !p.existingRecurring || ["cancelled", "canceled", "paused"].includes(p.recurringStatus || "")
+      ? null
+      : p.recurringStatus === "authorized"
+        ? "Você já tem uma assinatura automática. Pagar com PIX não cancela essa assinatura."
+        : "Há uma assinatura vinculada ao Mercado Pago. Confira a situação antes de pagar com PIX. O PIX não cancela essa assinatura.";
   const price = p.pricing;
   const available = p.enabled && !p.quotePending && Boolean(price);
   return (
@@ -43,7 +55,13 @@ export default function PaymentOptions(p: Props) {
       <div className={s.paymentSummary}>
         <div>
           <strong>{p.label}</strong>
-          <p>Período {p.interval === "year" ? "anual" : "mensal"} da assinatura</p>
+          <p>
+            {p.interval === "year"
+              ? "Período anual da assinatura"
+              : p.interval === "month"
+                ? "Período mensal da assinatura"
+                : "Período do plano contratado"}
+          </p>
         </div>
         <span>Pagamento confirmado somente após processamento.</span>
       </div>
@@ -93,13 +111,21 @@ export default function PaymentOptions(p: Props) {
       <div className={s.paymentOptions}>
         {p.recurring && (
           <section className={s.paymentOption} aria-label="Mercado Pago - assinatura automática">
-            <CreditCard size={23} aria-hidden="true" />
+            <Image
+              src="/images/payments/mercado-pago-logo.png"
+              alt=""
+              aria-hidden="true"
+              width={32}
+              height={24}
+              className={s.paymentProviderLogo}
+              unoptimized
+            />
             <h3>
               Mercado Pago <span>Assinatura automática</span>
             </h3>
             <p>
-              Escolha como deseja pagar no Mercado Pago, com cartão de crédito ou outros meios
-              disponíveis para sua assinatura.
+              Escolha como deseja pagar. O Mercado Pago mostrará as opções disponíveis para sua
+              assinatura.
             </p>
             <strong className={s.paymentPrice}>
               {price ? money(price.totalCents) : "Consultando valor"}
@@ -127,22 +153,20 @@ export default function PaymentOptions(p: Props) {
           </section>
         )}
         {p.pix && (
-          <section className={s.paymentOption} aria-label="PIX — pagamento avulso">
+          <section className={s.paymentOption} aria-label="PIX - pagamento manual">
             <QrCode size={23} aria-hidden="true" />
             <h3>
-              PIX <span>Pagamento avulso</span>
+              PIX <span>Pagamento manual</span>
             </h3>
-            <p>
-              Pague diretamente pelo PIX, sem cobrança automática. Para renovar, basta realizar um
-              novo pagamento.
-            </p>
+            <p>{pixDescription}</p>
             <strong className={s.paymentPrice}>
               {price ? money(price.totalCents) : "Consultando valor"}
               <small> / {period}</small>
             </strong>
-            <p className={s.small}>Este PIX paga um período da assinatura.</p>
-            {p.existingRecurring && (
-              <p className={s.small}>Este PIX não cancela a assinatura automática já existente.</p>
+            {recurringNotice && (
+              <p className={s.small} id="central-pix-recurring-notice">
+                {recurringNotice}
+              </p>
             )}
             {price?.firstPaymentDiscountApplied && (
               <p className={s.small}>
@@ -153,12 +177,47 @@ export default function PaymentOptions(p: Props) {
             {price?.recurringDiscountApplied && (
               <p className={s.small}>Condição recorrente considerada neste valor.</p>
             )}
-            <button className={s.button} type="button" disabled={!available} onClick={p.payPix}>
+            <button
+              className={s.button}
+              type="button"
+              disabled={!available}
+              aria-describedby={recurringNotice ? "central-pix-recurring-notice" : undefined}
+              onClick={p.payPix}
+            >
               Pagar com PIX <ArrowRight size={15} aria-hidden="true" />
             </button>
           </section>
         )}
       </div>
+      <details className={s.paymentHelp}>
+        <summary>
+          <Info size={14} aria-hidden="true" /> Qual a diferença entre as opções?
+          <ChevronDown size={14} aria-hidden="true" />
+        </summary>
+        <div>
+          {p.recurring && (
+            <section aria-label="Sobre a assinatura automática">
+              <h3>Assinatura automática — Mercado Pago</h3>
+              <p>
+                Você escolhe como pagar e autoriza a assinatura. Depois, as próximas cobranças
+                acontecem automaticamente, conforme as condições confirmadas no Mercado Pago.
+              </p>
+            </section>
+          )}
+          {p.pix && (
+            <section aria-label="Sobre o pagamento manual">
+              <h3>Pagamento manual — PIX</h3>
+              <p>
+                {p.interval === "month" || p.interval === "year"
+                  ? `Você paga pelo PIX uma vez por ${period}.`
+                  : "Você paga pelo PIX um período do seu plano."}{" "}
+                O PIX não faz cobranças automáticas. Quando chegar a hora de renovar, volte ao
+                Fut7Pro e faça outro pagamento. O valor final será mostrado na cobrança PIX.
+              </p>
+            </section>
+          )}
+        </div>
+      </details>
       {!price && (
         <p role="status" className={s.small}>
           O valor precisa ser confirmado pelo sistema antes de iniciar o pagamento.{" "}
@@ -193,6 +252,7 @@ export default function PaymentOptions(p: Props) {
             Você vai continuar no Mercado Pago, onde poderá conferir o meio de pagamento, o valor,
             as datas e as condições finais antes de confirmar.
           </p>
+          <p>Autorizar a assinatura não confirma um pagamento.</p>
           <label>
             <input
               ref={consent}
@@ -214,10 +274,6 @@ export default function PaymentOptions(p: Props) {
           </button>
         </section>
       )}
-      <p className={s.small}>
-        A autorização da assinatura permite cobranças automáticas; não confirma um pagamento. O
-        valor final do PIX será mostrado na cobrança gerada.
-      </p>
     </div>
   );
 }

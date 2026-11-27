@@ -241,6 +241,38 @@ it("bloqueia preços anteriores depois de aplicar cupom e renova o consentimento
   expect(screen.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" })).toBeDisabled();
   expect(BillingAPI.applyCouponToSubscription).toHaveBeenCalledWith("sub-a", "VALIDO");
 });
+it.each(["authorized", "cancelled", "pending"])(
+  "usa a periodicidade e o vínculo oficiais no modal (%s)",
+  async (preapproval) => {
+    (useSubscription as jest.Mock).mockImplementation(() => ({
+      ...hook(),
+      subscription: {
+        ...hook().subscription,
+        interval: undefined,
+        planKey: "yearly_essential",
+        mpPreapprovalId: "fixture-recurring",
+      },
+      subscriptionStatus: { ...hook().subscriptionStatus, preapproval },
+      plans: [{ ...hook().plans[0], key: "yearly_essential", interval: "year" }],
+    }));
+    render(
+      <Harness>
+        <OverviewPanel />
+      </Harness>
+    );
+    const payment = await screen.findByRole("button", { name: "Pagar cobrança" });
+    await waitFor(() => expect(payment).toBeEnabled());
+    fireEvent.click(payment);
+    expect(screen.getByText(/um ano de cada vez. No ano seguinte/)).toBeVisible();
+    if (preapproval === "authorized")
+      expect(screen.getByText(/Você já tem uma assinatura automática/)).toBeVisible();
+    else if (preapproval === "pending")
+      expect(screen.getByText(/Há uma assinatura vinculada/)).toBeVisible();
+    else expect(screen.queryByText(/não cancela essa assinatura/)).not.toBeInTheDocument();
+    expect(BillingAPI.activateSubscription).not.toHaveBeenCalled();
+    expect(BillingAPI.cancelSubscription).not.toHaveBeenCalled();
+  }
+);
 it("não mostra código PIX quando a cobrança diverge do resumo", async () => {
   (BillingAPI.createPixCharge as jest.Mock).mockResolvedValue({
     invoice: { amount: 9900 },

@@ -3,8 +3,14 @@ import { installGuide, login } from "./fixtures/guide-continuity";
 import { openSubscriptionCentral } from "./fixtures/subscription-central";
 
 const before = process.env.PAYMENT_CAPTURE_BASELINE === "1";
-for (const width of [1280, 768, 390, 320]) {
-  test(`escolha de pagamento, cupom e foco ${width}px`, async ({ page }, info) => {
+const scenarios = (["month", "year"] as const).flatMap((interval) =>
+  [1280, 768, 390, 320].map((width) => ({ interval, width }))
+);
+for (const { interval, width } of scenarios) {
+  const baseCents = interval === "month" ? 15000 : 150000;
+  const planKey = interval === "month" ? "monthly_essential" : "yearly_essential";
+  const planLabel = interval === "month" ? "Essencial Mensal" : "Essencial Anual";
+  test(`escolha de pagamento, cupom e foco ${interval} ${width}px`, async ({ page }, info) => {
     test.setTimeout(180000);
     await page.setViewportSize({ width, height: 900 });
     const guide = await installGuide(page);
@@ -18,7 +24,8 @@ for (const width of [1280, 768, 390, 320]) {
       mode = "TESTE",
       pixPosts = 0,
       cardPosts = 0,
-      applyPosts = 0;
+      applyPosts = 0,
+      recurringLinked = false;
     const access = {
       canAccess: true,
       blocked: false,
@@ -27,10 +34,10 @@ for (const width of [1280, 768, 390, 320]) {
       effectiveAccessUntil: "2027-01-15T12:00:00Z",
     };
     const pricing = () => ({
-      baseAmountCents: 15000,
-      totalCents: coupon ? 12000 : 15000,
-      recurringAmountCents: 15000,
-      discountCents: coupon ? 3000 : 0,
+      baseAmountCents: baseCents,
+      totalCents: coupon ? baseCents * 0.8 : baseCents,
+      recurringAmountCents: baseCents,
+      discountCents: coupon ? baseCents * 0.2 : 0,
       discountPct: coupon ? 20 : 0,
       isFirstPayment: true,
       firstPaymentDiscountApplied: Boolean(coupon),
@@ -39,9 +46,10 @@ for (const width of [1280, 768, 390, 320]) {
     const subscription = () => ({
       id: "fixture-sub",
       tenantId: "fixture-tenant",
-      planKey: "monthly_essential",
-      interval: "month",
-      amount: 15000,
+      planKey,
+      interval,
+      amount: baseCents,
+      mpPreapprovalId: recurringLinked ? "fixture-recurring" : undefined,
       status: mode === "TESTE" ? "trialing" : "past_due",
       couponCode: coupon || undefined,
       trialEnd: "2027-01-15T12:00:00Z",
@@ -80,18 +88,18 @@ for (const width of [1280, 768, 390, 320]) {
           valid: path.endsWith("/VALIDO"),
           discountPct: 20,
           extraTrialDays: 5,
-          priceWithCouponCents: 12000,
-          recurringAmountCents: 15000,
+          priceWithCouponCents: baseCents * 0.8,
+          recurringAmountCents: baseCents,
           couponAppliesToRecurring: false,
         };
       else if (path.endsWith("plans"))
         body = {
           plans: [
             {
-              key: "monthly_essential",
-              label: "Essencial Mensal",
-              interval: "month",
-              amount: 150,
+              key: planKey,
+              label: planLabel,
+              interval,
+              amount: baseCents / 100,
               features: [],
             },
           ],
@@ -113,12 +121,17 @@ for (const width of [1280, 768, 390, 320]) {
           },
         };
       else if (path.endsWith("status"))
-        body = { active: false, access, financialStatus: subscription().financialStatus };
+        body = {
+          active: false,
+          preapproval: recurringLinked ? "authorized" : "pending",
+          access,
+          financialStatus: subscription().financialStatus,
+        };
       else if (path.endsWith("overview"))
         body = {
           subscription: {
             ...subscription(),
-            amountCents: 15000,
+            amountCents: baseCents,
             createdAt: "2026-11-01T12:00:00Z",
           },
           access,
@@ -182,9 +195,65 @@ for (const width of [1280, 768, 390, 320]) {
       return;
     }
     await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+    const mercadoPago = dialog.getByRole("region", {
+      name: "Mercado Pago - assinatura automática",
+    });
+    await expect(mercadoPago).toBeVisible();
+    const logo = mercadoPago.locator("img");
+    await expect(logo).toHaveAttribute("src", "/images/payments/mercado-pago-logo.png");
+    await expect
+      .poll(() => logo.evaluate((image: HTMLImageElement) => image.naturalWidth))
+      .toBe(600);
+    const imageResponse = await page.request.get("/images/payments/mercado-pago-logo.png");
+    expect(imageResponse.ok()).toBe(true);
+    expect(imageResponse.headers()["content-type"]).toContain("image/png");
+    expect(
+      await logo.evaluate((image: HTMLImageElement) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(image, 0, 0);
+        return {
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+          alpha: context.getImageData(0, 0, 1, 1).data[3],
+          fit: getComputedStyle(image).objectFit,
+          renderedWidth: image.getBoundingClientRect().width,
+          renderedHeight: image.getBoundingClientRect().height,
+        };
+      })
+    ).toEqual({
+      width: 600,
+      height: 442,
+      alpha: 0,
+      fit: "contain",
+      renderedWidth: 32,
+      renderedHeight: 24,
+    });
     await expect(
-      dialog.getByRole("region", { name: "Mercado Pago - assinatura automática" })
+      dialog.getByText(
+        interval === "month"
+          ? /um mês de cada vez. No mês seguinte/
+          : /um ano de cada vez. No ano seguinte/
+      )
     ).toBeVisible();
+    await expect(dialog.getByText(/Você já tem uma assinatura automática/)).toHaveCount(0);
+    const help = dialog
+      .locator("details")
+      .filter({ has: page.locator("summary", { hasText: "Qual a diferença entre as opções?" }) });
+    await expect(help).not.toHaveAttribute("open", "");
+    const helpToggle = help.locator("summary");
+    await helpToggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(help).toHaveAttribute("open", "");
+    await expect(
+      help.getByText(interval === "month" ? /uma vez por mês/ : /uma vez por ano/)
+    ).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`after-help-${width}.png`), fullPage: false });
+    await page.keyboard.press("Enter");
+    await expect(help).not.toHaveAttribute("open", "");
+    expect(pixPosts + cardPosts + applyPosts).toBe(0);
     await expect(dialog.getByRole("heading", { name: /Cartão de crédito/ })).toHaveCount(0);
     await expect(dialog.getByRole("button", { name: /Pagar com PIX/ })).toBeEnabled();
     await dialog.getByRole("button", { name: /Ver formas de pagamento/ }).click();
@@ -201,28 +270,45 @@ for (const width of [1280, 768, 390, 320]) {
     await dialog.getByLabel("Código do cupom").fill("VALIDO");
     await dialog.getByRole("button", { name: "Aplicar cupom", exact: true }).click();
     await expect(dialog.getByRole("button", { name: /Pagar com PIX/ })).toBeEnabled();
-    await expect(dialog.getByText(/120,00/).first()).toBeVisible();
-    await expect(dialog.getByText(/Depois:.*150,00/)).toBeVisible();
+    await expect(
+      dialog.getByText(interval === "month" ? /120,00/ : /1\.200,00/).first()
+    ).toBeVisible();
+    await expect(
+      dialog.getByText(interval === "month" ? /Depois:.*150,00/ : /Depois:.*1\.500,00/)
+    ).toBeVisible();
     await expect(dialog.getByRole("checkbox")).not.toBeChecked();
     await dialog.getByRole("checkbox").check();
     await dialog.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" }).click();
     await expect(dialog.getByText(/Provedor simulado/)).toBeVisible();
     expect(cardPosts).toBe(1);
+    await dialog.getByRole("checkbox").uncheck();
+    await expect(
+      dialog.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" })
+    ).toBeDisabled();
     await dialog.getByRole("button", { name: /Pagar com PIX/ }).click();
     await expect(page.getByLabel("Código PIX copia e cola")).toHaveValue(
       "PIX-FICTICIO-SEM-VALOR-PARA-PAGAMENTO"
     );
-    await expect(page.getByRole("dialog").getByText(/120,00/)).toBeVisible();
+    await expect(
+      page.getByRole("dialog").getByText(interval === "month" ? /120,00/ : /1\.200,00/)
+    ).toBeVisible();
     expect(pixPosts).toBe(1);
     expect(applyPosts).toBe(1);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(payment).toBeFocused();
     mode = "VENCIDO";
+    recurringLinked = true;
     await page.getByRole("button", { name: "Atualizar", exact: true }).click();
     await expect(
       page.getByRole("button", { name: "Regularizar pagamento", exact: true })
     ).toBeEnabled();
+    await page.getByRole("button", { name: "Regularizar pagamento", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Pagar com PIX" })).toHaveAccessibleDescription(
+      "Você já tem uma assinatura automática. Pagar com PIX não cancela essa assinatura."
+    );
+    await expect(page.getByRole("checkbox")).toHaveCount(0);
+    await page.keyboard.press("Escape");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true
     );
