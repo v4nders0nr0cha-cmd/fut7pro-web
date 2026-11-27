@@ -50,7 +50,7 @@ export default function PaymentOptions(p: Props) {
       {p.trialEnd && (
         <p className={s.small}>
           Teste gratuito registrado até {date(p.trialEnd)}. Confira a data da primeira cobrança no
-          Mercado Pago antes de confirmar o cartão.
+          Mercado Pago antes de autorizar a assinatura.
         </p>
       )}
       {p.canApplyCoupon && (
@@ -92,17 +92,14 @@ export default function PaymentOptions(p: Props) {
       )}
       <div className={s.paymentOptions}>
         {p.recurring && (
-          <section
-            className={s.paymentOption}
-            aria-label="Cartão de crédito — assinatura automática"
-          >
+          <section className={s.paymentOption} aria-label="Mercado Pago - assinatura automática">
             <CreditCard size={23} aria-hidden="true" />
             <h3>
-              Cartão de crédito <span>Assinatura automática</span>
+              Mercado Pago <span>Assinatura automática</span>
             </h3>
             <p>
-              Pague com cartão de crédito. A cobrança será automática a cada período, conforme as
-              condições apresentadas antes da confirmação.
+              Escolha como deseja pagar no Mercado Pago, com cartão de crédito ou outros meios
+              disponíveis para sua assinatura.
             </p>
             <strong className={s.paymentPrice}>
               {price ? money(price.totalCents) : "Consultando valor"}
@@ -125,7 +122,7 @@ export default function PaymentOptions(p: Props) {
               aria-controls="central-card-consent"
               onClick={p.selectCard}
             >
-              Continuar com cartão <ArrowRight size={15} aria-hidden="true" />
+              Ver formas de pagamento <ArrowRight size={15} aria-hidden="true" />
             </button>
           </section>
         )}
@@ -135,14 +132,15 @@ export default function PaymentOptions(p: Props) {
             <h3>
               PIX <span>Pagamento avulso</span>
             </h3>
-            <p>Pague esta cobrança pelo PIX, sem autorizar cobranças automáticas no cartão.</p>
+            <p>
+              Pague diretamente pelo PIX, sem cobrança automática. Para renovar, basta realizar um
+              novo pagamento.
+            </p>
             <strong className={s.paymentPrice}>
               {price ? money(price.totalCents) : "Consultando valor"}
               <small> / {period}</small>
             </strong>
-            <p className={s.small}>
-              Este PIX paga um período. Para renovar por PIX, será necessário um novo pagamento.
-            </p>
+            <p className={s.small}>Este PIX paga um período da assinatura.</p>
             {p.existingRecurring && (
               <p className={s.small}>Este PIX não cancela a assinatura automática já existente.</p>
             )}
@@ -192,8 +190,8 @@ export default function PaymentOptions(p: Props) {
         <section id="central-card-consent" className={s.paymentConsent}>
           <h3>Confirmar assinatura automática</h3>
           <p>
-            Você vai continuar no Mercado Pago, onde poderá conferir o cartão, o valor, as datas e
-            as condições finais antes de confirmar.
+            Você vai continuar no Mercado Pago, onde poderá conferir o meio de pagamento, o valor,
+            as datas e as condições finais antes de confirmar.
           </p>
           <label>
             <input
@@ -217,8 +215,8 @@ export default function PaymentOptions(p: Props) {
         </section>
       )}
       <p className={s.small}>
-        A escolha do cartão autoriza cobranças futuras; não confirma um pagamento. O valor final do
-        PIX será mostrado na cobrança gerada.
+        A autorização da assinatura permite cobranças automáticas; não confirma um pagamento. O
+        valor final do PIX será mostrado na cobrança gerada.
       </p>
     </div>
   );

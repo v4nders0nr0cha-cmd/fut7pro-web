@@ -230,7 +230,7 @@ it("bloqueia preços anteriores depois de aplicar cupom e renova o consentimento
   const payment = await screen.findByRole("button", { name: "Pagar cobrança" });
   await waitFor(() => expect(payment).toBeEnabled());
   fireEvent.click(payment);
-  fireEvent.click(screen.getByRole("button", { name: /Continuar com cartão/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Ver formas de pagamento/ }));
   fireEvent.click(screen.getByRole("checkbox"));
   fireEvent.click(screen.getByText("Tem um cupom de desconto?"));
   fireEvent.change(screen.getByLabelText("Código do cupom"), { target: { value: "VALIDO" } });
