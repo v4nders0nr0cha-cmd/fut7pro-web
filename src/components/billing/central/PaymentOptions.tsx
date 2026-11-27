@@ -9,6 +9,7 @@ type Props = {
   label: string;
   trialEnd?: string | null;
   couponCode?: string;
+  existingRecurring?: boolean;
   interval: "month" | "year";
   pricing?: ChargePricing;
   enabled: boolean;
@@ -51,6 +52,43 @@ export default function PaymentOptions(p: Props) {
           Teste gratuito registrado até {date(p.trialEnd)}. Confira a data da primeira cobrança no
           Mercado Pago antes de confirmar o cartão.
         </p>
+      )}
+      {p.canApplyCoupon && (
+        <details className={s.paymentCoupon}>
+          <summary>
+            Tem um cupom de desconto? <ChevronDown size={15} aria-hidden="true" />
+          </summary>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              p.applyCoupon();
+            }}
+          >
+            <label htmlFor="central-payment-coupon">Código do cupom</label>
+            <div className={s.couponFields}>
+              <input
+                id="central-payment-coupon"
+                className={s.input}
+                value={p.coupon}
+                onChange={(event) => p.setCoupon(event.target.value)}
+                autoComplete="off"
+                maxLength={100}
+                disabled={!p.enabled || p.quotePending}
+              />
+              <button
+                className={s.secondary}
+                type="submit"
+                disabled={!p.enabled || p.quotePending || !p.coupon.trim()}
+              >
+                Aplicar cupom
+              </button>
+            </div>
+            <p className={s.small}>
+              As condições e a elegibilidade serão verificadas antes da aplicação. Digitar o código
+              não concede descontos nem dias extras.
+            </p>
+          </form>
+        </details>
       )}
       <div className={s.paymentOptions}>
         {p.recurring && (
@@ -103,9 +141,11 @@ export default function PaymentOptions(p: Props) {
               <small> / {period}</small>
             </strong>
             <p className={s.small}>
-              Este PIX paga um período. Para renovar por PIX, será necessário um novo pagamento. Uma
-              assinatura automática já existente não será cancelada por esta escolha.
+              Este PIX paga um período. Para renovar por PIX, será necessário um novo pagamento.
             </p>
+            {p.existingRecurring && (
+              <p className={s.small}>Este PIX não cancela a assinatura automática já existente.</p>
+            )}
             {price?.firstPaymentDiscountApplied && (
               <p className={s.small}>
                 Desconto somente nesta cobrança. Valor atual dos próximos períodos:{" "}
@@ -128,43 +168,6 @@ export default function PaymentOptions(p: Props) {
             Atualizar valores
           </button>
         </p>
-      )}
-      {p.canApplyCoupon && (
-        <details className={s.paymentCoupon}>
-          <summary>
-            Tem um cupom de desconto? <ChevronDown size={15} aria-hidden="true" />
-          </summary>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              p.applyCoupon();
-            }}
-          >
-            <label htmlFor="central-payment-coupon">Código do cupom</label>
-            <div className={s.couponFields}>
-              <input
-                id="central-payment-coupon"
-                className={s.input}
-                value={p.coupon}
-                onChange={(event) => p.setCoupon(event.target.value)}
-                autoComplete="off"
-                maxLength={100}
-                disabled={!p.enabled || p.quotePending}
-              />
-              <button
-                className={s.secondary}
-                type="submit"
-                disabled={!p.enabled || p.quotePending || !p.coupon.trim()}
-              >
-                Aplicar cupom
-              </button>
-            </div>
-            <p className={s.small}>
-              As condições e a elegibilidade serão verificadas antes da aplicação. Digitar o código
-              não concede descontos nem dias extras.
-            </p>
-          </form>
-        </details>
       )}
       {p.couponCode && (
         <p className={s.small}>

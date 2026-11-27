@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { Copy, Check } from "lucide-react";
@@ -43,6 +44,8 @@ type PixView = {
 };
 
 export default function FinancialDialogs() {
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => setPortalTarget(document.body), []);
   const c = useCentral();
   const caps = c.capabilities.data?.capabilities;
   const { data: session } = useSession();
@@ -262,267 +265,280 @@ export default function FinancialDialogs() {
     }
   }
   const pixUrl = paymentHref(pix?.url);
-  return (
-    <Fut7DialogBase
-      open={Boolean(dialog)}
-      title={label}
-      eyebrow="Assinatura Fut7Pro"
-      bodyClassName={dialog?.type === "payment" ? s.paymentScroll : undefined}
-      tone={dialog?.type === "cancel" ? "destructive" : "default"}
-      onClose={c.closeDialog}
-      size={dialog?.type === "payment" ? "lg" : "md"}
-    >
-      <div className={s.central} style={{ padding: 0 }}>
-        {c.actionError && <Notice error>{c.actionError}</Notice>}
-        {c.busy && (
-          <p role="status" className={s.notice}>
-            Solicitação em processamento. Aguarde a confirmação.
-          </p>
-        )}
-        {pix ? (
-          <>
-            <p className={s.muted}>
-              {pixExpired
-                ? "O prazo informado para este PIX terminou. Atualize a assinatura para conferir a cobrança antes de tentar pagar."
-                : "Pague com o aplicativo do seu banco. A confirmação depende do processamento do pagamento."}
-            </p>
-            <p className={s.value}>{money(pix.amount)}</p>
-            {pix.image && !pixExpired && (
-              <Image
-                src={
-                  pix.image.startsWith("data:image/png;base64,")
-                    ? pix.image
-                    : `data:image/png;base64,${pix.image}`
-                }
-                alt="QR Code para pagamento da assinatura"
-                width={192}
-                height={192}
-                unoptimized
-                className="mx-auto my-5 rounded-xl"
-              />
-            )}
-            {pix.code && (
-              <>
-                <label htmlFor="central-pix" className={s.muted}>
-                  Código PIX copia e cola
-                </label>
-                <textarea
-                  id="central-pix"
-                  readOnly
-                  disabled={pixExpired}
-                  value={pix.code}
-                  className={`${s.input} mt-2`}
-                  rows={3}
-                />
-                <button
-                  type="button"
-                  className={s.secondary}
-                  disabled={pixExpired}
-                  onClick={async () => {
-                    const current = c.actionToken();
-                    try {
-                      await navigator.clipboard.writeText(pix.code!);
-                      if (current()) setCopied(true);
-                    } catch {
-                      if (current()) setCopied(false);
-                    }
-                  }}
-                >
-                  {copied ? <Check size={16} /> : <Copy size={16} />}{" "}
-                  {copied ? "Código copiado" : "Copiar código PIX"}
-                </button>
-              </>
-            )}
-            {pix.expiresAt && (
-              <p className={s.small}>
-                Validade do PIX: {dateTime(pix.expiresAt)}. Essa data não representa o prazo de
-                acesso ao sistema.
+  return portalTarget
+    ? createPortal(
+        <Fut7DialogBase
+          open={Boolean(dialog)}
+          title={label}
+          eyebrow="Assinatura Fut7Pro"
+          bodyClassName={dialog?.type === "payment" ? s.paymentScroll : undefined}
+          tone={dialog?.type === "cancel" ? "destructive" : "default"}
+          onClose={c.closeDialog}
+          size={dialog?.type === "payment" ? "lg" : "md"}
+        >
+          <div className={s.central} style={{ padding: 0 }}>
+            {c.actionError && <Notice error>{c.actionError}</Notice>}
+            {c.busy && (
+              <p role="status" className={s.notice}>
+                Solicitação em processamento. Aguarde a confirmação.
               </p>
             )}
-            <div className={s.actions}>
-              {paymentHref(pix.recurringUrl) && (
-                <a
-                  className={s.button}
-                  href={paymentHref(pix.recurringUrl)!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Autorizar recorrência no Mercado Pago
-                </a>
-              )}
-              {pixUrl && !pixExpired && (
-                <a className={s.secondary} href={pixUrl} target="_blank" rel="noopener noreferrer">
-                  Abrir pagamento
-                </a>
-              )}
-              <button
-                type="button"
-                className={s.button}
-                onClick={() => void c.refresh()}
-                disabled={c.subscriptionLoading}
-              >
-                Atualizar assinatura
-              </button>
-            </div>
-            <p className={s.small}>O link de pagamento não é um comprovante.</p>
-          </>
-        ) : dialog?.type === "payment" ? (
-          <PaymentOptions
-            trialEnd={c.subscription?.status === "trialing" ? c.subscription.trialEnd : undefined}
-            couponCode={c.subscription?.couponCode}
-            label={
-              c.plans.find((item) => item.key === c.subscription?.planKey)?.label ||
-              formatBillingPlanLabel(c.subscription?.planKey || "")
-            }
-            interval={c.subscription?.interval === "year" ? "year" : "month"}
-            pricing={pricing}
-            enabled={enabled}
-            recurring={caps?.canUseRecurring === true}
-            pix={caps?.canUsePix === true}
-            canApplyCoupon={caps?.canApplyCoupon === true}
-            cardSelected={cardSelected}
-            selectCard={() => setCardSelected(true)}
-            accepted={accepted}
-            accept={setAccepted}
-            payCard={() => void recurring()}
-            payPix={() => void createPix()}
-            coupon={coupon}
-            setCoupon={setCoupon}
-            applyCoupon={() => void applyCoupon()}
-            couponMessage={couponMessage}
-            quotePending={Boolean(appliedCode)}
-            retry={() => void c.refresh()}
-          />
-        ) : dialog?.type === "coupon" ? (
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void applyCoupon();
-            }}
-          >
-            <p className={s.muted}>
-              As condições serão verificadas pelo Fut7Pro antes da aplicação. Dias e descontos
-              recebidos serão mostrados nos registros confirmados.
-            </p>
-            <label htmlFor="central-coupon" className={s.muted}>
-              Código do cupom
-            </label>
-            <input
-              id="central-coupon"
-              className={`${s.input} my-3`}
-              value={coupon}
-              onChange={(event) => setCoupon(event.target.value)}
-              autoComplete="off"
-              maxLength={100}
-            />
-            <button
-              type="submit"
-              className={s.button}
-              disabled={!enabled || !caps?.canApplyCoupon || !coupon.trim()}
-            >
-              Aplicar cupom
-            </button>
-          </form>
-        ) : dialog?.type === "cancel" ? (
-          <>
-            <p className={s.muted}>
-              Deseja solicitar o cancelamento da assinatura? As condições vigentes serão verificadas
-              pelo sistema. O cancelamento só estará concluído após a confirmação.
-            </p>
-            <div className={s.actions}>
-              <button type="button" className={s.secondary} onClick={c.closeDialog}>
-                Manter assinatura
-              </button>
-              <button
-                type="button"
-                className={s.button}
-                disabled={!enabled || !caps?.canCancel}
-                onClick={() => void cancel()}
-              >
-                Confirmar cancelamento
-              </button>
-            </div>
-          </>
-        ) : dialog?.type === "contact" ? (
-          <>
-            <p className={s.muted}>
-              Converse com a equipe sobre o plano {plan?.label || "selecionado"} e as condições para
-              o seu grupo.
-            </p>
-            <div className={s.actions}>
-              <a
-                className={s.button}
-                href={buildFut7ProOfficialWhatsAppUrl(
-                  `Olá! Gostaria de conhecer as condições do plano ${plan?.label || "Enterprise"} para meu grupo de futebol.`
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Falar com a equipe
-              </a>
-              <a
-                className={s.secondary}
-                href={`mailto:${plan?.contactEmail || FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL}`}
-              >
-                Enviar e-mail
-              </a>
-            </div>
-          </>
-        ) : plan ? (
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void choose();
-            }}
-          >
-            <p className={s.value}>{plan.label}</p>
-            <p className={s.muted}>
-              {money(Math.round(plan.amount * 100))}/{plan.interval === "year" ? "ano" : "mês"}
-            </p>
-            <p className={s.muted}>{plan.paymentNote || plan.description}</p>
-            {dialog?.type === "create" && (
+            {pix ? (
               <>
-                <label className={s.field}>
-                  E-mail do responsável pelo pagamento
-                  <input
-                    type="email"
-                    required
-                    className={`${s.input} my-3`}
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                <p className={s.muted}>
+                  {pixExpired
+                    ? "O prazo informado para este PIX terminou. Atualize a assinatura para conferir a cobrança antes de tentar pagar."
+                    : "Pague com o aplicativo do seu banco. A confirmação depende do processamento do pagamento."}
+                </p>
+                <p className={s.value}>{money(pix.amount)}</p>
+                {pix.image && !pixExpired && (
+                  <Image
+                    src={
+                      pix.image.startsWith("data:image/png;base64,")
+                        ? pix.image
+                        : `data:image/png;base64,${pix.image}`
+                    }
+                    alt="QR Code para pagamento da assinatura"
+                    width={192}
+                    height={192}
+                    unoptimized
+                    className="mx-auto my-5 rounded-xl"
                   />
-                </label>
-                {!plan.requiresUpfront && (
-                  <label className={s.field}>
-                    Cupom, se houver
-                    <input
-                      className={`${s.input} my-3`}
-                      value={coupon}
-                      onChange={(event) => setCoupon(event.target.value)}
-                      maxLength={100}
-                    />
-                  </label>
                 )}
+                {pix.code && (
+                  <>
+                    <label htmlFor="central-pix" className={s.muted}>
+                      Código PIX copia e cola
+                    </label>
+                    <textarea
+                      id="central-pix"
+                      readOnly
+                      disabled={pixExpired}
+                      value={pix.code}
+                      className={`${s.input} mt-2`}
+                      rows={3}
+                    />
+                    <button
+                      type="button"
+                      className={s.secondary}
+                      disabled={pixExpired}
+                      onClick={async () => {
+                        const current = c.actionToken();
+                        try {
+                          await navigator.clipboard.writeText(pix.code!);
+                          if (current()) setCopied(true);
+                        } catch {
+                          if (current()) setCopied(false);
+                        }
+                      }}
+                    >
+                      {copied ? <Check size={16} /> : <Copy size={16} />}{" "}
+                      {copied ? "Código copiado" : "Copiar código PIX"}
+                    </button>
+                  </>
+                )}
+                {pix.expiresAt && (
+                  <p className={s.small}>
+                    Validade do PIX: {dateTime(pix.expiresAt)}. Essa data não representa o prazo de
+                    acesso ao sistema.
+                  </p>
+                )}
+                <div className={s.actions}>
+                  {paymentHref(pix.recurringUrl) && (
+                    <a
+                      className={s.button}
+                      href={paymentHref(pix.recurringUrl)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Autorizar recorrência no Mercado Pago
+                    </a>
+                  )}
+                  {pixUrl && !pixExpired && (
+                    <a
+                      className={s.secondary}
+                      href={pixUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Abrir pagamento
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    className={s.button}
+                    onClick={() => void c.refresh()}
+                    disabled={c.subscriptionLoading}
+                  >
+                    Atualizar assinatura
+                  </button>
+                </div>
+                <p className={s.small}>O link de pagamento não é um comprovante.</p>
               </>
-            )}
-            <div className={s.actions}>
-              <button type="button" className={s.secondary} onClick={c.closeDialog}>
-                Voltar
-              </button>
-              <button
-                type="submit"
-                className={s.button}
-                disabled={
-                  !enabled ||
-                  (dialog?.type === "create" ? !caps?.canCreateSubscription : !caps?.canChangePlan)
+            ) : dialog?.type === "payment" ? (
+              <PaymentOptions
+                trialEnd={
+                  c.subscription?.status === "trialing" ? c.subscription.trialEnd : undefined
                 }
+                couponCode={c.subscription?.couponCode}
+                existingRecurring={Boolean(c.subscription?.mpPreapprovalId)}
+                label={
+                  c.plans.find((item) => item.key === c.subscription?.planKey)?.label ||
+                  formatBillingPlanLabel(c.subscription?.planKey || "")
+                }
+                interval={c.subscription?.interval === "year" ? "year" : "month"}
+                pricing={pricing}
+                enabled={enabled}
+                recurring={caps?.canUseRecurring === true}
+                pix={caps?.canUsePix === true}
+                canApplyCoupon={caps?.canApplyCoupon === true}
+                cardSelected={cardSelected}
+                selectCard={() => setCardSelected(true)}
+                accepted={accepted}
+                accept={setAccepted}
+                payCard={() => void recurring()}
+                payPix={() => void createPix()}
+                coupon={coupon}
+                setCoupon={setCoupon}
+                applyCoupon={() => void applyCoupon()}
+                couponMessage={couponMessage}
+                quotePending={Boolean(appliedCode)}
+                retry={() => void c.refresh()}
+              />
+            ) : dialog?.type === "coupon" ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void applyCoupon();
+                }}
               >
-                Confirmar escolha
-              </button>
-            </div>
-          </form>
-        ) : null}
-      </div>
-    </Fut7DialogBase>
-  );
+                <p className={s.muted}>
+                  As condições serão verificadas pelo Fut7Pro antes da aplicação. Dias e descontos
+                  recebidos serão mostrados nos registros confirmados.
+                </p>
+                <label htmlFor="central-coupon" className={s.muted}>
+                  Código do cupom
+                </label>
+                <input
+                  id="central-coupon"
+                  className={`${s.input} my-3`}
+                  value={coupon}
+                  onChange={(event) => setCoupon(event.target.value)}
+                  autoComplete="off"
+                  maxLength={100}
+                />
+                <button
+                  type="submit"
+                  className={s.button}
+                  disabled={!enabled || !caps?.canApplyCoupon || !coupon.trim()}
+                >
+                  Aplicar cupom
+                </button>
+              </form>
+            ) : dialog?.type === "cancel" ? (
+              <>
+                <p className={s.muted}>
+                  Deseja solicitar o cancelamento da assinatura? As condições vigentes serão
+                  verificadas pelo sistema. O cancelamento só estará concluído após a confirmação.
+                </p>
+                <div className={s.actions}>
+                  <button type="button" className={s.secondary} onClick={c.closeDialog}>
+                    Manter assinatura
+                  </button>
+                  <button
+                    type="button"
+                    className={s.button}
+                    disabled={!enabled || !caps?.canCancel}
+                    onClick={() => void cancel()}
+                  >
+                    Confirmar cancelamento
+                  </button>
+                </div>
+              </>
+            ) : dialog?.type === "contact" ? (
+              <>
+                <p className={s.muted}>
+                  Converse com a equipe sobre o plano {plan?.label || "selecionado"} e as condições
+                  para o seu grupo.
+                </p>
+                <div className={s.actions}>
+                  <a
+                    className={s.button}
+                    href={buildFut7ProOfficialWhatsAppUrl(
+                      `Olá! Gostaria de conhecer as condições do plano ${plan?.label || "Enterprise"} para meu grupo de futebol.`
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Falar com a equipe
+                  </a>
+                  <a
+                    className={s.secondary}
+                    href={`mailto:${plan?.contactEmail || FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL}`}
+                  >
+                    Enviar e-mail
+                  </a>
+                </div>
+              </>
+            ) : plan ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void choose();
+                }}
+              >
+                <p className={s.value}>{plan.label}</p>
+                <p className={s.muted}>
+                  {money(Math.round(plan.amount * 100))}/{plan.interval === "year" ? "ano" : "mês"}
+                </p>
+                <p className={s.muted}>{plan.paymentNote || plan.description}</p>
+                {dialog?.type === "create" && (
+                  <>
+                    <label className={s.field}>
+                      E-mail do responsável pelo pagamento
+                      <input
+                        type="email"
+                        required
+                        className={`${s.input} my-3`}
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                      />
+                    </label>
+                    {!plan.requiresUpfront && (
+                      <label className={s.field}>
+                        Cupom, se houver
+                        <input
+                          className={`${s.input} my-3`}
+                          value={coupon}
+                          onChange={(event) => setCoupon(event.target.value)}
+                          maxLength={100}
+                        />
+                      </label>
+                    )}
+                  </>
+                )}
+                <div className={s.actions}>
+                  <button type="button" className={s.secondary} onClick={c.closeDialog}>
+                    Voltar
+                  </button>
+                  <button
+                    type="submit"
+                    className={s.button}
+                    disabled={
+                      !enabled ||
+                      (dialog?.type === "create"
+                        ? !caps?.canCreateSubscription
+                        : !caps?.canChangePlan)
+                    }
+                  >
+                    Confirmar escolha
+                  </button>
+                </div>
+              </form>
+            ) : null}
+          </div>
+        </Fut7DialogBase>,
+        portalTarget
+      )
+    : null;
 }

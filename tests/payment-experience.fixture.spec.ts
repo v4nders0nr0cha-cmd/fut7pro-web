@@ -165,9 +165,17 @@ for (const width of [1280, 768, 390, 320]) {
     await page.keyboard.press("Enter");
     let dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
+    if (!before) {
+      const rect = await dialog.boundingBox();
+      expect(rect).not.toBeNull();
+      expect(rect!.y).toBeGreaterThanOrEqual(0);
+      expect(rect!.y + rect!.height).toBeLessThanOrEqual(901);
+      expect(rect!.x).toBeGreaterThanOrEqual(0);
+      expect(rect!.x + rect!.width).toBeLessThanOrEqual(width + 1);
+    }
     await page.screenshot({
       path: info.outputPath(`${before ? "before" : "after"}-payment-${width}.png`),
-      fullPage: true,
+      fullPage: false,
     });
     if (before) {
       await page.keyboard.press("Escape");

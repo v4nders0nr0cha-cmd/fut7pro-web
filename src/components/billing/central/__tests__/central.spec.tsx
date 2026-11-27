@@ -237,6 +237,7 @@ it("não mostra código PIX quando a cobrança diverge do resumo", async () => {
   const payment = await screen.findByRole("button", { name: "Pagar cobrança" });
   await waitFor(() => expect(payment).toBeEnabled());
   fireEvent.click(payment);
+  expect(screen.getByRole("dialog").parentElement).toBe(document.body);
   fireEvent.click(screen.getByRole("button", { name: /Pagar com PIX/ }));
   expect(await screen.findByText(/O valor da cobrança PIX difere/)).toBeInTheDocument();
   expect(screen.queryByDisplayValue("PRIVATE-PRICE-MISMATCH")).not.toBeInTheDocument();
