@@ -249,7 +249,7 @@ for (const width of [1280, 768, 390, 320]) {
     const paymentDialog = page.getByRole("dialog", { name: "Escolha como deseja pagar" });
     await expect(paymentDialog).toBeVisible();
     await expect(paymentDialog.getByRole("checkbox")).toHaveCount(0);
-    await paymentDialog.getByRole("button", { name: "Continuar com cartão" }).click();
+    await paymentDialog.getByRole("button", { name: "Ver formas de pagamento" }).click();
     await expect(
       paymentDialog.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" })
     ).toBeDisabled();

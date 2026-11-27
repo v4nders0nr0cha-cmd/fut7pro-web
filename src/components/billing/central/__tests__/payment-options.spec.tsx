@@ -45,23 +45,30 @@ it.each([
 it("mostra as duas modalidades sem pedir consentimento antes da escolha", () => {
   const p = props();
   render(<PaymentOptions {...p} />);
+  expect(
+    screen.getByRole("region", { name: "Mercado Pago - assinatura automática" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/cartão de crédito ou outros meios disponíveis para sua assinatura/)
+  ).toBeInTheDocument();
   expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   expect(screen.getAllByText(/120,00/)).toHaveLength(2);
   expect(screen.getByText(/Depois:.*150,00/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /Continuar com cartão/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Ver formas de pagamento/ }));
   expect(p.selectCard).toHaveBeenCalledTimes(1);
   expect(p.payCard).not.toHaveBeenCalled();
 });
-it("PIX não exige consentimento de cartão", () => {
+it("PIX não exige consentimento de recorrência", () => {
   const p = props();
   render(<PaymentOptions {...p} />);
   fireEvent.click(screen.getByRole("button", { name: /Pagar com PIX/ }));
   expect(p.payPix).toHaveBeenCalledTimes(1);
   expect(p.payCard).not.toHaveBeenCalled();
 });
-it("exige autorização depois da escolha de cartão e informa o provedor", () => {
+it("exige autorização depois da opção Mercado Pago e informa a confirmação final", () => {
   const p = { ...props(), cardSelected: true };
   const view = render(<PaymentOptions {...p} />);
+  expect(screen.getByText(/conferir o meio de pagamento, o valor/)).toBeInTheDocument();
   expect(screen.getByRole("checkbox")).toHaveFocus();
   expect(screen.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" })).toBeDisabled();
   view.rerender(<PaymentOptions {...p} accepted />);
@@ -95,10 +102,10 @@ it("mostra somente as modalidades permitidas e distingue condição recorrente",
       pricing={{ ...p.pricing, firstPaymentDiscountApplied: false, recurringDiscountApplied: true }}
     />
   );
-  expect(screen.queryByRole("button", { name: /Continuar com cartão/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Ver formas de pagamento/ })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Pagar com PIX/ })).toBeEnabled();
 });
-it("explica a condição recorrente em cartão e PIX sem prometer nova promoção", () => {
+it("explica a condição recorrente na assinatura automática e no PIX sem prometer nova promoção", () => {
   const p = props();
   render(
     <PaymentOptions

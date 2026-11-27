@@ -145,7 +145,7 @@ for (const width of [1280, 768, 390, 320]) {
       .toBe("grupo-fixture");
     await openSubscriptionCentral(page);
     const payment = page.getByRole("button", {
-      name: before ? "Regularizar pagamento" : "Configurar pagamento",
+      name: "Configurar pagamento",
       exact: true,
     });
     await expect(payment).toBeEnabled({ timeout: 30000 });
@@ -182,8 +182,12 @@ for (const width of [1280, 768, 390, 320]) {
       return;
     }
     await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+    await expect(
+      dialog.getByRole("region", { name: "Mercado Pago - assinatura automática" })
+    ).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: /Cartão de crédito/ })).toHaveCount(0);
     await expect(dialog.getByRole("button", { name: /Pagar com PIX/ })).toBeEnabled();
-    await dialog.getByRole("button", { name: /Continuar com cartão/ }).click();
+    await dialog.getByRole("button", { name: /Ver formas de pagamento/ }).click();
     await expect(dialog.getByRole("checkbox")).toBeFocused();
     await expect(
       dialog.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" })
