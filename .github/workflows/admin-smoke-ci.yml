@@ -2,7 +2,8 @@ name: Admin Smoke CI
 
 on:
   pull_request:
-    branches: [main, develop, "fix/billing-phase1-scope-20261122"]
+    branches:
+      [main, develop, "fix/billing-phase1-scope-20261122", "feat/subscription-central-web-20261122"]
   workflow_dispatch:
 
 concurrency:

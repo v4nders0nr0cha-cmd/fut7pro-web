@@ -28,8 +28,8 @@ Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Um
 
 ## 📋 Pré-requisitos
 
-- Node.js 18+
-- npm ou yarn
+- Node.js 20 ou 22
+- pnpm 10.19.0 e o lockfile pnpm do repositório
 - PostgreSQL
 - Git
 
@@ -45,7 +45,7 @@ cd fut7pro-web
 2. **Instale as dependências**
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 ```
 
 3. **Configure as variáveis de ambiente**
@@ -89,7 +89,7 @@ npm run db:seed
 5. **Inicie o servidor de desenvolvimento**
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Acesse [http://localhost:3000](http://localhost:3000) para ver o projeto.
@@ -119,8 +119,8 @@ src/
 
 ```bash
 # Desenvolvimento
-npm run dev              # Inicia servidor de desenvolvimento
-npm run build            # Build para produção
+pnpm run dev              # Inicia servidor de desenvolvimento
+pnpm run build            # Build para produção
 npm run start            # Inicia servidor de produção
 
 # Qualidade de Código

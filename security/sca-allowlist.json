@@ -1,3 +1,40 @@
 {
-  "exceptions": []
+  "exceptions": [
+    {
+      "advisoryId": "GHSA-mrhx-c7xc-m3w5",
+      "packageName": "zod",
+      "versions": ["3.25.76"],
+      "dependencyPaths": [".>zod"],
+      "scope": "client-validation",
+      "owner": "Fut7Pro - manutencao de seguranca",
+      "justification": "No current API route parses untrusted request bodies with Zod. Active consumers validate browser forms and API responses. The only declared collection upper bound (six gallery photos) now aborts before validating any element. Unbounded collections are unchanged even in the upstream v4 fix. Keep v3 to preserve existing validation contracts; do not claim the package advisory is fixed. Review any new consumer and the v4 migration before expiry.",
+      "evidence": [
+        "src/lib/validation.ts",
+        "src/hooks/useRacha.ts",
+        "src/hooks/useRachaPublic.ts",
+        "src/lib/bounded-array.ts",
+        "src/utils/schemas/nossaHistoria.schema.ts",
+        "src/lib/__tests__/bounded-array.spec.ts",
+        "https://github.com/colinhacks/zod/pull/6652"
+      ],
+      "expiresOn": "2026-12-11",
+      "lockfileSha256": "6a1d68226c9a94ead8a903537c60ac7c3d22085fe026171d3fe86bc8dce1f483"
+    },
+    {
+      "advisoryId": "GHSA-ggr8-5vv4-36mx",
+      "packageName": "deepmerge-ts",
+      "versions": ["7.1.5"],
+      "dependencyPaths": [".>@prisma/client>prisma>@prisma/config>deepmerge-ts"],
+      "scope": "trusted-prisma-configuration",
+      "owner": "Fut7Pro - manutencao de seguranca",
+      "justification": "Only Prisma configuration tooling consumes this transitive package. The advisory requires cyclic JavaScript object graphs, which ordinary JSON cannot represent. Tenant requests do not control Prisma's local executable configuration. An immediate override to major 8 would change a Prisma-internal dependency without upstream compatibility evidence; do not force it. Review with the Prisma configuration chain before expiry.",
+      "evidence": [
+        "prisma/schema.prisma",
+        "next.config.js",
+        "https://github.com/RebeccaStevens/deepmerge-ts/security/advisories/GHSA-ggr8-5vv4-36mx"
+      ],
+      "expiresOn": "2026-12-11",
+      "lockfileSha256": "6a1d68226c9a94ead8a903537c60ac7c3d22085fe026171d3fe86bc8dce1f483"
+    }
+  ]
 }
