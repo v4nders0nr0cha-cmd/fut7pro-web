@@ -1,0 +1,132 @@
+{
+  "stats": {
+    "startTime": "2026-11-27T10:51:35.464Z",
+    "duration": 652735.746,
+    "expected": 9,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 1280px",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 60733,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 768px",
+      "browser": "chromium",
+      "status": "unexpected",
+      "attempts": [
+        {
+          "status": "failed",
+          "durationMs": 112651,
+          "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('button', { name: 'Regularizar pagamento' })\nExpected: focused\nReceived: inactive\nTimeout:  60000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" with timeout 60000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Regularizar pagamento' })\u001b[22m\n\u001b[2m    3 × locator resolved to <button disabled type=\"button\" class=\"central_button__3JStV\">Regularizar pagamento</button>\u001b[22m\n\u001b[2m      - unexpected value \"inactive\"\u001b[22m\n\u001b[2m    57 × locator resolved to <button type=\"button\" class=\"central_button__3JStV\">Regularizar pagamento</button>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n"
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 390px",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 68245,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 320px",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 38596,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Diretor de Futebol: resumo permitido e histórico protegido no backend real",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 12965,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 1280px",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 90867,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 768px",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 69946,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 390px",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 60254,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 320px",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 84643,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Diretor de Futebol: resumo permitido e histórico protegido no backend real",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 30482,
+          "error": null
+        }
+      ]
+    }
+  ]
+}

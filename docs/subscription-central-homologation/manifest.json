@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-27",
+  "sourceHeads": {
+    "frontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86",
+    "backend": "8a0cfced7e8e207630f5f1880c2aa207a5d8eed0"
+  },
+  "environment": {
+    "billing": "real Nest billing controllers/services, JWT strategy and tenant/role guards",
+    "database": "isolated PostgreSQL 17, billing_phase3_final_test",
+    "paymentProvider": "simulated; no real charges",
+    "administrativeShell": "fixture",
+    "localNext": "15.5.28",
+    "ciNext": "15.5.29",
+    "localPlaywright": "1.56.1",
+    "ciPlaywright": "1.57.0",
+    "localFont": "Arial substituted only in isolated build",
+    "localBuildInstrumentation": "Sentry build plugin disabled locally; CI standard build"
+  },
+  "screens": [
+    {
+      "name": "overview-1280.png",
+      "gitBlobSha": "a847ce305f31f60cb4eaa409d68a214efd761ab9",
+      "sha256": "4f29d70b833b28a9c3c6c679e9989facbb87590c63a4183a92cba20a3c29b031",
+      "bytes": 172636,
+      "browser": "chromium",
+      "width": 1280,
+      "path": "images/overview-1280.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "benefits-1280.png",
+      "gitBlobSha": "cf88ca450aa7b42fd80daa9e9148c7e40e037990",
+      "sha256": "e7566bc1a1fad2e9779c54b08204455f2ecd59e32a53154002e90ce6b9952541",
+      "bytes": 179029,
+      "browser": "chromium",
+      "width": 1280,
+      "path": "images/benefits-1280.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "payments-1280.png",
+      "gitBlobSha": "90a82e1c977e735c293d3c193707e5c964d259d2",
+      "sha256": "434b6aa8967cdfc2b2cf059d87d32a9f86ea3e9392ad6045e28bb0adf21061c6",
+      "bytes": 206286,
+      "browser": "chromium",
+      "width": 1280,
+      "path": "images/payments-1280.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "plans-1280.png",
+      "gitBlobSha": "a34adc4199a132604d2b26465f9d979e3760c271",
+      "sha256": "d9998d92ddad03f4c8e7d6360f0fb8e612086a7504aeb8ec30cbc38b0ec45bbf",
+      "bytes": 291606,
+      "browser": "chromium",
+      "width": 1280,
+      "path": "images/plans-1280.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "overview-390.png",
+      "gitBlobSha": "f56a9b9f5032b25cba918995f347f61a03c65068",
+      "sha256": "8b733e7b4497f16efc37b44fe50e857a22edf9325cccd85ddc6fd8c0e3957d71",
+      "bytes": 118489,
+      "browser": "chromium",
+      "width": 390,
+      "path": "images/overview-390.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "benefits-390.png",
+      "gitBlobSha": "e5d9eb6bb8ee86d7e12624beae8ca3928c569094",
+      "sha256": "4ab2ed19da8f90bcb542be4f8579cb4587d6e7938bc03ae89efc53d6c75efa56",
+      "bytes": 119571,
+      "browser": "chromium",
+      "width": 390,
+      "path": "images/benefits-390.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "payments-390.png",
+      "gitBlobSha": "ce956c9634a653d11d0b87bfe2e58413fa5e1885",
+      "sha256": "3c15f2f0c37c0e2144b91bc187fbbd7f823c5e6b2deac1826289ab3d9a4cf9de",
+      "bytes": 179532,
+      "browser": "chromium",
+      "width": 390,
+      "path": "images/payments-390.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "plans-390.png",
+      "gitBlobSha": "0043ef0d439ea5b36a7f74a43c3bff73f68c071a",
+      "sha256": "7a3690306afb3fd5689db356225d1ed4d424b37725ec536f24716affc2b4949e",
+      "bytes": 221460,
+      "browser": "chromium",
+      "width": 390,
+      "path": "images/plans-390.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "pix-390.png",
+      "gitBlobSha": "8e6b33f7c83214e716cb0d2d32f0854356b9c43b",
+      "sha256": "eb7399782046a9ce72ed18cb9e1ea89ba172d183217d5344c5583e59a658440f",
+      "bytes": 147511,
+      "browser": "chromium",
+      "width": 390,
+      "path": "images/pix-390.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "football-director-390.png",
+      "gitBlobSha": "350da4afd3f33f30cfec8d1704c3bcbc0aac4732",
+      "sha256": "25c603eb26d16920a7e9bbc06b1622bd67ca5e53c0490f5b8ea9ecdf13c1fdb4",
+      "bytes": 70184,
+      "browser": "chromium",
+      "width": 390,
+      "path": "images/football-director-390.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    },
+    {
+      "name": "status-error-390.png",
+      "gitBlobSha": "1f883ef68d4660bfe88eb04edaf7fb614dd32bb7",
+      "sha256": "c02bba384ecec5d438a9df8666faad9703ba8bb754b0c07cfedeac28042587de",
+      "bytes": 130282,
+      "browser": "chromium",
+      "width": 390,
+      "path": "images/status-error-390.png",
+      "sourceFrontend": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86"
+    }
+  ],
+  "ci": {
+    "frontendRun": 45987961949,
+    "adminSmokeRun": 45987961947,
+    "typesRun": 45987962003,
+    "backendRun": 45904611797
+  },
+  "security": {
+    "prodAudit": {
+      "critical": 0,
+      "high": 32,
+      "moderate": 17,
+      "low": 7
+    },
+    "blockingThreshold": "critical",
+    "snyk": "not executed: missing SNYK_TOKEN",
+    "fullSecurityApproval": false
+  },
+  "productionModified": false,
+  "merged": false,
+  "phase4Started": false
+}

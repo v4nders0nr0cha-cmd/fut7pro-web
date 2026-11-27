@@ -1,0 +1,74 @@
+[
+  {
+    "repo": "fut7pro-backend",
+    "pr": 199,
+    "head": "9868b353a55c857c6ea182d2998fd432abddd40a",
+    "base": "main",
+    "merged": false,
+    "state": "open",
+    "mergeable": true
+  },
+  {
+    "repo": "fut7pro-backend",
+    "pr": 200,
+    "head": "6462b09c1dc267eddac181e4684b77e166fd9b5f",
+    "base": "fix/billing-phase1-access-20261122",
+    "merged": false,
+    "state": "open",
+    "mergeable": true
+  },
+  {
+    "repo": "fut7pro-backend",
+    "pr": 201,
+    "head": "2a9ebc900cf8b1390b3dd5a1fa6b1f8d14e44ff4",
+    "base": "fix/billing-phase1-operations-20261122",
+    "merged": false,
+    "state": "open",
+    "mergeable": true
+  },
+  {
+    "repo": "fut7pro-backend",
+    "pr": 202,
+    "head": "260cf354a753c8b346b98cacb529256e81320c61",
+    "base": "fix/billing-phase1-webhook-inbox-20261122",
+    "merged": false,
+    "state": "open",
+    "mergeable": true
+  },
+  {
+    "repo": "fut7pro-backend",
+    "pr": 203,
+    "head": "51059df82b9e6bea4379de39504b4912905b8cb6",
+    "base": "feat/billing-phase2-history-storage-20261122",
+    "merged": false,
+    "state": "open",
+    "mergeable": true
+  },
+  {
+    "repo": "fut7pro-backend",
+    "pr": 204,
+    "head": "8a0cfced7e8e207630f5f1880c2aa207a5d8eed0",
+    "base": "feat/billing-phase2-history-api-20261122",
+    "merged": false,
+    "state": "open",
+    "mergeable": true
+  },
+  {
+    "repo": "fut7pro-web",
+    "pr": 272,
+    "head": "32351b012815f7af52bc5238579759a21ded978b",
+    "base": "main",
+    "merged": false,
+    "state": "open",
+    "mergeable": true
+  },
+  {
+    "repo": "fut7pro-web",
+    "pr": 273,
+    "head": "4f4ebdd72b4a055bfbd8ce034059e80105e2bd86",
+    "base": "fix/billing-phase1-scope-20261122",
+    "merged": false,
+    "state": "open",
+    "mergeable": true
+  }
+]

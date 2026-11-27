@@ -1,0 +1,132 @@
+{
+  "stats": {
+    "startTime": "2026-11-27T11:14:32.843Z",
+    "duration": 627348.028,
+    "expected": 10,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 1280px",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 72471,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 768px",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 47713,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 390px",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 39628,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 320px",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 53224,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Diretor de Futebol: resumo permitido e histórico protegido no backend real",
+      "browser": "chromium",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 26970,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 1280px",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 135111,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 768px",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 83908,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 390px",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 60181,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Backend PostgreSQL integrado: quatro áreas em 320px",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 59819,
+          "error": null
+        }
+      ]
+    },
+    {
+      "title": "Diretor de Futebol: resumo permitido e histórico protegido no backend real",
+      "browser": "webkit",
+      "status": "expected",
+      "attempts": [
+        {
+          "status": "passed",
+          "durationMs": 31067,
+          "error": null
+        }
+      ]
+    }
+  ]
+}

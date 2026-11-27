@@ -1,0 +1,8 @@
+{
+  "checks": 24,
+  "backend": "Nest billing controllers + real JWT strategy + tenant/membership guards",
+  "database": "isolated PostgreSQL",
+  "paymentProvider": "simulated",
+  "administrativeShell": "fixture",
+  "passed": true
+}

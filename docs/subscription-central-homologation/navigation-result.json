@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "browser": "chromium",
+  "width": 390,
+  "reducedMotion": true,
+  "back": true,
+  "forward": true,
+  "reload": true,
+  "legacyOverview": true,
+  "retainedPlanOnStatusFailure": true,
+  "blockedActionsOnStatusFailure": true,
+  "recoveredStatus": true,
+  "focusTrapForward": true,
+  "focusTrapBackward": true,
+  "escapeRestoresFocus": true,
+  "statusFault": "browser network fault injection; other billing requests reach the real backend"
+}

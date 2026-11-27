@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-27",
+  "database": "billing_phase3_final_test",
+  "host": "127.0.0.1:55435",
+  "isolated": true,
+  "runner": "scripts/prepare-billing-phase1-fixture.ts",
+  "result": "passed",
+  "migrations": [
+    "20261122010000_billing_durable_operations",
+    "20261122020000_durable_webhook_inbox",
+    "20261122030000_subscription_history"
+  ],
+  "newPhase3Migration": false,
+  "productionModified": false
+}
