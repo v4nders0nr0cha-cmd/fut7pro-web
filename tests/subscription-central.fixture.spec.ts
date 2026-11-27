@@ -28,6 +28,14 @@ for (const width of [1280, 768, 390, 320]) {
       planKey: "monthly_essential",
       interval: "month",
       amount: 15000,
+      pricingPreview: {
+        totalCents: 15000,
+        baseAmountCents: 15000,
+        discountCents: 0,
+        discountPct: 0,
+        isFirstPayment: true,
+        firstPaymentDiscountApplied: false,
+      },
       status: "past_due",
       requiresUpfront: false,
       marketingEnabled: false,
@@ -234,16 +242,18 @@ for (const width of [1280, 768, 390, 320]) {
     await page.goto("/admin/financeiro/planos-limites?faturas=1");
     await expect(page).toHaveURL(/\/admin\/assinatura\/pagamentos/);
     await page.goto("/admin/assinatura");
-    const regularize = page.getByRole("button", { name: "Regularizar pagamento" });
+    const regularize = page.getByRole("button", { name: "Pagar cobrança" });
     await expect(regularize).toBeEnabled();
     await regularize.focus();
     await page.keyboard.press("Enter");
-    const paymentDialog = page.getByRole("dialog", { name: "Regularizar assinatura" });
+    const paymentDialog = page.getByRole("dialog", { name: "Escolha como deseja pagar" });
     await expect(paymentDialog).toBeVisible();
+    await expect(paymentDialog.getByRole("checkbox")).toHaveCount(0);
+    await paymentDialog.getByRole("button", { name: "Continuar com cartão" }).click();
     await expect(
-      paymentDialog.getByRole("button", { name: "Continuar no Mercado Pago" })
+      paymentDialog.getByRole("button", { name: "Confirmar e ir ao Mercado Pago" })
     ).toBeDisabled();
-    await paymentDialog.getByRole("button", { name: "Gerar PIX" }).click();
+    await paymentDialog.getByRole("button", { name: "Pagar com PIX" }).click();
     await expect(paymentDialog.getByText(/Não foi possível confirmar a operação/)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(paymentDialog).not.toBeVisible();

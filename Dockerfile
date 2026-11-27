@@ -14,7 +14,7 @@ ARG NEXT_PUBLIC_API_URL
 COPY . .
 # Client generation never needs a production database. No SQL is executed here.
 RUN DATABASE_URL=postgresql://build_only:build_only@127.0.0.1:1/build_only pnpm run prisma:generate
-RUN DATABASE_URL=postgresql://build_only:build_only@127.0.0.1:1/build_only DISABLE_WEB_DIRECT_DB=true API_URL="$NEXT_PUBLIC_API_URL" BACKEND_URL="$NEXT_PUBLIC_API_URL" pnpm run build
+RUN NODE_OPTIONS=--max-old-space-size=4096 DATABASE_URL=postgresql://build_only:build_only@127.0.0.1:1/build_only DISABLE_WEB_DIRECT_DB=true API_URL="$NEXT_PUBLIC_API_URL" BACKEND_URL="$NEXT_PUBLIC_API_URL" pnpm run build
 RUN pnpm prune --prod --ignore-scripts
 RUN node -e "if(typeof require('@prisma/client').PrismaClient !== 'function') process.exit(1)"
 

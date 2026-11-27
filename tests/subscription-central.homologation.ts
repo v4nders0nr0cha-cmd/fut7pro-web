@@ -113,9 +113,9 @@ for (const width of [1280, 768, 390, 320]) {
     await expect(payment).toBeEnabled();
     await payment.focus();
     await page.keyboard.press("Enter");
-    const dialog = page.getByRole("dialog", { name: "Regularizar assinatura" });
+    const dialog = page.getByRole("dialog", { name: "Escolha como deseja pagar" });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole("button", { name: "Gerar PIX", exact: true }).click();
+    await dialog.getByRole("button", { name: "Pagar com PIX", exact: true }).click();
     await expect(page.getByLabel("Código PIX copia e cola")).toHaveValue(
       "DEMONSTRACAO-SEM-VALOR-PARA-PAGAMENTO"
     );

@@ -7,6 +7,7 @@ import { useCentral } from "./CentralProvider";
 import { Empty, Notice, Pill, Skeleton } from "./Common";
 import { date, money, statusLabel, accessSource } from "./presentation";
 import RecordTimeline from "./RecordTimeline";
+import { paymentActionLabel } from "./payment-presentation";
 import { formatBillingPlanLabel } from "@/utils/billing-plan-label";
 import s from "./central.module.css";
 
@@ -76,9 +77,6 @@ export default function OverviewPanel() {
           <p className={s.small}>
             Condições atuais do contrato. Valores históricos ficam nas cobranças.
           </p>
-          <Link className={s.linkButton} href="/admin/assinatura/planos">
-            Ver planos <ArrowUpRight size={14} />
-          </Link>
         </section>
         <section className={s.card}>
           <h3>Status de acesso</h3>
@@ -133,11 +131,6 @@ export default function OverviewPanel() {
             {financial?.message ||
               "Consulte as cobranças para verificar pagamentos e pendências registrados."}
           </p>
-          {caps?.canViewHistory && (
-            <Link className={s.linkButton} href="/admin/assinatura/pagamentos">
-              Consultar cobranças <ArrowUpRight size={14} />
-            </Link>
-          )}
         </section>
       </div>
       <div className={s.actions}>
@@ -148,17 +141,9 @@ export default function OverviewPanel() {
             disabled={!c.ready || c.busy || (!caps.canUsePix && !caps.canUseRecurring)}
             onClick={() => c.openDialog("payment")}
           >
-            Regularizar pagamento
+            {paymentActionLabel(financial?.code, overview?.invoices?.pending)}
           </button>
         )}
-        {caps?.canViewHistory && (
-          <Link className={s.secondary} href="/admin/assinatura/beneficios">
-            Consultar benefícios
-          </Link>
-        )}
-        <Link className={s.secondary} href="/admin/assinatura/planos">
-          Ver planos disponíveis
-        </Link>
       </div>
       <div className={s.sectionTitle}>
         <h2>Gestão da assinatura</h2>

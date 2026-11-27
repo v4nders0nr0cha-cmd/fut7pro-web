@@ -85,7 +85,7 @@ for (const width of [1280, 390, 320]) {
       )
       .toBe("grupo-fixture");
     await openSubscriptionCentral(page);
-    const payment = page.getByRole("button", { name: "Regularizar pagamento", exact: true });
+    const payment = page.getByRole("button", { name: "Opções de pagamento", exact: true });
     await expect(payment).toBeEnabled({ timeout: 30000 });
     await page.goto("/admin/financeiro/planos-limites");
     await expect(page).toHaveURL(/\/admin\/assinatura$/, { timeout: 30000 });
