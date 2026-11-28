@@ -59,7 +59,7 @@ for (const width of [1280, 768, 390, 320]) {
       providerStatus: null,
       chargedAmountCents: 15000,
       paidAmountCents: null,
-      refundedAmountCents: n === 1 ? 2500 : 0,
+      refundedAmountCents: 0,
       confirmedDiscountAmountCents: null,
       currency: null,
       paymentConfirmedAt: null,

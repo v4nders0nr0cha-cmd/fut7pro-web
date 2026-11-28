@@ -240,7 +240,7 @@ for (const width of [1280, 768, 390, 320]) {
     await page.goto("/admin/financeiro/planos-limites?faturas=1");
     await expect(page).toHaveURL(/\/admin\/assinatura\/pagamentos/);
     await page.goto("/admin/assinatura");
-    const regularize = page.getByRole("button", { name: "Pagar cobrança" });
+    const regularize = page.getByRole("button", { name: "Ver opções de pagamento" });
     await expect(regularize).toBeEnabled();
     await regularize.focus();
     await page.keyboard.press("Enter");
