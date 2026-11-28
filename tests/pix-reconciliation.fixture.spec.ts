@@ -66,7 +66,13 @@ for (const width of [1280, 768, 390, 320]) {
       paymentMethod: "pix",
       commercialSnapshot: null,
       historicalTermsAvailable: false,
-      presentation: { pix: true, code: reconciled && n === 1 ? "PIX_CANCELED" : "PIX_EXPIRED", label: reconciled && n === 1 ? "PIX cancelado" : "PIX expirado", expiresAt: "2026-11-14T00:00:00Z", needsReconciliation: !reconciled },
+      presentation: {
+        pix: true,
+        code: reconciled && n === 1 ? "PIX_CANCELED" : "PIX_EXPIRED",
+        label: reconciled && n === 1 ? "PIX cancelado" : "PIX expirado",
+        expiresAt: "2026-11-14T00:00:00Z",
+        needsReconciliation: !reconciled,
+      },
       receipt: null,
       receiptAvailability: "NOT_RECORDED",
     });
@@ -78,7 +84,13 @@ for (const width of [1280, 768, 390, 320]) {
       if (route.request().method() !== "GET") {
         if (path.endsWith("/invoices/invoice-0001/reconcile")) {
           reconciled = true;
-          return route.fulfill({ json: { outcome: "UPDATED", providerStatus: "cancelled", presentation: { label: "PIX cancelado" } } });
+          return route.fulfill({
+            json: {
+              outcome: "UPDATED",
+              providerStatus: "cancelled",
+              presentation: { label: "PIX cancelado" },
+            },
+          });
         }
         pixPosts++;
         return route.fulfill({ status: 503, json: { message: "Falha isolada no provedor" } });
@@ -102,7 +114,8 @@ for (const width of [1280, 768, 390, 320]) {
           tenantId: "fixture-tenant",
           subscriptionId: "fixture-sub",
           capabilities: {
-            canViewHistory: true, canReconcilePayments: true,
+            canViewHistory: true,
+            canReconcilePayments: true,
             canPay: true,
             canUseRecurring: true,
             canUsePix: true,
@@ -122,8 +135,23 @@ for (const width of [1280, 768, 390, 320]) {
           access,
           financialStatus: { code: "PENDENTE", label: "Pendente" },
           historyAvailable: true,
-          invoices: { pending: 0, confirmed: 0, pixAttempts: 3, pixExpired: reconciled ? 2 : 3, pixCanceled: reconciled ? 1 : 0, overdueConfirmed: 0, attemptsAreNotDebt: true, assessmentComplete: true },
-          activeAccessBenefit: { source: "ADMIN_ADJUSTMENT", days: 90, reasonCategory: "COMMERCIAL_COURTESY", customerReason: "Cortesia", newAccessUntil: access.effectiveAccessUntil },
+          invoices: {
+            pending: 0,
+            confirmed: 0,
+            pixAttempts: 3,
+            pixExpired: reconciled ? 2 : 3,
+            pixCanceled: reconciled ? 1 : 0,
+            overdueConfirmed: 0,
+            attemptsAreNotDebt: true,
+            assessmentComplete: true,
+          },
+          activeAccessBenefit: {
+            source: "ADMIN_ADJUSTMENT",
+            days: 90,
+            reasonCategory: "COMMERCIAL_COURTESY",
+            customerReason: "Cortesia",
+            newAccessUntil: access.effectiveAccessUntil,
+          },
         };
       else if (path.endsWith("/benefits"))
         body = {
@@ -191,10 +219,16 @@ for (const width of [1280, 768, 390, 320]) {
     await expect(page.getByText("Você está usando o Fut7Pro grátis!")).toBeVisible();
     await expect(page.getByText("3 tentativas PIX registradas")).toBeVisible();
     await expect(page.getByRole("button", { name: "Regularizar pagamento" })).toHaveCount(0);
-    await page.screenshot({ path: testInfo.outputPath(`pix-overview-${width}.png`), fullPage: true });
+    await page.screenshot({
+      path: testInfo.outputPath(`pix-overview-${width}.png`),
+      fullPage: true,
+    });
     const nav = page.getByRole("navigation", { name: "Central de Assinatura" });
     await nav.getByRole("link", { name: "Pagamentos" }).click();
-    const detail = page.getByRole("button", { name: /Detalhar cobrança/ }).filter({ visible: true }).first();
+    const detail = page
+      .getByRole("button", { name: /Detalhar cobrança/ })
+      .filter({ visible: true })
+      .first();
     await detail.focus();
     await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog", { name: "Detalhes da cobrança" });
@@ -202,11 +236,16 @@ for (const width of [1280, 768, 390, 320]) {
     await dialog.getByRole("button", { name: "Conferir no Mercado Pago" }).click();
     await expect.poll(() => reconciled).toBe(true);
     await expect(dialog.getByText("PIX cancelado", { exact: true })).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath(`pix-reconciled-${width}.png`), fullPage: true });
+    await page.screenshot({
+      path: testInfo.outputPath(`pix-reconciled-${width}.png`),
+      fullPage: true,
+    });
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
     await expect(detail).toBeFocused();
     expect(pixPosts).toBe(0);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
+    ).toBe(true);
   });
 }
