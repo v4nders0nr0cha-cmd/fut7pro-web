@@ -80,13 +80,16 @@ export default function BenefitsPanel() {
           <h3>Teste gratuito inicial</h3>
           <strong className={s.value}>
             {trial.originalDays === null
-              ? "Detalhes indisponíveis"
+              ? "Duração original não registrada"
               : trial.originalDays === 0
                 ? "Sem dias de teste"
                 : `${trial.originalDays} dias registrados`}
           </strong>
           {trial.evidence === "UNAVAILABLE" ? (
-            <p className={s.muted}>Os detalhes originais deste período não estão disponíveis.</p>
+            <p className={s.muted}>
+              A duração original do teste não foi registrada. Não é possível informar quantos dias
+              foram concedidos sem essa confirmação.
+            </p>
           ) : (
             <dl className={s.details}>
               <div>
@@ -231,7 +234,19 @@ export default function BenefitsPanel() {
       ) : (
         <section className={s.card}>
           {!coupons.data?.items.length ? (
-            <Empty>Ainda não há aplicações de cupom registradas neste histórico.</Empty>
+            <Empty>
+              {coupon ? (
+                <>
+                  O cupom <strong>{coupon.code}</strong> consta no contrato.{" "}
+                  {coupons.data?.coverage?.recordedFrom
+                    ? `Este histórico começou em ${date(coupons.data.coverage.recordedFrom)} e pode não incluir aplicações anteriores.`
+                    : "As aplicações anteriores podem não estar disponíveis neste histórico."}{" "}
+                  A ausência de um evento não comprova que o benefício deixou de funcionar.
+                </>
+              ) : (
+                "Ainda não há aplicações de cupom registradas neste histórico."
+              )}
+            </Empty>
           ) : (
             <ol className={s.list}>
               {coupons.data.items.map((event) => (

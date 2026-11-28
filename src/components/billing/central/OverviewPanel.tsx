@@ -40,6 +40,28 @@ export default function OverviewPanel() {
     !c.subscriptionError && !c.subscriptionLoading && typeof access?.canAccess === "boolean";
   const plan = c.plans.find((plan) => plan.key === sub.planKey);
   const end = access?.effectiveAccessUntil;
+  const benefit = overview?.activeAccessBenefit;
+  const free = accessKnown && allowed && Boolean(benefit);
+  const assessment = overview?.invoices?.attemptsAreNotDebt === true ? overview.invoices : null;
+  const overdue = (assessment?.overdueConfirmed ?? 0) > 0;
+  const neutralPayment = assessment ? !overdue : Boolean(allowed && access?.compensationActive);
+  const financialLabel = assessment
+    ? overdue
+      ? "Pagamento vencido confirmado"
+      : (assessment.confirmationPending ?? 0) > 0
+        ? "Pagamento em confirmação"
+        : financial?.code === "EM_DIA"
+          ? financial.label
+          : assessment.pending > 0
+            ? "Aguardando ou a conferir"
+            : "Sem pagamento vencido comprovado"
+    : neutralPayment
+      ? "Situação a conferir"
+      : financial?.label || "Não informado";
+  const contractLabel =
+    neutralPayment && (overview?.subscription.status || sub.status) === "past_due"
+      ? "Contrato em conferência"
+      : statusLabel(overview?.subscription.status || sub.status);
   return (
     <>
       {params.get("retorno") === "pagamento" && (
@@ -65,10 +87,16 @@ export default function OverviewPanel() {
           situação. Uma nova cobrança não será iniciada automaticamente.
         </Notice>
       )}
+      {caps?.paymentConfirmationPending && (
+        <Notice>
+          O Mercado Pago indica pagamento aprovado. Não pague novamente; aguarde a confirmação
+          financeira no Fut7Pro.
+        </Notice>
+      )}
       <div className={`${s.grid} ${s.three}`}>
         <section className={`${s.card} ${s.hero}`}>
           <h3>Plano contratado</h3>
-          <Pill>{statusLabel(overview?.subscription.status || sub.status)}</Pill>
+          <Pill>{contractLabel}</Pill>
           <strong className={s.value}>{plan?.label || formatBillingPlanLabel(sub.planKey)}</strong>
           <p className={s.muted}>
             {money(overview?.subscription.amountCents ?? sub.amount)} /{" "}
@@ -79,7 +107,7 @@ export default function OverviewPanel() {
           </p>
         </section>
         <section className={s.card}>
-          <h3>Status de acesso</h3>
+          <h3>{free ? "Você está usando o Fut7Pro grátis!" : "Status de acesso"}</h3>
           <Pill tone={!accessKnown ? "neutral" : allowed ? "good" : "danger"}>
             {allowed ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}{" "}
             {accessKnown
@@ -96,40 +124,58 @@ export default function OverviewPanel() {
             {end ? date(end) : allowed ? "Acesso autorizado" : "Consulte a situação"}
           </strong>
           <p className={s.muted}>
-            {end
-              ? accessKnown
-                ? "Prazo oficial de acesso"
-                : "Último prazo consultado"
-              : "Prazo não informado"}
+            {free && benefit
+              ? benefit.source === "GUIDE_REWARD"
+                ? "Recompensa confirmada do Guia Interativo"
+                : benefit.reasonCategory === "COMMERCIAL_COURTESY"
+                  ? `O Fut7Pro concedeu${benefit.days ? ` mais ${benefit.days} dias de acesso` : " esse período"} como cortesia.`
+                  : `${benefit.customerReason}${benefit.days ? `: ${benefit.days} dias gratuitos concedidos.` : "."}`
+              : end
+                ? accessKnown
+                  ? "Prazo oficial de acesso"
+                  : "Último prazo consultado"
+                : "Prazo não informado"}
           </p>
-          <p className={s.small}>{accessSource(access?.source)}</p>
-          {access?.compensationActive && (
+          {!free && <p className={s.small}>{accessSource(access?.source)}</p>}
+          {free ? (
             <p className={s.small}>
-              A concessão de acesso é independente da situação dos pagamentos.
+              Não é necessário pagar para manter o acesso durante esse período gratuito.
             </p>
+          ) : (
+            access?.compensationActive && (
+              <p className={s.small}>
+                A concessão de acesso é independente da situação dos pagamentos.
+              </p>
+            )
           )}
         </section>
         <section className={s.card}>
           <h3>Status financeiro</h3>
           <Pill
             tone={
-              financial?.code === "EM_DIA"
-                ? "good"
-                : ["PENDENTE", "VENCIDO"].includes(financial?.code || "")
-                  ? "warn"
-                  : "neutral"
+              neutralPayment
+                ? "neutral"
+                : financial?.code === "EM_DIA"
+                  ? "good"
+                  : ["PENDENTE", "VENCIDO"].includes(financial?.code || "")
+                    ? "warn"
+                    : "neutral"
             }
           >
-            {financial?.label || "Não informado"}
+            {financialLabel}
           </Pill>
           <strong className={s.value}>
-            {overview?.invoices
-              ? `${overview.invoices.pending} ${overview.invoices.pending === 1 ? "cobrança pendente" : "cobranças pendentes"}`
-              : "Situação dos pagamentos"}
+            {assessment && (assessment.pixAttempts ?? 0) > 0
+              ? `${assessment.assessmentComplete === false ? "Pelo menos " : ""}${assessment.pixAttempts} ${(assessment.pixAttempts ?? 0) === 1 ? "tentativa PIX registrada" : "tentativas PIX registradas"}`
+              : overview?.invoices
+                ? `${overview.invoices.pending} ${overview.invoices.pending === 1 ? "cobrança pendente" : "cobranças pendentes"}`
+                : "Situação dos pagamentos"}
           </strong>
           <p className={s.muted}>
-            {financial?.message ||
-              "Consulte as cobranças para verificar pagamentos e pendências registrados."}
+            {assessment && (assessment.pixAttempts ?? 0) > 0 && !overdue
+              ? `${(assessment.pixExpired ?? 0) > 0 ? `${assessment.pixExpired} ${(assessment.pixExpired ?? 0) === 1 ? "código expirou" : "códigos expiraram"}. ` : ""}${(assessment.pixCanceled ?? 0) > 0 ? `${assessment.pixCanceled} ${(assessment.pixCanceled ?? 0) === 1 ? "tentativa foi cancelada" : "tentativas foram canceladas"}. ` : ""}Esses registros não comprovam, por si só, mensalidades em dívida. Confira os detalhes em Pagamentos.`
+              : financial?.message ||
+                "Consulte as cobranças para verificar pagamentos e pendências registrados."}
           </p>
         </section>
       </div>
@@ -141,18 +187,32 @@ export default function OverviewPanel() {
             disabled={!c.ready || c.busy || (!caps.canUsePix && !caps.canUseRecurring)}
             onClick={() => c.openDialog("payment")}
           >
-            {paymentActionLabel(financial?.code, overview?.invoices?.pending)}
+            {overdue
+              ? "Regularizar pagamento"
+              : financial?.code === "TESTE"
+                ? "Configurar pagamento"
+                : neutralPayment
+                  ? "Ver opções de pagamento"
+                  : paymentActionLabel(financial?.code, overview?.invoices?.pending)}
           </button>
         )}
       </div>
       <div className={s.sectionTitle}>
         <h2>Gestão da assinatura</h2>
       </div>
+      {overview?.subscription.periodIsProspective &&
+        overview.subscription.currentPeriodEnd &&
+        overview.subscription.currentPeriodEnd !== end && (
+          <p className={s.small}>
+            O período de referência do contrato ainda não comprova pagamento. O prazo de uso é o
+            acesso confirmado acima; não foi alterado por essas tentativas PIX.
+          </p>
+        )}
       <section className={s.card}>
         <dl className={s.details}>
           <div>
             <dt>Situação contratual</dt>
-            <dd>{statusLabel(overview?.subscription.status || sub.status)}</dd>
+            <dd>{contractLabel}</dd>
           </div>
           <div>
             <dt>Periodicidade</dt>

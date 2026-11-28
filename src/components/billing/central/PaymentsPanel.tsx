@@ -3,7 +3,12 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, ReceiptText } from "lucide-react";
 import Fut7DialogBase from "@/components/ui/feedback/Fut7DialogBase";
-import { historyRequest, type InvoiceRecord, type Page } from "@/lib/api/subscription-central";
+import {
+  historyRequest,
+  reconcileInvoice,
+  type InvoiceRecord,
+  type Page,
+} from "@/lib/api/subscription-central";
 import { useCentral } from "./CentralProvider";
 import useCentralResource from "./useCentralResource";
 import useCursor from "./useCursor";
@@ -27,11 +32,15 @@ function InvoiceStatus({ invoice }: { invoice: InvoiceRecord }) {
           ? "danger"
           : refunded
             ? "warn"
-            : confirmed
-              ? "good"
-              : ["pending", "in_process", "overdue"].includes(invoice.status)
-                ? "warn"
-                : "neutral"
+            : ["PIX_EXPIRED", "PIX_CANCELED", "PIX_REJECTED"].includes(
+                  invoice.presentation?.code || ""
+                )
+              ? "neutral"
+              : confirmed
+                ? "good"
+                : ["pending", "in_process", "overdue"].includes(invoice.status)
+                  ? "warn"
+                  : "neutral"
       }
     >
       {refunded
@@ -40,7 +49,7 @@ function InvoiceStatus({ invoice }: { invoice: InvoiceRecord }) {
           : "Devolução parcial"
         : !confirmed && ["paid", "approved", "accredited"].includes(invoice.status)
           ? "Pagamento registrado"
-          : statusLabel(invoice.status)}
+          : invoice.presentation?.label || statusLabel(invoice.status)}
     </Pill>
   );
 }
@@ -60,6 +69,26 @@ function InvoiceDetails({ invoiceId, close }: { invoiceId: string | null; close:
     c.revision
   );
   const invoice = query.data;
+  async function reconcile() {
+    if (
+      !invoiceId ||
+      !subId ||
+      !c.ready ||
+      c.busy ||
+      !c.capabilities.data?.capabilities.canReconcilePayments
+    )
+      return;
+    const current = c.actionToken();
+    const result = await c.runAction(() => reconcileInvoice(subId, invoiceId));
+    if (result && current()) {
+      c.success(
+        result.outcome === "PAYMENT_REQUIRES_CONFIRMATION"
+          ? "O Mercado Pago indica aprovação. Não pague novamente; aguarde a confirmação financeira no Fut7Pro."
+          : `Situação conferida no Mercado Pago: ${result.presentation.label}.`
+      );
+      await c.refresh();
+    }
+  }
   return (
     <Fut7DialogBase
       open={Boolean(invoiceId && permitted)}
@@ -125,6 +154,34 @@ function InvoiceDetails({ invoiceId, close }: { invoiceId: string | null; close:
                 <dd>{date(invoice.periodEnd)}</dd>
               </div>
             </dl>
+            {invoice.presentation?.pix && !invoice.paymentConfirmedAt && (
+              <Notice>
+                {invoice.presentation.code === "CONFIRMATION_PENDING"
+                  ? "O provedor indica aprovação, mas a confirmação financeira ainda não foi concluída no Fut7Pro. Não faça outro pagamento."
+                  : ["PIX_EXPIRED", "PIX_CANCELED", "PIX_REJECTED"].includes(
+                        invoice.presentation.code
+                      )
+                    ? "Esta é uma tentativa anterior de pagamento. Código expirado ou tentativa cancelada não comprova uma mensalidade em dívida."
+                    : "Esta tentativa PIX não comprova, por si só, um período pago ou uma dívida exigível."}
+                {invoice.presentation.expiresAt && (
+                  <p>Validade registrada do código: {date(invoice.presentation.expiresAt)}.</p>
+                )}
+              </Notice>
+            )}
+            {invoice.presentation?.pix &&
+              invoice.presentation.needsReconciliation &&
+              c.capabilities.data?.capabilities.canReconcilePayments && (
+                <button
+                  type="button"
+                  className={s.secondary}
+                  disabled={!c.ready || c.busy}
+                  onClick={() => void reconcile()}
+                >
+                  {c.busy ? "Conferindo pagamento..." : "Conferir no Mercado Pago"}
+                </button>
+              )}
+            {c.actionError && <Notice error>{c.actionError}</Notice>}
+            {c.actionSuccess && <Notice>{c.actionSuccess}</Notice>}
             {invoice.refundedAmountCents !== null && invoice.refundedAmountCents > 0 && (
               <Notice>
                 O valor devolvido é informado separadamente. O pagamento original permanece
@@ -248,6 +305,12 @@ export default function PaymentsPanel() {
         Consulte valores registrados, confirmações e devoluções da assinatura. O acesso ao sistema é
         apresentado separadamente na visão geral.
       </p>
+      {items?.some((invoice) => !invoice.currency) && (
+        <p className={s.small}>
+          Alguns registros antigos não têm moeda confirmada. Os valores numéricos foram preservados;
+          a moeda só será exibida após confirmação verificável.
+        </p>
+      )}
       <form
         className={s.filters}
         onSubmit={(event) => {
@@ -270,7 +333,7 @@ export default function PaymentsPanel() {
           >
             <option value="">Todas as situações</option>
             <option value="confirmed">Pagamentos confirmados</option>
-            <option value="open">Aguardando pagamento</option>
+            <option value="open">Aguardando ou a conferir</option>
             <option value="refunds">Devoluções registradas</option>
             <option value="cancellations">Cobranças canceladas</option>
             <option value="overdue">Cobranças vencidas</option>
