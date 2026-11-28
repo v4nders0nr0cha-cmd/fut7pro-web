@@ -182,7 +182,7 @@ for (const width of [1280, 768, 390, 320]) {
       page.getByRole("heading", { name: "Minha assinatura", exact: true })
     ).toBeVisible();
     await expect(page.getByText("Acesso liberado", { exact: true })).toBeVisible();
-    await expect(page.getByText("Pendente", { exact: true })).toBeVisible();
+    await expect(page.getByText("Situação a conferir", { exact: true })).toBeVisible();
     const nav = page.getByRole("navigation", { name: "Central de Assinatura" });
     await page.screenshot({ path: testInfo.outputPath(`overview-${width}.png`), fullPage: true });
     await nav.getByRole("link", { name: "Benefícios" }).click();
@@ -190,7 +190,7 @@ for (const width of [1280, 768, 390, 320]) {
     await expect(page.getByRole("heading", { name: "Benefícios do grupo" })).toBeVisible();
     await expect(page.getByText("Recompensa do Guia Interativo")).toBeVisible();
     await expect(
-      page.getByText(/detalhes originais deste período não estão disponíveis/)
+      page.getByText(/duração original do teste não foi registrada/)
     ).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`benefits-${width}.png`), fullPage: true });
     await nav.getByRole("link", { name: "Pagamentos" }).focus();

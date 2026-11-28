@@ -1,4 +1,4 @@
-import { GET } from "../subscription/[subscriptionId]/[...history]/route";
+import { GET, POST } from "../subscription/[subscriptionId]/[...history]/route";
 import { ensureScopedSubscription } from "../subscription/_scope";
 import { requireUser, proxyBackend } from "@/app/api/_proxy/helpers";
 jest.mock("../subscription/_scope", () => ({ ensureScopedSubscription: jest.fn() }));
@@ -23,6 +23,27 @@ beforeEach(() => {
   (requireUser as jest.Mock).mockResolvedValue({ id: "admin" });
   (ensureScopedSubscription as jest.Mock).mockResolvedValue({ tenantSlug: "grupo-a" });
   (proxyBackend as jest.Mock).mockResolvedValue({ response: { status: 200 }, body: { items: [] } });
+});
+it("concilia apenas a fatura do grupo autenticado sem encaminhar identificador externo", async () => {
+  const res = await POST(req, params(["invoices", "invoice-a", "reconcile"]));
+  expect(res.status).toBe(200);
+  expect(ensureScopedSubscription).toHaveBeenCalledWith({ id: "admin" }, "sub-a");
+  expect(proxyBackend).toHaveBeenCalledWith(
+    "http://fixture.invalid/billing/subscription/sub-a/invoices/invoice-a/reconcile",
+    expect.objectContaining({ method: "POST", cache: "no-store" })
+  );
+});
+it("bloqueia conciliação sem sessão, fora do grupo ou com rota arbitrária", async () => {
+  expect((await POST(req, params(["cancel"]))).status).toBe(404);
+  (requireUser as jest.Mock).mockResolvedValue(null);
+  expect((await POST(req, params(["invoices", "invoice-a", "reconcile"]))).status).toBe(401);
+  (requireUser as jest.Mock).mockResolvedValue({ id: "admin" });
+  (ensureScopedSubscription as jest.Mock).mockResolvedValue({
+    error: "Fora do escopo",
+    status: 403,
+  });
+  expect((await POST(req, params(["invoices", "invoice-a", "reconcile"]))).status).toBe(403);
+  expect(proxyBackend).not.toHaveBeenCalled();
 });
 it("encaminha apenas consultas e filtros permitidos com escopo validado", async () => {
   const res = await GET(req, params(["invoices"]));

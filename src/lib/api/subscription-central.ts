@@ -2,6 +2,8 @@ import { BillingApiError, type SubscriptionAccess, type FinancialStatus } from "
 
 export interface Capabilities {
   canViewHistory: boolean;
+  canReconcilePayments?: boolean;
+  paymentConfirmationPending?: boolean;
   canPay: boolean;
   canUseRecurring: boolean;
   canUsePix: boolean;
@@ -39,19 +41,49 @@ export interface Overview {
     createdAt: string;
     trialEnd: string | null;
     currentPeriodEnd: string | null;
+    firstPaymentAt?: string | null;
+    periodIsProspective?: boolean;
   };
   access: SubscriptionAccess;
   financialStatus: FinancialStatus;
   historyAvailable: boolean;
   coverage?: Coverage;
-  invoices?: { pending: number; confirmed: number };
+  invoices?: {
+    pending: number;
+    confirmed: number;
+    pixAttempts?: number;
+    pixExpired?: number;
+    pixCanceled?: number;
+    confirmationPending?: number;
+    overdueConfirmed?: number;
+    assessmentComplete?: boolean;
+    attemptsAreNotDebt?: boolean;
+  };
+  activeAccessBenefit?: {
+    source: string;
+    days: number | null;
+    reasonCategory: string;
+    customerReason: string;
+    appliedAt: string | null;
+    newAccessUntil: string;
+  } | null;
 }
+export type InvoicePresentation = {
+  pix: boolean;
+  code: string;
+  label: string;
+  expiresAt: string | null;
+  providerStatusDetail: string | null;
+  needsReconciliation: boolean;
+  overdueConfirmed: boolean;
+};
 export interface InvoiceRecord {
   id: string;
   type: "UPFRONT" | "RECURRING";
   createdAt: string;
   status: string;
   providerStatus: string | null;
+  presentation?: InvoicePresentation;
   chargedAmountCents: number;
   paidAmountCents: number | null;
   refundedAmountCents: number | null;
@@ -159,4 +191,27 @@ export function historyRequest<T>(
     `subscription/${encodeURIComponent(id)}/${area}${query.size ? `?${query}` : ""}`,
     signal
   );
+}
+
+export async function reconcileInvoice(subscriptionId: string, invoiceId: string) {
+  const response = await fetch(
+    `/api/admin/billing/subscription/${encodeURIComponent(subscriptionId)}/invoices/${encodeURIComponent(invoiceId)}/reconcile`,
+    { method: "POST", cache: "no-store" }
+  );
+  const body = await response.json().catch(() => null);
+  if (!response.ok)
+    throw new BillingApiError(
+      typeof body?.message === "string"
+        ? body.message
+        : typeof body?.error === "string"
+          ? body.error
+          : "Não foi possível conferir o pagamento. Os registros foram preservados.",
+      response.status,
+      body
+    );
+  return body as {
+    invoiceId: string;
+    outcome: "UPDATED" | "UNCHANGED" | "PAYMENT_REQUIRES_CONFIRMATION";
+    presentation: InvoicePresentation;
+  };
 }

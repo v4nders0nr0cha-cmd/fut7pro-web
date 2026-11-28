@@ -33,7 +33,7 @@ export function historicalMoney(value: number | null | undefined, currency: stri
       /* moeda desconhecida */
     }
   }
-  return `${(value / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · moeda não registrada`;
+  return `${(value / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · moeda não confirmada`;
 }
 export function methodLabel(method: string | null) {
   return (
@@ -96,6 +96,7 @@ export const eventLabel = (value: string) =>
     PAYMENT_CONFIRMED: "Pagamento confirmado",
     REFUND_RECORDED: "Devolução registrada",
     INVOICE_STATUS_CHANGED: "Situação da cobrança atualizada",
+    PAYMENT_STATUS_RECONCILED: "Pagamento conferido no Mercado Pago",
     DAYS_GRANTED: "Dias concedidos",
     DAYS_REVERTED: "Concessão revertida",
   })[value] || "Atualização registrada";

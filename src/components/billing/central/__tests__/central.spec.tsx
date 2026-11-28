@@ -12,6 +12,7 @@ jest.mock("@/hooks/useSubscription");
 jest.mock("@/lib/api/subscription-central", () => ({
   centralRequest: jest.fn(),
   historyRequest: jest.fn(),
+  reconcileInvoice: jest.fn(),
 }));
 jest.mock("next-auth/react", () => ({
   useSession: () => ({ data: { user: { email: principalEmail, name: "Admin" } } }),
@@ -115,6 +116,65 @@ function hook() {
     refreshPlans: jest.fn(),
   };
 }
+it("explica cortesia confirmada e não transforma três PIX expirados em dívida", async () => {
+  const officialAccess = {
+    ...access,
+    canAccess: true,
+    blocked: false,
+    source: "COMPENSATION",
+    compensationActive: true,
+    effectiveAccessUntil: "2026-12-15T10:41:18Z",
+  };
+  (useSubscription as jest.Mock).mockImplementation(() => ({
+    ...hook(),
+    subscriptionStatus: {
+      access: officialAccess,
+      financialStatus: { code: "VENCIDO", label: "Pagamento vencido" },
+    },
+  }));
+  (historyRequest as jest.Mock).mockResolvedValue({
+    subscription: {
+      id: "sub-a",
+      tenantId: "a",
+      status: "past_due",
+      amountCents: 15000,
+      createdAt: "2026-01-01",
+      periodIsProspective: true,
+      currentPeriodEnd: "2027-01-15",
+    },
+    access: officialAccess,
+    activeAccessBenefit: {
+      source: "ADMIN_ADJUSTMENT",
+      days: 90,
+      reasonCategory: "COMMERCIAL_COURTESY",
+      customerReason: "Cortesia",
+      newAccessUntil: "2026-12-15T10:41:18Z",
+    },
+    invoices: {
+      pending: 0,
+      confirmed: 0,
+      pixAttempts: 3,
+      pixExpired: 3,
+      pixCanceled: 0,
+      overdueConfirmed: 0,
+      attemptsAreNotDebt: true,
+      assessmentComplete: true,
+    },
+  });
+  render(
+    <Harness>
+      <OverviewPanel />
+    </Harness>
+  );
+  expect(await screen.findByText("Você está usando o Fut7Pro grátis!")).toBeInTheDocument();
+  expect(screen.getByText(/mais 90 dias de acesso/)).toBeInTheDocument();
+  expect(screen.getByText("3 tentativas PIX registradas")).toBeInTheDocument();
+  expect(screen.getByText(/não comprovam, por si só, mensalidades em dívida/)).toBeInTheDocument();
+  expect(screen.queryByText("Pagamento vencido")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Regularizar pagamento" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Ver opções de pagamento" })).toBeEnabled();
+});
+
 function Harness({ children }: { children: React.ReactNode }) {
   return (
     <CentralProvider>
