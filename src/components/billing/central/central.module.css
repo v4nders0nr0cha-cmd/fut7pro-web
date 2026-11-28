@@ -61,6 +61,47 @@
 .paymentOption > svg {
   color: #e9bd35;
 }
+.paymentProviderLogo {
+  width: 32px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.paymentHelp summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  cursor: pointer;
+  color: #b9c2ce;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 4px 0;
+}
+.paymentHelp summary > svg {
+  flex-shrink: 0;
+}
+.paymentHelp > div {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.paymentHelp h3,
+.paymentHelp p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.paymentHelp h3 {
+  font-weight: 600;
+}
+.paymentHelp p {
+  color: #b9c2ce;
+  margin-top: 4px;
+}
 .paymentOption:only-child {
   grid-column: 1 / -1;
 }
